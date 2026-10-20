@@ -37,7 +37,8 @@ export function fromFsrs(cardId: string, c: FsrsCard): StateRow {
 export function applyRating(card: StudyCard, rating: Grade, now: Date, examDate: Date | null, f: FSRS = scheduler): { state: StateRow; log: ReviewLog } {
   const { card: next, log } = f.next(toFsrs(card.state, now), now, rating);
   if (examDate && daysUntil(examDate, now) > 0) {
-    const cap = startOfDay(examDate, -1);
+    let cap = startOfDay(examDate, -1);
+    if (cap <= now) cap = startOfDay(examDate); // exam tomorrow: a cap in the past would loop the card all day
     if (next.due > cap) {
       next.due = cap;
       next.scheduled_days = Math.max(0, Math.floor((cap.getTime() - now.getTime()) / DAY_MS));
@@ -56,13 +57,18 @@ export function buildSession(cards: StudyCard[], o: SessionOptions): { queue: St
   const exam = days > 0;
   const priority = (c: StudyCard) => c.importance * (1 - retrievability(c.state, o.now));
 
+  const byPriority = (a: StudyCard, b: StudyCard) => priority(b) - priority(a);
+
   const due = cards.filter((c) => c.state && new Date(c.state.due).getTime() <= t);
-  if (exam && (due.length * SECONDS_PER_CARD) / 60 > o.minutes) due.sort((a, b) => priority(b) - priority(a));
+  const overloaded = exam && (due.length * SECONDS_PER_CARD) / 60 > o.minutes;
+  if (overloaded) due.sort(byPriority);
   else due.sort((a, b) => new Date(a.state!.due).getTime() - new Date(b.state!.due).getTime());
 
+  const dueSet = new Set(due);
   const weak = exam && days <= 3
-    ? cards.filter((c) => c.state && !due.includes(c) && retrievability(c.state, o.now) < 0.8)
+    ? cards.filter((c) => c.state && !dueSet.has(c) && retrievability(c.state, o.now) < 0.8)
     : [];
+  if (overloaded) weak.sort(byPriority);
 
   const fresh = cards.filter((c) => !c.state)
     .sort((a, b) => b.importance - a.importance) // stable sort keeps input order on ties

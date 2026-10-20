@@ -100,3 +100,21 @@ test('readiness of all-new deck is 0 and estMinutes uses 25 s per card', () => {
   expect(newCardCapacity(100, 6, 10)).toBe(48); // floor(6*10*60/25/3)
   expect(newCardCapacity(30, 6, 10)).toBe(30);
 });
+
+test('exam tomorrow caps a mature card at the start of exam day, short steps untouched', () => {
+  const exam = new Date('2026-11-03T00:00:00');
+  const { state } = applyRating(card('a', mature('a')), Rating.Good, now, exam, noFuzz);
+  expect(new Date(state.due).getTime()).toBe(exam.getTime());
+  expect(Number.isInteger(state.scheduled_days)).toBe(true);
+  expect(state.scheduled_days).toBeGreaterThanOrEqual(0);
+  const again = applyRating(card('n', null), Rating.Again, now, exam, noFuzz).state;
+  const free = applyRating(card('n', null), Rating.Again, now, null, noFuzz).state;
+  expect(again.due).toBe(free.due);
+  expect(new Date(again.due).getTime()).toBeGreaterThan(now.getTime());
+});
+
+test('final-days mode starts exactly 3 days before the exam', () => {
+  const weakKept = card('k', { ...mature('k', 1), due: day(10).toISOString(), last_review: day(-5).toISOString() });
+  expect(buildSession([weakKept], { ...opts, examDate: new Date('2026-11-05T00:00:00') }).queue.map((c) => c.id)).toEqual(['k']);
+  expect(buildSession([weakKept], { ...opts, examDate: new Date('2026-11-06T00:00:00') }).queue).toEqual([]);
+});
