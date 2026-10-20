@@ -13,13 +13,14 @@ export const OnboardingInput = z.object({
 
 const str = (fd: FormData, k: string) => (typeof fd.get(k) === 'string' ? (fd.get(k) as string).trim() : '');
 
-export function parseOnboarding(fd: FormData):
+// requireAdult=false only when the profile already holds the original attestation (edit mode)
+export function parseOnboarding(fd: FormData, { requireAdult = true } = {}):
   | { ok: true; value: z.infer<typeof OnboardingInput> }
   | { ok: false; errors: Record<string, string> } {
   const lang = str(fd, 'first_language');
   const minutes = str(fd, 'study_minutes_per_day');
   const r = OnboardingInput.safeParse({
-    adult: fd.get('adult') === 'on',
+    adult: requireAdult ? fd.get('adult') === 'on' : true,
     first_language: lang === 'other' ? str(fd, 'first_language_other') : lang,
     study_minutes_per_day: minutes === '' ? 20 : Number(minutes),
     font: str(fd, 'font') || 'default',

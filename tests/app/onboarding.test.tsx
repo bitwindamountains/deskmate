@@ -7,12 +7,20 @@ vi.mock('next/navigation', () => ({ redirect: (to: string) => redirect(to) }));
 let claims: { sub: string } | null = { sub: 'u1' };
 let profile: Record<string, unknown> | null = null;
 const update = vi.fn();
+const isCalls: unknown[][] = [];
+let updateResult: { data: unknown[] | null; error: unknown } = { data: [{ user_id: 'u1' }], error: null };
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getClaims: async () => ({ data: claims ? { claims } : null }) },
     from: () => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: profile }) }) }),
-      update: (v: unknown) => ({ eq: (...a: unknown[]) => update(v, ...a) }),
+      update: (v: unknown) => {
+        const chain: Record<string, unknown> = {};
+        chain.eq = (...a: unknown[]) => { update(v, ...a); return chain; };
+        chain.is = (...a: unknown[]) => { isCalls.push(a); return chain; };
+        chain.select = async () => updateResult;
+        return chain;
+      },
     }),
   }),
 }));
@@ -21,7 +29,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 import { completeOnboarding } from '@/app/onboarding/actions';
 import { OnboardingForm } from '@/app/onboarding/onboarding-form';
 
-beforeEach(() => { redirect.mockClear(); update.mockReset(); claims = { sub: 'u1' }; });
+beforeEach(() => { redirect.mockClear(); update.mockReset(); isCalls.length = 0; updateResult = { data: [{ user_id: 'u1' }], error: null }; profile = { user_id: 'u1', onboarded_at: null }; claims = { sub: 'u1' }; });
 afterEach(cleanup);
 
 test('no claims redirects to /login', async () => {
@@ -42,8 +50,7 @@ test('completeOnboarding rejects bad input without writing', async () => {
   expect(s.errors?.adult).toBeTruthy();
   expect(update).not.toHaveBeenCalled();
 });
-test('completeOnboarding updates own row server-side then redirects', async () => {
-  update.mockResolvedValue({ error: null });
+test('first-time submit sends both timestamps, only for a not-yet-onboarded row', async () => {
   const f = new FormData();
   f.set('adult', 'on'); f.set('first_language', 'en'); f.set('onboarded_at', 'evil');
   await expect(completeOnboarding({}, f)).rejects.toThrow('REDIRECT:/today');
@@ -52,6 +59,24 @@ test('completeOnboarding updates own row server-side then redirects', async () =
   expect(v.onboarded_at).not.toBe('evil');
   expect(v.adult_attested_at).toBeTruthy();
   expect(v).toMatchObject({ first_language: 'en', study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false } });
+  expect(isCalls).toEqual([['onboarded_at', null]]);
+});
+test('edit submit sends neither timestamp and does not need the 18+ box', async () => {
+  profile = { user_id: 'u1', onboarded_at: '2026-01-01' };
+  const f = new FormData();
+  f.set('first_language', 'en'); f.set('font', 'dyslexic');
+  await expect(completeOnboarding({}, f)).rejects.toThrow('REDIRECT:/today');
+  const [v] = update.mock.calls[0];
+  expect(v).not.toHaveProperty('onboarded_at');
+  expect(v).not.toHaveProperty('adult_attested_at');
+  expect(v.preferences.font).toBe('dyslexic');
+});
+test('0-row update returns an error state and does not redirect', async () => {
+  updateResult = { data: [], error: null };
+  const f = new FormData();
+  f.set('adult', 'on'); f.set('first_language', 'en');
+  await expect(completeOnboarding({}, f)).resolves.toEqual({ error: "We couldn't save your answers. Please try again." });
+  expect(redirect).not.toHaveBeenCalled();
 });
 
 test('form shows labelled fields and the verbatim disclosure', () => {
