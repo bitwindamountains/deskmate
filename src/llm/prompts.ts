@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, EssayGlobal, EssayParagraphs, GradeAnswer } from './schemas.js';
+import { CardGenerate, EssayGlobal, EssayParagraphs, GradeAnswer } from './schemas';
 
 export interface RubricCriterion {
   name: string;
