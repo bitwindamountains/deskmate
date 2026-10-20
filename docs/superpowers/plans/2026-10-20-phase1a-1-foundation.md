@@ -39,7 +39,7 @@
 
 ## Prerequisites (owner, once)
 
-- Create a free Supabase project `scholar-dev`. Enable Google provider (Auth → Providers) and custom SMTP (Auth → SMTP). Add `http://localhost:3000/auth/callback` to the redirect allow-list.
+- Create a free Supabase project `scholar-dev`. Enable Google provider (Auth → Providers) and custom SMTP (Auth → SMTP). Add `http://localhost:3000/auth/callback**` to the redirect allow-list (the `**` wildcard is needed because the callback URL carries `?next=…`), and the same pattern for the deployed `SITE_URL`. Set `SITE_URL` in every deployed environment.
 - Create `.env.local` from `.env.example` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`, and at least `GROQ_API_KEY`.
 - Run `npx supabase login` (use a scoped personal access token), then `npx supabase link --project-ref $SUPABASE_PROJECT_REF`.
 
@@ -105,7 +105,8 @@ test('manifest starts at /today in standalone mode', () => {
 
 - A trigger `on auth.users insert` creates the profile row. The function lives in schema `private`, is `security definer`, and sets `search_path = ''`. It is not in `public`, so it is not callable over the API.
 - Policies: select, update (with `using` and `with check`) for `to authenticated` with `(select auth.uid()) = user_id`. No insert or delete policy, because the trigger and the FK cascade own both.
-- `grant select, update on public.profiles to authenticated;`
+- Column-scoped grant: `grant select on public.profiles to authenticated; grant update (display_name, first_language, study_minutes_per_day, preferences, adult_attested_at, onboarded_at) on public.profiles to authenticated;` (never `user_id` or `created_at`).
+- Constraints: `check (onboarded_at is null or adult_attested_at is not null)` (no onboarding without the 18+ attestation, even via the API) and `check (first_language is null or char_length(first_language) <= 60)`. Ruling: a user setting `adult_attested_at` themselves through the API is the same act as ticking the box, so this is accepted.
 - `tests/db/helpers.ts` produces:
 ```ts
 export function adminClient(): SupabaseClient;                       // secret key, server-only
