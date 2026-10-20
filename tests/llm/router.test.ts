@@ -12,7 +12,7 @@ const s = z.object({ n: z.number() });
 type Reply = { status?: number; content?: string; reject?: unknown };
 /** Each provider host gets a queue of replies, consumed in order. */
 function stubHosts(replies: Record<string, Reply[]>) {
-  const f = vi.fn(async (url: string) => {
+  const f = vi.fn(async (url: string, _init?: RequestInit) => {
     const host = new URL(url).host;
     const r = replies[host].shift()!;
     if (r.reject) throw r.reject;
