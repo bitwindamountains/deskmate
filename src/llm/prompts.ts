@@ -107,6 +107,7 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
       'Skip trivia such as page numbers and incidental examples. Split lists longer than 3 items. Include "why" cards for important concepts.',
       'source_quote must be copied exactly from the source text and must support the card. Skip anything you cannot ground in the source.',
       'Cloze cards put the hidden part as {{c1::text}} in front; back holds the hidden text.',
+      'importance: 3 = core concept likely on an exam, 2 = supporting, 1 = detail.',
       DATA_RULE,
       `Return only JSON matching this schema: ${schemaText(CardGenerate)}`,
     ].join('\n'),
