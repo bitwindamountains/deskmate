@@ -4,7 +4,7 @@ import { cosine } from '@/lib/embed/duplicates';
 import type { Grade } from './schedule';
 
 export function normalizeAnswer(s: string): string {
-  return s.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu, '')
+  return s.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu, (c, i, str) => (/[.,\-+%/]/.test(c) && (/\d/.test(str[i - 1] ?? '') || /\d/.test(str[i + 1] ?? '')) ? c : ''))
     .split(/\s+/).filter((w) => w && w !== 'a' && w !== 'an' && w !== 'the').join(' ');
 }
 
@@ -42,11 +42,12 @@ export async function gradeLocally(i: CascadeInput, embed: EmbedFn | null): Prom
   });
   const ans = normalizeAnswer(i.answer);
   if (!ans) return { ...done(0, 'fuzzy', [], i.keyPoints, true), needsLlm: false };
-  if (ans === normalizeAnswer(i.reference)) return done(1, 'exact', i.keyPoints, [], i.type !== 'why');
+  if (ans === normalizeAnswer(i.reference)) return done(1, 'exact', i.keyPoints, [], true);
   const sim = similarity(ans, i.reference);
-  if (i.reference.trim().split(/\s+/).length <= 8 && sim >= 0.85) return done(sim, 'fuzzy', i.keyPoints, [], i.type !== 'why');
+  if (i.reference.trim().split(/\s+/).length <= 8 && sim >= 0.85) return done(sim, 'fuzzy', i.keyPoints, [], true);
   if (!embed) return done(sim, 'fuzzy', [], i.keyPoints, false);
-  const v = await embed([i.answer, i.reference, ...i.keyPoints]);
+  let v: number[][];
+  try { v = await embed([i.answer, i.reference, ...i.keyPoints]); } catch { return done(sim, 'fuzzy', [], i.keyPoints, false); }
   if (!i.keyPoints.length) return done(Math.min(1, Math.max(0, cosine(v[0], v[1]))), 'embedding', [], [], false);
   const hit = i.keyPoints.filter((_, k) => cosine(v[0], v[2 + k]) >= KP_HIT);
   return done(hit.length / i.keyPoints.length, 'embedding', hit, i.keyPoints.filter((k) => !hit.includes(k)), false);

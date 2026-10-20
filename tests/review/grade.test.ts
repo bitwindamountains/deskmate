@@ -25,9 +25,22 @@ describe('gradeLocally', () => {
     const b = await gradeLocally({ ...base, answer: 'Electron transport chain', responseMs: 10001 }, null);
     expect(b.suggested).toBe(Rating.Good);
   });
-  test('why card always needs LLM', async () => {
-    const r = await gradeLocally({ ...base, type: 'why', answer: 'electron transport chain' }, null);
-    expect(r.needsLlm).toBe(true);
+  test('why card: exact match skips LLM; embedding or fallback needs it', async () => {
+    expect((await gradeLocally({ ...base, type: 'why', answer: 'electron transport chain' }, null)).needsLlm).toBe(false);
+    const embed = async (t: string[]) => t.map(() => [1, 0]);
+    const long = { type: 'why' as const, reference: 'a long reference with many more than eight words in total here', keyPoints: ['k'], answer: 'zzz', responseMs: 1 };
+    expect((await gradeLocally(long, embed)).needsLlm).toBe(true);
+    expect((await gradeLocally(long, null)).needsLlm).toBe(true);
+  });
+  test('embed rejection falls back to fuzzy', async () => {
+    const r = await gradeLocally({ type: 'basic', reference: 'a long reference with many more than eight words in total here', keyPoints: ['k'], answer: 'zzz', responseMs: 1 }, async () => { throw new Error('offline'); });
+    expect(r.source).toBe('fuzzy');
+  });
+  test('numeric signs and separators are kept', () => {
+    expect(normalizeAnswer('-5')).not.toBe(normalizeAnswer('5'));
+    expect(normalizeAnswer('3.14')).toBe(normalizeAnswer('3.14'));
+    expect(normalizeAnswer('3,14')).not.toBe(normalizeAnswer('3.14'));
+    expect(normalizeAnswer('the mitochondria.')).toBe(normalizeAnswer('Mitochondria'));
   });
   test('embedding: one of two key points hit gives 0.5 and needs LLM', async () => {
     const embed = async (t: string[]) => t.map((x) => (x === 'my answer' ? [1, 0] : x === 'kp one' ? [1, 0] : x === 'kp two' ? [0, 1] : [1, 1]));
