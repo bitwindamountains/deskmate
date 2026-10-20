@@ -3,11 +3,11 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.6"
+    "node": ">=22.9"
   },
   "scripts": {
     "test": "vitest run",
-    "eval": "node --env-file=.env --import tsx eval/run.ts"
+    "eval": "node --env-file-if-exists=.env --import tsx eval/run.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"

@@ -98,6 +98,6 @@ export async function complete<T>(
   const message =
     missing.length === providers.length
       ? `No usable provider for ${task}: set one of ${providers.map((p) => p.apiKeyEnv).join(', ')}`
-      : `All providers failed for ${task}`;
+      : `All providers failed for ${task}: ${log.map((l) => `${l.provider}: ${l.status}${l.message ? ` (${l.message.slice(0, 120)})` : ''}`).join('; ')}`;
   throw new AllProvidersFailedError(message, log);
 }

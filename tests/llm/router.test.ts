@@ -102,3 +102,10 @@ test('log entries carry task, provider, model', async () => {
   const r = await complete('essay_global', pr, s, { env, providers: [a] });
   expect(r.log[0]).toMatchObject({ task: 'essay_global', provider: 'a', model: 'ma' });
 });
+
+test('failure message lists each provider and its reason', async () => {
+  stubHosts({ b: [{ reject: new TypeError('fetch failed') }] });
+  const err = await complete('grade_answer', pr, s, { env: { B_KEY: 'kb' }, providers: [a, b] }).catch((e) => e);
+  expect(err.message).toMatch(/a: skipped_no_key \(A_KEY not set\)/);
+  expect(err.message).toMatch(/b: error \(network: fetch failed\)/);
+});
