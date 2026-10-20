@@ -24,12 +24,14 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
       <h1 className="text-2xl font-semibold">Set up Scholar</h1>
       {state.error && <p role="alert" className="error">{state.error}</p>}
       <form action={action} className="space-y-5">
-        <div>
-          <label className="flex min-h-11 items-center gap-2">
-            <input type="checkbox" name="adult" required {...bad('adult')} /> I am 18 or older.
-          </label>
-          <Err id="adult-err" msg={e.adult} />
-        </div>
+        {!defaults && (
+          <div>
+            <label className="flex min-h-11 items-center gap-2">
+              <input type="checkbox" name="adult" required {...bad('adult')} /> I am 18 or older.
+            </label>
+            <Err id="adult-err" msg={e.adult} />
+          </div>
+        )}
 
         <div>
           <label htmlFor="first_language" className="mb-1 block">Your first language</label>
@@ -62,7 +64,7 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
         {/* ponytail: this sentence is tied to the `trainsOnInputs: false` providers in src/llm/config.ts; update both together. */}
         <p>Scholar uses AI to make flashcards and check your answers. Your study material is sent to Groq to do this. Groq&apos;s terms say it does not train its models on what you send.</p>
 
-        <button type="submit" disabled={pending} className="btn btn-primary">Start studying</button>
+        <button type="submit" disabled={pending} className="btn btn-primary">{defaults ? 'Save changes' : 'Start studying'}</button>
       </form>
     </main>
   );
