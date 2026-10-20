@@ -3,8 +3,8 @@
 import { useActionState } from 'react';
 import { sendEmailCode, signInWithGoogle, verifyEmailCode, type LoginState } from './actions';
 
-const input = 'block w-full rounded border border-gray-500 px-3 py-2';
-const button = 'rounded border border-gray-700 px-4 py-2 font-medium';
+const input = 'field';
+const button = 'btn';
 
 export function LoginForm({ next, initialError }: { next: string; initialError?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(
@@ -13,13 +13,13 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
   );
 
   return (
-    <main className="mx-auto max-w-sm space-y-6 p-6">
+    <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Sign in to Scholar</h1>
-      {state.error && <p role="alert" className="font-medium text-red-800 before:content-['Error:_']">{state.error}</p>}
+      {state.error && <p role="alert" className="error">{state.error}</p>}
 
       <form action={signInWithGoogle}>
         <input type="hidden" name="next" value={next} />
-        <button type="submit" className={`${button} w-full`}>Continue with Google</button>
+        <button type="submit" className="btn btn-primary w-full">Continue with Google</button>
       </form>
 
       <form action={action} className="space-y-3">
@@ -43,7 +43,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
           {state.step === 'email' ? 'Email me a code' : 'Verify code'}
         </button>
         {state.step === 'code' && (
-          <button type="submit" name="intent" value="resend" formNoValidate disabled={pending} className="underline">
+          <button type="submit" name="intent" value="resend" formNoValidate disabled={pending} className="min-h-11 underline">
             Send a new code
           </button>
         )}

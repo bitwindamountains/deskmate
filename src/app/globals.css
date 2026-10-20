@@ -1,5 +1,96 @@
 @import 'tailwindcss';
 
-body {
-  font-family: var(--font-atkinson), system-ui, sans-serif;
+/* Tokens: see DESIGN.md. Light is the default; dark follows the OS. */
+:root {
+  color-scheme: light dark;
+  --ground: #f4f6f3;
+  --surface: #ffffff;
+  --ink: #18263a;
+  --ink-muted: #475569;
+  --line: #6b7787;
+  --rail: #18263a;
+  --rail-ink: #c8d2de;
+  --rail-ink-strong: #ffffff;
+  --mark: #d4f25a;
+  --on-mark: #18263a;
+  --focus: #1d4ed8;
+  --danger: #9b1c1c;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #10161f;
+    --surface: #18212d;
+    --ink: #e7ecf2;
+    --ink-muted: #a9b4c2;
+    --line: #7d8a9b;
+    --rail: #0a0f16;
+    --rail-ink: #aab5c3;
+    --rail-ink-strong: #ffffff;
+    --mark: #cdeb52;
+    --on-mark: #10161f;
+    --focus: #cdeb52;
+    --danger: #fca5a5;
+  }
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-rail: var(--rail);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-ink-strong: var(--rail-ink-strong);
+  --color-mark: var(--mark);
+  --color-on-mark: var(--on-mark);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
+}
+
+@layer base {
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+/* The (app) layout puts data-font on its root; :has lifts it to body so portals inherit it too. */
+body:has([data-font='dyslexic']) {
+  font-family: 'OpenDyslexic', var(--font-sans);
+  line-height: 1.6;
+}
+
+::selection { background: var(--mark); color: var(--on-mark); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.rail { --focus: var(--mark); }
+a { text-underline-offset: 0.2em; }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+    padding: 0.5rem 1.25rem; border: 1px solid var(--ink); border-radius: 0.5rem; font-weight: 700;
+    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  }
+  .btn:hover { background: var(--surface); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--on-mark); }
+  .btn-primary:hover { background: var(--ink); color: var(--ground); }
+  .field {
+    display: block; width: 100%; min-height: 44px; padding: 0.5rem 0.75rem;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 0.5rem;
+  }
+  .error { color: var(--danger); font-weight: 700; }
+  .error::before { content: 'Error: '; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+[data-reduced-motion='true'] *, [data-reduced-motion='true'] *::before, [data-reduced-motion='true'] *::after {
+  transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important;
+}
+
+@layer base { input[type='checkbox'], input[type='radio'] { accent-color: var(--ink); width: 1.25rem; height: 1.25rem; } }
