@@ -1,8 +1,8 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { safeNext } from '@/lib/auth/paths';
+import { siteUrl } from '@/lib/auth/site-url';
 import { createClient } from '@/lib/supabase/server';
 
 export type LoginState = { step: 'email' | 'code'; email?: string; error?: string };
@@ -11,26 +11,22 @@ const RATE_LIMITED = 'Too many attempts. Wait a minute, then try again.';
 const BAD_CODE = "That code didn't work. Check it, or send a new one.";
 const GENERIC = 'Something went wrong. Try again.';
 
-async function origin(): Promise<string> {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https');
-  return h.get('origin') ?? `${proto}://${host}`;
-}
-
 const isRateLimited = (e: { status?: number; code?: string }) =>
   e.status === 429 || e.code === 'over_email_send_rate_limit';
 
 const field = (fd: FormData, k: string) => (typeof fd.get(k) === 'string' ? (fd.get(k) as string).trim() : '');
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {
-  const supabase = await createClient();
   const next = safeNext(field(formData, 'next'));
+  const failed = `/login?error=callback&next=${encodeURIComponent(next)}`;
+  const site = siteUrl();
+  if (!site) redirect(failed);
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${await origin()}/auth/callback?next=${encodeURIComponent(next)}` },
+    options: { redirectTo: `${site}/auth/callback?next=${encodeURIComponent(next)}` },
   });
-  if (error || !data.url) redirect('/login?error=callback');
+  if (error || !data.url) redirect(failed);
   redirect(data.url);
 }
 
