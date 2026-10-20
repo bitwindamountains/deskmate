@@ -1,0 +1,5 @@
+Cellular respiration is the process cells use to turn glucose into usable energy. Most of this energy is stored as ATP (adenosine triphosphate).
+
+The process has three main stages: glycolysis, the Krebs cycle, and the electron transport chain. Glycolysis happens in the cytoplasm and does not need oxygen. The Krebs cycle and the electron transport chain happen in the mitochondria.
+
+The electron transport chain produces most of the cell's ATP. It needs oxygen as the final electron acceptor, which is why aerobic respiration requires oxygen. Muscle cells contain many mitochondria because they need a lot of energy.
