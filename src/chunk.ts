@@ -7,6 +7,10 @@ export interface Chunk { position: number; pageStart: number; pageEnd: number; t
 
 export const wordCount = (text: string): number => text.split(/\s+/).filter(Boolean).length;
 
+/** Fewer than 20 words in total means a scan (or an empty paste), not selectable text. */
+export const hasTextLayer = (pages: PageText[]): boolean =>
+  pages.reduce((sum, p) => sum + wordCount(p.text), 0) >= 20;
+
 /** Split on blank lines and pack paragraphs into chunks of at most maxWords; an oversize paragraph stays whole. */
 export function chunkByWords(text: string, maxWords: number): string[] {
   const chunks: string[] = [];

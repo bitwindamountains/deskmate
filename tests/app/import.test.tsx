@@ -22,7 +22,25 @@ test('valid paste calls createSource', () => {
   createSource.mockResolvedValue({ ok: false, error: 'x' });
   render(<ImportForm decks={[]} />);
   fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
-  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'hello world' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'w '.repeat(30) } });
   fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
   expect(createSource).toHaveBeenCalledTimes(1);
+});
+
+test('a rejected createSource shows the save error', async () => {
+  createSource.mockRejectedValue(new Error('network'));
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'w '.repeat(30) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect((await screen.findByRole('alert')).textContent).toContain("We couldn't save your material. Please try again.");
+});
+
+test('deck-name error is tied to the deck-name input', () => {
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'w '.repeat(30) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  const input = screen.getByLabelText('New deck name');
+  expect(input.getAttribute('aria-invalid')).toBe('true');
+  expect(input.getAttribute('aria-describedby')).toBe('import-err');
 });

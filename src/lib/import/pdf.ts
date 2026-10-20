@@ -1,4 +1,5 @@
-import { wordCount, type PageText } from '../../chunk';
+import type { PageText } from '../../chunk';
+export { hasTextLayer } from '../../chunk';
 
 /** Browser only: extracts text per page with pdf.js (imported lazily so SSR never evaluates it). */
 export async function extractPdfPages(file: File): Promise<PageText[]> {
@@ -22,5 +23,3 @@ export async function extractPdfPages(file: File): Promise<PageText[]> {
   return pages;
 }
 
-export const hasTextLayer = (pages: PageText[]): boolean =>
-  pages.reduce((sum, p) => sum + wordCount(p.text), 0) >= 20;

@@ -16,8 +16,10 @@ export async function insertSource(db: SupabaseClient<any, any, any>, userId: st
   let sourceId: string | undefined;
   const undo = async () => {
     // best effort; deleting the source cascades to its chunks
-    if (sourceId) await db.from('sources').delete().eq('id', sourceId);
-    if (newDeckId) await db.from('decks').delete().eq('id', newDeckId);
+    try {
+      if (sourceId) await db.from('sources').delete().eq('id', sourceId);
+      if (newDeckId) await db.from('decks').delete().eq('id', newDeckId);
+    } catch { /* best effort */ }
   };
   try {
     if (!deckId) {
