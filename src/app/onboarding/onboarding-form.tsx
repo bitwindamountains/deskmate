@@ -5,10 +5,10 @@ import { LANGUAGES } from '@/lib/profile/onboarding';
 import type { Profile } from '@/lib/profile/require';
 import { completeOnboarding, type OnboardingState } from './actions';
 
-const input = 'block w-full rounded border border-gray-500 px-3 py-2';
+const input = 'field';
 
 function Err({ id, msg }: { id: string; msg?: string }) {
-  return msg ? <p id={id} role="alert" className="mt-1 font-medium text-red-800 before:content-['Error:_']">{msg}</p> : null;
+  return msg ? <p id={id} role="alert" className="error mt-1">{msg}</p> : null;
 }
 
 export function OnboardingForm({ defaults }: { defaults?: Profile }) {
@@ -20,12 +20,12 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
   const bad = (k: string) => (e[k] ? { 'aria-invalid': true, 'aria-describedby': `${k}-err` } : {});
 
   return (
-    <main className="mx-auto max-w-md space-y-6 p-6">
+    <main className="mx-auto max-w-md space-y-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Set up Scholar</h1>
-      {state.error && <p role="alert" className="font-medium text-red-800 before:content-['Error:_']">{state.error}</p>}
+      {state.error && <p role="alert" className="error">{state.error}</p>}
       <form action={action} className="space-y-5">
         <div>
-          <label className="flex items-center gap-2">
+          <label className="flex min-h-11 items-center gap-2">
             <input type="checkbox" name="adult" required {...bad('adult')} /> I am 18 or older.
           </label>
           <Err id="adult-err" msg={e.adult} />
@@ -51,18 +51,18 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
 
         <fieldset>
           <legend className="mb-1">Reading font</legend>
-          <label className="mr-4"><input type="radio" name="font" value="default" defaultChecked={font === 'default'} /> Standard</label>
-          <label><input type="radio" name="font" value="dyslexic" defaultChecked={font === 'dyslexic'} /> Dyslexia-friendly</label>
+          <label className="mr-4 inline-flex min-h-11 items-center gap-2"><input type="radio" name="font" value="default" defaultChecked={font === 'default'} /> Standard</label>
+          <label className="inline-flex min-h-11 items-center gap-2"><input type="radio" name="font" value="dyslexic" defaultChecked={font === 'dyslexic'} /> Dyslexia-friendly</label>
         </fieldset>
 
-        <label className="flex items-center gap-2">
+        <label className="flex min-h-11 items-center gap-2">
           <input type="checkbox" name="reduced_motion" defaultChecked={defaults?.preferences?.reduced_motion ?? false} /> Reduce motion
         </label>
 
         {/* ponytail: this sentence is tied to the `trainsOnInputs: false` providers in src/llm/config.ts; update both together. */}
         <p>Scholar uses AI to make flashcards and check your answers. Your study material is sent to Groq to do this. Groq&apos;s terms say it does not train its models on what you send.</p>
 
-        <button type="submit" disabled={pending} className="rounded border border-gray-700 px-4 py-2 font-medium">Start studying</button>
+        <button type="submit" disabled={pending} className="btn btn-primary">Start studying</button>
       </form>
     </main>
   );
