@@ -3,3 +3,6 @@ node_modules/
 eval/out/
 .superpowers/
 graphify-out/
+.env.local
+.next/
+*.tsbuildinfo

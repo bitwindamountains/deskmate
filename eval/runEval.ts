@@ -99,7 +99,7 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
   /** Run one call; failures become a 'failed' row instead of stopping the run. */
   async function call<T>(task: TaskName, sample: string, prompt: { system: string; user: string }, schema: ZodType<T>): Promise<CompleteResult<T> | null> {
     try {
-      const r = await completeFn(task, prompt, schema, { env: o.env, providers });
+      const r = await completeFn(task, prompt, schema, { env: o.env, providers, requireNoTraining: false });
       record(sample, r.log);
       return r;
     } catch (e) {
