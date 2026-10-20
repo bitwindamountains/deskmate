@@ -79,7 +79,10 @@ create index source_chunks_user_id_idx on scholar.source_chunks (user_id);
 alter table scholar.source_chunks enable row level security;
 
 revoke all on scholar.source_chunks from public, anon, authenticated;
-grant select, insert, update on scholar.source_chunks to authenticated;
+-- Update is column-scoped to generated_at, and the policy below only lets it be set, never cleared:
+-- clearing it (or adding chunks to a paid source) would let generation rerun under an already-paid source.
+grant select, insert on scholar.source_chunks to authenticated;
+grant update (generated_at) on scholar.source_chunks to authenticated;
 grant all on scholar.source_chunks to service_role;
 
 create policy "source_chunks: owner can select" on scholar.source_chunks
@@ -88,13 +91,15 @@ create policy "source_chunks: owner can insert into own source" on scholar.sourc
   for insert to authenticated
   with check (
     (select auth.uid()) = user_id
-    and exists (select 1 from scholar.sources s where s.id = source_id and s.user_id = (select auth.uid()))
+    and exists (select 1 from scholar.sources s
+                 where s.id = source_id and s.user_id = (select auth.uid()) and s.quota_consumed_at is null)
   );
 create policy "source_chunks: owner can update" on scholar.source_chunks
   for update to authenticated
   using ((select auth.uid()) = user_id)
   with check (
     (select auth.uid()) = user_id
+    and generated_at is not null
     and exists (select 1 from scholar.sources s where s.id = source_id and s.user_id = (select auth.uid()))
   );
 
@@ -200,13 +205,14 @@ revoke all on schema scholar_private from public, anon;
 -- execute on the inner function to call it. scholar_private is not in Exposed schemas, so the API never reaches it directly.
 grant usage on schema scholar_private to authenticated;
 
-create function scholar_private.consume_generation_quota(p_source_id uuid, p_limit int default 3)
+create function scholar_private.consume_generation_quota(p_source_id uuid)
 returns boolean
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
+  c_daily_limit constant int := 3; -- not a parameter: authenticated can execute this function, so it must not set its own limit
   v_uid uuid := (select auth.uid());
   v_consumed_at timestamptz;
   v_rows int;
@@ -224,15 +230,11 @@ begin
     return true; -- this source already paid
   end if;
 
-  if p_limit < 1 then
-    return false; -- the insert branch below would otherwise count past a zero limit
-  end if;
-
   insert into scholar.quota_usage as q (user_id, day, generations)
   values (v_uid, (now() at time zone 'utc')::date, 1)
   on conflict (user_id, day) do update
     set generations = q.generations + 1
-    where q.generations < p_limit;
+    where q.generations < c_daily_limit;
   get diagnostics v_rows = row_count;
 
   if v_rows = 0 then
@@ -244,10 +246,10 @@ begin
 end;
 $$;
 
-revoke execute on function scholar_private.consume_generation_quota(uuid, int) from public, anon;
-grant execute on function scholar_private.consume_generation_quota(uuid, int) to authenticated;
+revoke execute on function scholar_private.consume_generation_quota(uuid) from public, anon;
+grant execute on function scholar_private.consume_generation_quota(uuid) to authenticated;
 
--- The only API entry point. No p_limit parameter: clients cannot raise their own limit.
+-- The only API entry point.
 create function scholar.consume_generation_quota(p_source_id uuid)
 returns boolean
 language sql
@@ -258,4 +260,4 @@ as $$
 $$;
 
 revoke execute on function scholar.consume_generation_quota(uuid) from public, anon;
-grant execute on function scholar.consume_generation_quota(uuid) to authenticated, service_role;
+grant execute on function scholar.consume_generation_quota(uuid) to authenticated;
