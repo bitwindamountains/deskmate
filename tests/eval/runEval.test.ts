@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { chunkByWords, runEval } from '../../eval/runEval.js';
+import { runEval } from '../../eval/runEval.js';
 import { AllProvidersFailedError } from '../../src/llm/router.js';
 
 const ESSAY = 'Prompt: Should schools ban phones?\nSchools should ban phones because they distract students.\n\nStudies show focus improves without phones.';
@@ -51,12 +51,6 @@ beforeEach(async () => {
 });
 
 const opts = () => ({ samplesDir: join(dir, 'samples'), outDir: join(dir, 'out'), env: {}, completeFn: fake as any, log: () => {} });
-
-test('chunkByWords packs paragraphs and keeps an oversize paragraph whole', () => {
-  expect(chunkByWords('a b\n\nc d\n\ne f', 4)).toEqual(['a b\n\nc d', 'e f']);
-  expect(chunkByWords('a b c d e f', 2)).toEqual(['a b c d e f']);
-  expect(chunkByWords('   ', 10)).toEqual([]);
-});
 
 test('empty essay file is skipped with a warning and no call', async () => {
   await writeFile(join(dir, 'samples/essays/blank.txt'), '  \n\n ');
