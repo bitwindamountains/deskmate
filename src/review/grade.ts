@@ -4,7 +4,7 @@ import { cosine } from '@/lib/embed/duplicates';
 import type { Grade } from './schedule';
 
 export function normalizeAnswer(s: string): string {
-  return s.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu, (c, i, str) => (/[.,\-+%/]/.test(c) && (/\d/.test(str[i - 1] ?? '') || /\d/.test(str[i + 1] ?? '')) ? c : ''))
+  return s.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu, (c, i, str) => (/[.,\-+%/]/.test(c) && !(/[.,]/.test(c) && /^\s*$/.test(str[i + 1] ?? '')) && (/\d/.test(str[i - 1] ?? '') || /\d/.test(str[i + 1] ?? '')) ? c : ''))
     .split(/\s+/).filter((w) => w && w !== 'a' && w !== 'an' && w !== 'the').join(' ');
 }
 
