@@ -1,4 +1,4 @@
-import type { ChatRequest, ProviderConfig, ProviderOutcome } from '../types.js';
+import type { ChatRequest, ProviderConfig, ProviderOutcome } from '../types';
 
 export function mapFetchError(e: unknown): ProviderOutcome {
   const name = (e as { name?: string })?.name;

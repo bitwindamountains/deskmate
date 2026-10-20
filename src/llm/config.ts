@@ -1,4 +1,4 @@
-import type { ProviderConfig, TaskName } from './types.js';
+import type { ProviderConfig, TaskName } from './types';
 
 // Verify current free models and data-use terms before use: both change often.
 // trainsOnInputs is conservative: true unless the free tier's terms say inputs are not used for training.
