@@ -1,6 +1,6 @@
 -- Study content: decks, sources, chunks, cards, call log, and the daily generation quota.
--- Shared project: touches only schemas scholar and private (never public, auth, rentflow, invoicetracker).
--- private is NOT added to Exposed schemas, so nothing in it is reachable through the Data API.
+-- Shared project: touches only schemas scholar and scholar_private (never public, auth, rentflow, invoicetracker).
+-- scholar_private is NOT added to Exposed schemas, so nothing in it is reachable through the Data API.
 
 -- ---------------------------------------------------------------- decks
 create table scholar.decks (
@@ -184,7 +184,7 @@ create table scholar.quota_usage (
 );
 alter table scholar.quota_usage enable row level security;
 
--- Read-only for users: only private.consume_generation_quota (security definer) writes it,
+-- Read-only for users: only scholar_private.consume_generation_quota (security definer) writes it,
 -- so a user cannot reset their own counter with a direct UPDATE.
 revoke all on scholar.quota_usage from public, anon, authenticated;
 grant select on scholar.quota_usage to authenticated;
@@ -194,13 +194,13 @@ create policy "quota_usage: owner can select" on scholar.quota_usage
   for select to authenticated using ((select auth.uid()) = user_id);
 
 -- ---------------------------------------------------------------- quota function
-create schema if not exists private;
-revoke all on schema private from public, anon;
--- Ruling (ledgered): the scholar wrapper is security invoker, so the caller needs usage on private and
--- execute on the inner function to call it. private is not in Exposed schemas, so the API never reaches it directly.
-grant usage on schema private to authenticated;
+create schema scholar_private; -- plain create: fail loudly rather than share an existing schema
+revoke all on schema scholar_private from public, anon;
+-- Ruling (ledgered): the scholar wrapper is security invoker, so the caller needs usage on scholar_private and
+-- execute on the inner function to call it. scholar_private is not in Exposed schemas, so the API never reaches it directly.
+grant usage on schema scholar_private to authenticated;
 
-create function private.consume_generation_quota(p_source_id uuid, p_limit int default 3)
+create function scholar_private.consume_generation_quota(p_source_id uuid, p_limit int default 3)
 returns boolean
 language plpgsql
 security definer
@@ -244,8 +244,8 @@ begin
 end;
 $$;
 
-revoke execute on function private.consume_generation_quota(uuid, int) from public, anon;
-grant execute on function private.consume_generation_quota(uuid, int) to authenticated;
+revoke execute on function scholar_private.consume_generation_quota(uuid, int) from public, anon;
+grant execute on function scholar_private.consume_generation_quota(uuid, int) to authenticated;
 
 -- The only API entry point. No p_limit parameter: clients cannot raise their own limit.
 create function scholar.consume_generation_quota(p_source_id uuid)
@@ -254,7 +254,7 @@ language sql
 security invoker
 set search_path = ''
 as $$
-  select private.consume_generation_quota(p_source_id);
+  select scholar_private.consume_generation_quota(p_source_id);
 $$;
 
 revoke execute on function scholar.consume_generation_quota(uuid) from public, anon;
