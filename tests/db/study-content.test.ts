@@ -137,8 +137,8 @@ test('user cannot insert quota_usage directly', async () => {
   expect(error?.code).toBe('42501');
 });
 
-test('the private quota function is not reachable through the API', async () => {
-  const { error } = await A.client.schema('private' as never).rpc('consume_generation_quota', { p_source_id: sourceB, p_limit: 1000 } as never);
+test('the scholar_private quota function is not reachable through the API', async () => {
+  const { error } = await A.client.schema('scholar_private' as never).rpc('consume_generation_quota', { p_source_id: sourceB, p_limit: 1000 } as never);
   expect(error?.code).toBe('PGRST106');
 });
 
