@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { EssayGlobal, FeedbackItem, GradeAnswer } from '../../src/llm/schemas.js';
+import { Card, EssayGlobal, FeedbackItem, GradeAnswer } from '../../src/llm/schemas.js';
 
 const item = {
   layer: 'global', category: 'thesis', rubric_criterion: 'Thesis', paragraph_index: 0,
@@ -24,4 +24,10 @@ test('EssayGlobal rejects 1 strength and 4 strengths', () => {
   expect(EssayGlobal.safeParse(g).success).toBe(true);
   expect(EssayGlobal.safeParse({ ...g, strengths: [strength] }).success).toBe(false);
   expect(EssayGlobal.safeParse({ ...g, strengths: [strength, strength, strength, strength] }).success).toBe(false);
+});
+
+test('Card requires importance 1..3', () => {
+  const c = { type: 'basic', front: 'f', back: 'b', key_points: [], source_quote: 'q', concept: 'c', bloom_level: 'remember' };
+  for (const importance of [1, 2, 3]) expect(Card.safeParse({ ...c, importance }).success).toBe(true);
+  for (const importance of [0, 4, 1.5, '2', undefined]) expect(Card.safeParse({ ...c, importance }).success).toBe(false);
 });

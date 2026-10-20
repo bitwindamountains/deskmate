@@ -23,8 +23,8 @@ const paragraphData = {
 };
 const cardData = {
   cards: [
-    { type: 'basic', front: 'What makes ATP?', back: 'Mitochondria', key_points: ['mitochondria'], source_quote: 'Mitochondria produce ATP', concept: 'c', bloom_level: 'remember' },
-    { type: 'basic', front: 'Q2', back: 'A2', key_points: [], source_quote: 'not in the source', concept: 'c', bloom_level: 'remember' },
+    { type: 'basic', front: 'What makes ATP?', back: 'Mitochondria', key_points: ['mitochondria'], source_quote: 'Mitochondria produce ATP', concept: 'c', bloom_level: 'remember', importance: 2 },
+    { type: 'basic', front: 'Q2', back: 'A2', key_points: [], source_quote: 'not in the source', concept: 'c', bloom_level: 'remember', importance: 2 },
   ],
 };
 const gradeData = { score: 0.8, hit: ['k'], missed: [], misconception: null, feedback: 'Nice.', suggested_rating: 'good' };
