@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { generateChunk } from '@/lib/generate/generate-chunk';
+import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
 const Body = z.object({ sourceId: z.uuid(), position: z.number().int().min(0) });
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) return NextResponse.json({ error: 'unauthorized', message: 'Please sign in again.' }, { status: 401 });
+  if (!(await isOnboarded(supabase, userId))) {
+    return NextResponse.json({ error: 'not_onboarded', message: 'Finish setting up your account first.' }, { status: 403 });
+  }
 
   const body = Body.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'bad_request', message: 'Something went wrong with that request.' }, { status: 400 });

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { validateImport } from '@/lib/import/validate';
+import { chunksWithinLimits, validateImport } from '@/lib/import/validate';
 
 const words = (n: number) => 'w '.repeat(n);
 const base = { newDeckTitle: 'Bio', title: 't' };
@@ -43,4 +43,23 @@ test('malformed input gets the generic error', () => {
   expect(bad({ title: 'x'.repeat(121) })).toEqual({ ok: false, error: GENERIC });
   expect(bad({ deckId: 'not-a-uuid' })).toEqual({ ok: false, error: GENERIC });
   expect(bad({ examDate: 'tomorrow' })).toEqual({ ok: false, error: GENERIC });
+});
+
+test('a chunk over 15,000 characters is rejected with the word-limit copy', () => {
+  const long = 'abcdefghijk '.repeat(1_500); // 1,500 words, one 18,000-char chunk; under the word and char pre-checks
+  expect(validateImport({ ...base, kind: 'text', pages: [{ page: 1, text: long }] })).toEqual({
+    ok: false, error: "That's about 1,500 words. The limit is 12,000 at a time; split it into smaller parts.",
+  });
+});
+test('chunk limits: 30 chunks of 15,000 chars pass, 31 chunks or 15,001 chars fail', () => {
+  const chunk = (position: number, n = 15_000) => ({ position, pageStart: 1, pageEnd: 1, text: 'x'.repeat(n) });
+  const many = (n: number) => Array.from({ length: n }, (_, i) => chunk(i));
+  expect(chunksWithinLimits(many(30))).toBe(true);
+  expect(chunksWithinLimits(many(31))).toBe(false);
+  expect(chunksWithinLimits([chunk(0, 15_001)])).toBe(false);
+});
+test('pages containing null get the validation error, not a TypeError', () => {
+  const pages = [null, { page: 1, text: 'w'.repeat(200_001) }] as never;
+  expect(validateImport({ ...base, kind: 'pdf', pages }).ok).toBe(false);
+  expect(validateImport({ ...base, kind: 'pdf', pages: [null] as never })).toEqual({ ok: false, error: GENERIC });
 });

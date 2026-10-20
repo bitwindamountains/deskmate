@@ -182,6 +182,18 @@ test('importance outside 1..3 is rejected', async () => {
   }
 });
 
+test('chunk position outside 0..29 is rejected (migration 20261020140000)', async () => {
+  const s = await newSource(A, deckA);
+  const { error } = await A.client.from('source_chunks').insert({ user_id: A.userId, source_id: s, position: 30, text: 'x' });
+  expect(error?.code).toBe('23514');
+});
+
+test('chunk text over 15,000 characters is rejected (migration 20261020140000)', async () => {
+  const s = await newSource(A, deckA);
+  const { error } = await A.client.from('source_chunks').insert({ user_id: A.userId, source_id: s, position: 0, text: 'x'.repeat(15_001) });
+  expect(error?.code).toBe('23514');
+});
+
 test('anon cannot read decks or call the quota function', async () => {
   const read = await anonClient().from('decks').select('*');
   expect(read.error?.code).toBe('42501');

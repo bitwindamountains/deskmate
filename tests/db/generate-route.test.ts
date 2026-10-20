@@ -17,6 +17,11 @@ const created: string[] = [];
 beforeAll(async () => {
   A = await createTestUser(); created.push(A.userId);
   B = await createTestUser(); created.push(B.userId);
+  // the route requires a finished onboarding (18+ attestation)
+  const now = new Date().toISOString();
+  const { error } = await adminClient().from('profiles')
+    .upsert([A, B].map((u) => ({ user_id: u.userId, adult_attested_at: now, onboarded_at: now })), { onConflict: 'user_id' });
+  if (error) throw error;
 });
 afterAll(async () => { await deleteTestUsers(created); });
 
@@ -117,6 +122,16 @@ test('POST without a session is 401', async () => {
   session.client = (await import('./helpers')).anonClient();
   const res = await post({ sourceId: crypto.randomUUID(), position: 0 });
   expect(res.status).toBe(401);
+});
+
+test('POST from a signed-in user who never onboarded is 403 not_onboarded', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const sourceId = await newSource(U);
+  session.client = U.client;
+  const res = await post({ sourceId, position: 0 });
+  expect(res.status).toBe(403);
+  expect(await res.json()).toEqual({ error: 'not_onboarded', message: 'Finish setting up your account first.' });
+  expect(await generations(U.userId)).toBe(0);
 });
 
 test('POST for an unknown source is 404 with the error shape', async () => {
