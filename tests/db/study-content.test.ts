@@ -9,6 +9,7 @@ const created: string[] = [];
 let deckA: string;
 let deckB: string;
 let sourceB: string;
+let paidSourceC: string;
 
 const card = (u: User, deck_id: string, extra: Record<string, unknown> = {}) => ({
   user_id: u.userId, deck_id, type: 'basic', front: 'f', back: 'b', source_quote: 'q', concept: 'c', bloom_level: 'remember', importance: 2, ...extra,
@@ -87,6 +88,25 @@ test('user cannot move a card into another user deck', async () => {
   expect(error?.code).toBe('42501');
 });
 
+test('user cannot point a card at another user chunk', async () => {
+  const { data: chunk } = await B.client.from('source_chunks').select('id').single();
+  const { error } = await A.client.from('cards').update({ source_chunk_id: chunk!.id }).eq('deck_id', deckA);
+  expect(error?.code).toBe('42501');
+});
+
+test('chunk generated_at can be set but never cleared', async () => {
+  const { data, error } = await B.client.from('source_chunks').update({ generated_at: new Date().toISOString() }).eq('source_id', sourceB).select();
+  expect(error).toBeNull();
+  expect(data).toHaveLength(1);
+  const cleared = await B.client.from('source_chunks').update({ generated_at: null }).eq('source_id', sourceB);
+  expect(cleared.error?.code).toBe('42501'); // RLS with check: generated_at is not null
+});
+
+test('chunk text cannot be updated', async () => {
+  const { error } = await B.client.from('source_chunks').update({ text: 'changed' }).eq('source_id', sourceB);
+  expect(error?.code).toBe('42501'); // column privilege: only generated_at is updatable
+});
+
 test('user cannot pre-set quota_consumed_at on a new source', async () => {
   const { error } = await A.client
     .from('sources').insert({ user_id: A.userId, deck_id: deckA, title: 's', kind: 'text', page_count: 1, quota_consumed_at: new Date().toISOString() });
@@ -116,6 +136,12 @@ test('quota: calling twice for the same source consumes once', async () => {
   expect((await consume(C, s)).data).toBe(true);
   expect((await consume(C, s)).data).toBe(true);
   expect(await generationsToday(C)).toBe(1);
+  paidSourceC = s;
+});
+
+test('quota: chunks cannot be added to an already-paid source', async () => {
+  const { error } = await C.client.from('source_chunks').insert({ user_id: C.userId, source_id: paidSourceC, position: 0, text: 'more' });
+  expect(error?.code).toBe('42501');
 });
 
 test('quota: user cannot consume against another user source', async () => {
@@ -138,7 +164,7 @@ test('user cannot insert quota_usage directly', async () => {
 });
 
 test('the scholar_private quota function is not reachable through the API', async () => {
-  const { error } = await A.client.schema('scholar_private' as never).rpc('consume_generation_quota', { p_source_id: sourceB, p_limit: 1000 } as never);
+  const { error } = await A.client.schema('scholar_private' as never).rpc('consume_generation_quota', { p_source_id: sourceB } as never);
   expect(error?.code).toBe('PGRST106');
 });
 
