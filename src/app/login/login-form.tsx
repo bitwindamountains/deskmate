@@ -12,10 +12,12 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
     { step: 'email', error: initialError },
   );
 
+  const bad = state.error ? { 'aria-invalid': true, 'aria-describedby': 'login-err' } : {};
+
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Sign in to Scholar</h1>
-      {state.error && <p role="alert" className="error">{state.error}</p>}
+      {state.error && <p id="login-err" role="alert" className="error">{state.error}</p>}
 
       <form action={signInWithGoogle}>
         <input type="hidden" name="next" value={next} />
@@ -27,7 +29,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
         {state.step === 'email' ? (
           <div>
             <label htmlFor="email" className="mb-1 block">Email</label>
-            <input id="email" name="email" type="email" autoComplete="email" required defaultValue={state.email} className={input} />
+            <input id="email" name="email" type="email" autoComplete="email" required defaultValue={state.email} className={input} {...bad} />
           </div>
         ) : (
           <>
@@ -35,7 +37,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
             <input type="hidden" name="email" value={state.email} />
             <div>
               <label htmlFor="token" className="mb-1 block">6-digit code</label>
-              <input id="token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required className={input} />
+              <input id="token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required className={input} {...bad} />
             </div>
           </>
         )}

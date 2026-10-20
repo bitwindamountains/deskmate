@@ -36,3 +36,21 @@ test('moves to the code step with a labelled field', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }));
   await waitFor(() => screen.getByLabelText('6-digit code'));
 });
+
+test('error ties to the email and code inputs via aria-invalid/aria-describedby', async () => {
+  sendEmailCode.mockResolvedValue({ step: 'email', error: 'Nope' });
+  render(<LoginForm next="/today" />);
+  expect(screen.getByLabelText('Email').getAttribute('aria-invalid')).toBeNull();
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }));
+  const alert = await waitFor(() => screen.getByRole('alert'));
+  const email = screen.getByLabelText('Email');
+  expect(email.getAttribute('aria-invalid')).toBe('true');
+  expect(alert.id).toBeTruthy();
+  expect(email.getAttribute('aria-describedby')).toBe(alert.id);
+});
+
+test('initial error also ties to the email input', () => {
+  render(<LoginForm next="/today" initialError="Bad code" />);
+  expect(screen.getByLabelText('Email').getAttribute('aria-describedby')).toBe(screen.getByRole('alert').id);
+});
