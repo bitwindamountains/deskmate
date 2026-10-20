@@ -36,10 +36,17 @@ describe('gradeLocally', () => {
     const r = await gradeLocally({ type: 'basic', reference: 'a long reference with many more than eight words in total here', keyPoints: ['k'], answer: 'zzz', responseMs: 1 }, async () => { throw new Error('offline'); });
     expect(r.source).toBe('fuzzy');
   });
+  test('why card with rejecting embed needs LLM', async () => {
+    const r = await gradeLocally({ type: 'why', reference: 'a long reference with many more than eight words in total here', keyPoints: ['k'], answer: 'zzz', responseMs: 1 }, async () => { throw new Error('offline'); });
+    expect(r).toMatchObject({ source: 'fuzzy', needsLlm: true });
+  });
   test('numeric signs and separators are kept', () => {
     expect(normalizeAnswer('-5')).not.toBe(normalizeAnswer('5'));
     expect(normalizeAnswer('3.14')).toBe(normalizeAnswer('3.14'));
     expect(normalizeAnswer('3,14')).not.toBe(normalizeAnswer('3.14'));
+    expect(normalizeAnswer('5.')).toBe(normalizeAnswer('5'));
+    expect(normalizeAnswer('The answer is 3.14.')).toBe(normalizeAnswer('The answer is 3.14'));
+    expect(normalizeAnswer('3.14')).not.toBe('314');
     expect(normalizeAnswer('the mitochondria.')).toBe(normalizeAnswer('Mitochondria'));
   });
   test('embedding: one of two key points hit gives 0.5 and needs LLM', async () => {
