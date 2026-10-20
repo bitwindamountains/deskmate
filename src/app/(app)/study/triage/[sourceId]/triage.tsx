@@ -37,7 +37,9 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   useEffect(() => { cardsRef.current = cards; }, [cards]);
   const [known] = useState(() => existing.map((k) => ({ ...k })));
   const dedupeChain = useRef(Promise.resolve());
-  const started = useRef(false);
+  const loop = useRef<AbortController | null>(null);
+  const nextChunk = useRef(0); // index into todo the loop is on; a remount resumes here
+  const doneLink = useRef<HTMLAnchorElement>(null);
   const focusNext = useRef<React.RefObject<HTMLElement | null> | null>(null);
   const discardBtn = useRef<HTMLButtonElement>(null);
   const editBtn = useRef<HTMLButtonElement>(null);
@@ -62,6 +64,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
     setMode('view'); setActionError('');
     move([current.id], 'kept');
     setSay(`Kept. ${left - 1} left.`);
+    if (left === 1) focusNext.current = doneLink;
   }
 
   function discard(reason?: Reason) {
@@ -69,7 +72,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
     setMode('view'); setActionError('');
     move([current.id], 'discarded', reason);
     setSay(`Discarded. ${left - 1} left.`);
-    focusNext.current = discardBtn;
+    focusNext.current = left === 1 ? doneLink : discardBtn;
   }
 
   function keepAll() {
@@ -78,6 +81,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
     setMode('view'); setActionError('');
     move(ids, 'kept');
     setSay(`Kept all ${plural(ids.length, 'card')}.`);
+    focusNext.current = doneLink; // Keep all is now disabled
   }
 
   function openReason() { setMode('reason'); focusNext.current = firstChip; }
@@ -130,39 +134,49 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   }
 
   async function run(from: number) {
+    loop.current?.abort();
+    const ctrl = new AbortController();
+    loop.current = ctrl;
     setProblem(null);
     for (let i = from; i < todo.length; i++) {
+      nextChunk.current = i;
       setPart(i);
       const stop = (kind: Problem['kind'], message: string) => { setPart(null); setProblem({ kind, message, at: i }); };
       let res: Response;
       try {
-        res = await fetch('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sourceId, position: todo[i] }) });
+        res = await fetch('/api/generate', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sourceId, position: todo[i] }), signal: ctrl.signal,
+        });
       } catch {
-        return stop('retry', BUSY);
+        return ctrl.signal.aborted ? undefined : stop('retry', BUSY);
       }
-      // The proxy no longer redirects /api/*, but an expired session can still surface as a redirect or an HTML page.
-      const isJson = !res.redirected && (res.headers.get('content-type') ?? '').includes('application/json');
+      if (ctrl.signal.aborted) return;
+      // The proxy no longer redirects /api/*, but an expired session can still surface as a redirect.
+      if (res.status === 401 || res.redirected) return stop('session', 'Your session ended.');
+      const isJson = (res.headers.get('content-type') ?? '').includes('application/json');
       const body = isJson ? await res.json().catch(() => null) : null;
-      if (res.status === 401 || !body) return stop('session', 'Your session ended.');
-      if (res.status === 429) return stop('quota', body.message);
-      if (!res.ok || !Array.isArray(body.cards)) return stop('retry', typeof body.message === 'string' ? body.message : BUSY);
+      if (ctrl.signal.aborted) return;
+      if (res.status === 429 && typeof body?.message === 'string') return stop('quota', body.message);
+      if (!res.ok || !Array.isArray(body?.cards)) return stop('retry', BUSY);
       const batch = (body.cards as CardRow[]).filter((c) => c.status === 'pending' && !cardsRef.current.some((x) => x.id === c.id));
       cardsRef.current = [...cardsRef.current, ...batch];
       setCards((cs) => [...cs, ...batch.filter((c) => !cs.some((x) => x.id === c.id))]);
       dedupe(batch);
     }
+    nextChunk.current = todo.length;
     setPart(null);
   }
 
   useEffect(() => {
-    if (started.current || !todo.length) return; // StrictMode runs effects twice; one generation loop only
-    started.current = true;
-    void run(0);
-  });
+    // StrictMode mounts twice: the first loop is aborted on cleanup and the remount resumes at the same chunk.
+    if (nextChunk.current < todo.length) void run(nextChunk.current);
+    return () => loop.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per mount
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || mode === 'edit' || !current) return;
+      if (e.defaultPrevented || e.repeat || e.altKey || e.ctrlKey || e.metaKey || mode === 'edit' || !current) return;
       if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')) return;
       if (e.key === 'ArrowRight') keep();
       else if (e.key === 'ArrowLeft') { if (mode === 'reason') discard(); else openReason(); }
@@ -253,7 +267,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
 
       <div className="flex flex-wrap gap-3 border-t border-line pt-6">
         <button type="button" className="btn" disabled={!left} onClick={keepAll}>Keep all</button>
-        <Link href="/study" className="btn">Done reviewing</Link>
+        <Link ref={doneLink} href="/study" className="btn">Done reviewing</Link>
       </div>
 
       <p role="status" aria-live="polite" className="sr-only">{say}</p>
