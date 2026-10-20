@@ -1,0 +1,2 @@
+// Server/edge stand-in for browser-only packages (see next.config.ts): pdf.js and transformers.js only run in the client.
+export {};

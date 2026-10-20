@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { updateCard, updateEmbeddings, updateStatus } from '@/lib/triage/card-actions';
 import { createClient } from '@/lib/supabase/server';
 
@@ -9,6 +10,7 @@ async function session() {
   const { data } = await db.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) redirect('/login');
+  if (!(await isOnboarded(db, userId))) throw new Error("We couldn't save that change.");
   return { db, userId };
 }
 
