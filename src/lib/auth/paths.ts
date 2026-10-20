@@ -6,5 +6,5 @@ export function isPublicPath(pathname: string): boolean {
 
 // Same-origin relative path only: one leading "/", not followed by "/" or "\".
 export function safeNext(next: string | null | undefined): string {
-  return typeof next === 'string' && /^\/(?![/\\])/.test(next) ? next : '/today';
+  return typeof next === 'string' && /^\/(?![/\\])[^\x00-\x1f\x7f]*$/.test(next) ? next : '/today';
 }
