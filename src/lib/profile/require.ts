@@ -12,12 +12,16 @@ export async function getProfile(): Promise<{ userId: string; profile: Profile |
   const userId = data?.claims?.sub;
   if (!userId) redirect('/login');
   const read = () => supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
-  let { data: profile } = await read();
+  const first = await read();
+  if (first.error) throw first.error;
+  let profile = first.data;
   if (!profile) {
     // No auth.users trigger in the shared project: the user creates their own row on first visit (RLS: user_id = auth.uid()).
     const { error } = await supabase.from('profiles').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
     if (error) throw error;
-    ({ data: profile } = await read());
+    const second = await read();
+    if (second.error) throw second.error;
+    profile = second.data;
   }
   return { userId, profile: profile as Profile | null };
 }

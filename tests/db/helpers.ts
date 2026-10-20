@@ -39,3 +39,10 @@ export async function deleteTestUser(userId: string): Promise<void> {
   const { error } = await adminClient().auth.admin.deleteUser(userId);
   if (error) throw error;
 }
+
+/** Attempts every delete, then fails loudly if any failed (no user is skipped because an earlier delete threw). */
+export async function deleteTestUsers(ids: string[]): Promise<void> {
+  const results = await Promise.allSettled(ids.map(deleteTestUser));
+  const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (failed.length) throw new AggregateError(failed.map((f) => f.reason), `failed to delete ${failed.length} test user(s): ${ids.join(', ')}`);
+}

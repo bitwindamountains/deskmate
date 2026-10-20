@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { anonClient, createTestUser, deleteTestUser, type Client } from './helpers';
+import { anonClient, createTestUser, deleteTestUsers, type Client } from './helpers';
 
 type User = { client: Client; userId: string };
 let A: User;
@@ -17,7 +17,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Only the users this file created; their profile rows go with them via the FK cascade.
-  for (const id of created) await deleteTestUser(id);
+  await deleteTestUsers(created);
 });
 
 test('first getProfile creates an empty profile', async () => {
@@ -54,7 +54,7 @@ test('a user cannot update another user profile', async () => {
 
 test('a user cannot move their row to another user_id', async () => {
   const { error } = await A.client.from('profiles').update({ user_id: B.userId }).eq('user_id', A.userId);
-  expect(error).not.toBeNull();
+  expect(error?.code).toBe('42501');
 });
 
 test('study_minutes_per_day outside 5..120 is rejected', async () => {
@@ -77,6 +77,7 @@ test('first_language longer than 60 chars is rejected', async () => {
 });
 
 test('anon cannot read profiles', async () => {
-  const { data } = await anonClient().from('profiles').select('*');
-  expect(data ?? []).toEqual([]);
+  const { data, error } = await anonClient().from('profiles').select('*');
+  expect(error?.code).toBe('42501');
+  expect(data).toBeNull();
 });

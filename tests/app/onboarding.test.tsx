@@ -9,13 +9,15 @@ let profile: Record<string, unknown> | null = null;
 const update = vi.fn();
 const upsert = vi.fn();
 let upsertError: unknown = null;
+let secondReadError: unknown = null;
+let reads = 0;
 const isCalls: unknown[][] = [];
 let updateResult: { data: unknown[] | null; error: unknown } = { data: [{ user_id: 'u1' }], error: null };
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getClaims: async () => ({ data: claims ? { claims } : null }) },
     from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: profile }) }) }),
+      select: () => ({ eq: () => ({ maybeSingle: async () => (++reads === 2 && secondReadError ? { data: null, error: secondReadError } : { data: profile }) }) }),
       upsert: async (...a: unknown[]) => {
         upsert(...a);
         if (!upsertError) profile = { user_id: 'u1', onboarded_at: null };
@@ -36,7 +38,7 @@ import { getProfile, requireOnboardedUser } from '@/lib/profile/require';
 import { completeOnboarding } from '@/app/onboarding/actions';
 import { OnboardingForm } from '@/app/onboarding/onboarding-form';
 
-beforeEach(() => { redirect.mockClear(); update.mockReset(); upsert.mockReset(); upsertError = null; isCalls.length = 0; updateResult = { data: [{ user_id: 'u1' }], error: null }; profile = { user_id: 'u1', onboarded_at: null }; claims = { sub: 'u1' }; });
+beforeEach(() => { redirect.mockClear(); update.mockReset(); upsert.mockReset(); upsertError = null; secondReadError = null; reads = 0; isCalls.length = 0; updateResult = { data: [{ user_id: 'u1' }], error: null }; profile = { user_id: 'u1', onboarded_at: null }; claims = { sub: 'u1' }; });
 afterEach(cleanup);
 
 test('no claims redirects to /login', async () => {
@@ -61,6 +63,13 @@ test('first-visit insert error is thrown, not hidden', async () => {
   profile = null;
   upsertError = new Error('denied');
   await expect(getProfile()).rejects.toThrow('denied');
+});
+
+test('read error after a successful first-visit insert is thrown, not returned as null profile', async () => {
+  profile = null;
+  upsertError = null;
+  secondReadError = new Error('read failed');
+  await expect(getProfile()).rejects.toThrow('read failed');
 });
 
 test('completeOnboarding rejects bad input without writing', async () => {
