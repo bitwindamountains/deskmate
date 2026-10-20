@@ -109,3 +109,9 @@ test('failure message lists each provider and its reason', async () => {
   expect(err.message).toMatch(/a: skipped_no_key \(A_KEY not set\)/);
   expect(err.message).toMatch(/b: error \(network: fetch failed\)/);
 });
+
+test('requireNoTraining defaults to true', async () => {
+  stubHosts({ b: [{ content: '{"n":1}' }] });
+  const r = await complete('grade_answer', pr, s, { env, providers: [{ ...a, trainsOnInputs: true }, b] });
+  expect(statuses(r.log)).toEqual(['skipped_privacy', 'ok']);
+});

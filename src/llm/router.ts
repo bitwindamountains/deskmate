@@ -6,7 +6,7 @@ import { callOpenAICompatible } from './providers/openai-compatible.js';
 import type { CallLog, CallStatus, ProviderConfig, TaskName } from './types.js';
 
 export interface CompleteOptions {
-  /** Exclude providers whose free tier may train on inputs. Required for real student content. */
+  /** Exclude providers whose free tier may train on inputs. Defaults to true; pass false only for synthetic data. Required for real student content. */
   requireNoTraining?: boolean;
   /** Where API keys are read from (src/ has no access to process.env). */
   env: Record<string, string | undefined>;
@@ -55,7 +55,7 @@ export async function complete<T>(
   });
 
   for (const p of providers) {
-    if (opts.requireNoTraining && p.trainsOnInputs) {
+    if ((opts.requireNoTraining ?? true) && p.trainsOnInputs) {
       log.push(entry(p, 'skipped_privacy'));
       continue;
     }
