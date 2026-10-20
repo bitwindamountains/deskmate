@@ -85,6 +85,14 @@ test('manifest starts at /today in standalone mode', () => {
 
 ### Task 2: Profiles table, RLS, and the DB test harness
 
+> **Amended 2026-10-20 (shared project).** Scholar shares the owner's existing Supabase project (ref `tfkazskwrarwbjdtlqed`) with two other apps (`rentflow`, `invoicetracker` schemas) and their auth users. Changes to this task, binding over the text below:
+> - All Scholar objects live in schema `scholar`, never `public`. `create schema scholar; grant usage on schema scholar to authenticated;` (never `anon`). Every table below is `scholar.<name>`.
+> - **No trigger on `auth.users`**: it would create Scholar profiles for other apps' signups. Instead a user creates their own row on first visit: an insert policy `to authenticated with check ((select auth.uid()) = user_id)` and a column grant `grant insert (user_id) on scholar.profiles to authenticated` (defaults fill the rest, so a user cannot insert pre-attested rows). `getProfile` (src/lib/profile/require.ts) inserts `{ user_id }` with `on conflict do nothing` (`upsert(..., { onConflict: 'user_id', ignoreDuplicates: true })`) when no row exists, then reads it.
+> - All three Supabase clients (browser, server, proxy) set `db: { schema: 'scholar' }`, read from `NEXT_PUBLIC_SUPABASE_SCHEMA` with default `'scholar'`.
+> - The owner adds `scholar` to Exposed schemas (Settings → Data API). The migration cannot do this.
+> - The migration file is written by hand at `supabase/migrations/20261020120000_scholar_profiles.sql` (the CLI is not logged in) and applied by the controller after the owner sees it.
+> - Test "signup creates an empty profile" becomes "first getProfile creates an empty profile"; add "a user cannot insert a profile for another user_id" and "a user cannot insert a pre-attested row".
+
 **Files:**
 - Create: `supabase/migrations/<timestamp>_profiles.sql` (via `npx supabase migration new profiles`)
 - Create: `vitest.db.config.ts`, `tests/db/helpers.ts`, `tests/db/profiles.test.ts`
