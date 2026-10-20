@@ -1,9 +1,8 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cosine, findDuplicates } from '@/lib/embed/duplicates';
 
-vi.mock('@huggingface/transformers', () => {
-  throw new Error('offline');
-});
+const pipeline = vi.hoisted(() => vi.fn());
+vi.mock('@huggingface/transformers', () => ({ pipeline }));
 
 const c = (id: string, embedding: number[]) => ({ id, embedding });
 
@@ -37,8 +36,45 @@ describe('findDuplicates', () => {
 });
 
 describe('getEmbedder', () => {
+  const load = async () => {
+    vi.resetModules();
+    return (await import('@/lib/embed/embed')).getEmbedder;
+  };
+  beforeEach(() => {
+    pipeline.mockReset();
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+  });
+  afterEach(() => vi.useRealTimers());
+
   test('resolves null when the model fails to load', async () => {
-    const { getEmbedder } = await import('@/lib/embed/embed');
+    pipeline.mockRejectedValue(new Error('offline'));
+    const getEmbedder = await load();
     await expect(getEmbedder()).resolves.toBeNull();
+  });
+  test('within 60s of a failure returns null without retrying', async () => {
+    pipeline.mockRejectedValue(new Error('offline'));
+    const getEmbedder = await load();
+    await getEmbedder();
+    vi.setSystemTime(1_000_000 + 59_000);
+    await expect(getEmbedder()).resolves.toBeNull();
+    expect(pipeline).toHaveBeenCalledTimes(1);
+  });
+  test('after 60s retries the import', async () => {
+    pipeline.mockRejectedValue(new Error('offline'));
+    const getEmbedder = await load();
+    await getEmbedder();
+    vi.setSystemTime(1_000_000 + 61_000);
+    await getEmbedder();
+    expect(pipeline).toHaveBeenCalledTimes(2);
+  });
+  test('a successful load is cached', async () => {
+    pipeline.mockResolvedValue(async () => ({ tolist: () => [[1]] }));
+    const getEmbedder = await load();
+    const f = await getEmbedder();
+    expect(f).not.toBeNull();
+    await expect(f!(['x'])).resolves.toEqual([[1]]);
+    await getEmbedder();
+    expect(pipeline).toHaveBeenCalledTimes(1);
   });
 });
