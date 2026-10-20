@@ -35,6 +35,8 @@
 
 ### Task 1: Decks, sources, chunks, cards, quota, and call-log tables
 
+> **Amended 2026-10-20 (shared project, see plan 1a-1 Task 2).** Every table and function below lives in schema `scholar` (`public` in the text below means `scholar`). Write the migration by hand at `supabase/migrations/20261020130000_scholar_study_content.sql`; the controller applies it after the owner sees it. `scholar` is already exposed (via `pgrst.db_schemas`) and has `usage` granted to `authenticated` and `service_role`. Every table: `revoke all ... from public, anon, authenticated` first, then the listed grants, plus `grant all ... to service_role` (the DB test admin client needs it). Quota: take the brief's own ruling path directly — `private.consume_generation_quota(...)` as `security definer`, `set search_path = ''`, with an explicit ownership check `exists (select 1 from scholar.sources s where s.id = p_source_id and s.user_id = (select auth.uid()))`; schema `private` gets no `usage` grant to `authenticated`/`anon`; a `scholar.consume_generation_quota(p_source_id uuid)` `security invoker` wrapper calls it, and only the wrapper gets `grant execute ... to authenticated` (revoke execute from `public` on both). `quota_usage` gets `select` only for `authenticated`. DB tests reuse `tests/db/helpers.ts` (`createTestUser`, `deleteTestUsers`, `adminClient`, `anonClient`), all clients on schema `scholar`.
+
 **Files:**
 - Create: `supabase/migrations/<timestamp>_study_content.sql` (via `npx supabase migration new study_content`)
 - Modify: `src/llm/schemas.ts` (add `importance` to `Card`)
