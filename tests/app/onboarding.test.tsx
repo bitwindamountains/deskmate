@@ -7,6 +7,8 @@ vi.mock('next/navigation', () => ({ redirect: (to: string) => redirect(to) }));
 let claims: { sub: string } | null = { sub: 'u1' };
 let profile: Record<string, unknown> | null = null;
 const update = vi.fn();
+const upsert = vi.fn();
+let upsertError: unknown = null;
 const isCalls: unknown[][] = [];
 let updateResult: { data: unknown[] | null; error: unknown } = { data: [{ user_id: 'u1' }], error: null };
 vi.mock('@/lib/supabase/server', () => ({
@@ -14,6 +16,11 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: { getClaims: async () => ({ data: claims ? { claims } : null }) },
     from: () => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: profile }) }) }),
+      upsert: async (...a: unknown[]) => {
+        upsert(...a);
+        if (!upsertError) profile = { user_id: 'u1', onboarded_at: null };
+        return { error: upsertError };
+      },
       update: (v: unknown) => {
         const chain: Record<string, unknown> = {};
         chain.eq = (...a: unknown[]) => { update(v, ...a); return chain; };
@@ -25,11 +32,11 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-import { requireOnboardedUser } from '@/lib/profile/require';
+import { getProfile, requireOnboardedUser } from '@/lib/profile/require';
 import { completeOnboarding } from '@/app/onboarding/actions';
 import { OnboardingForm } from '@/app/onboarding/onboarding-form';
 
-beforeEach(() => { redirect.mockClear(); update.mockReset(); isCalls.length = 0; updateResult = { data: [{ user_id: 'u1' }], error: null }; profile = { user_id: 'u1', onboarded_at: null }; claims = { sub: 'u1' }; });
+beforeEach(() => { redirect.mockClear(); update.mockReset(); upsert.mockReset(); upsertError = null; isCalls.length = 0; updateResult = { data: [{ user_id: 'u1' }], error: null }; profile = { user_id: 'u1', onboarded_at: null }; claims = { sub: 'u1' }; });
 afterEach(cleanup);
 
 test('no claims redirects to /login', async () => {
@@ -43,6 +50,17 @@ test('profile with onboarded_at null redirects to /onboarding', async () => {
 test('onboarded profile is returned', async () => {
   profile = { user_id: 'u1', onboarded_at: '2026-01-01' };
   await expect(requireOnboardedUser()).resolves.toMatchObject({ userId: 'u1' });
+  expect(upsert).not.toHaveBeenCalled();
+});
+test('first visit creates the profile row for claims.sub, then reads it', async () => {
+  profile = null;
+  await expect(getProfile()).resolves.toEqual({ userId: 'u1', profile: { user_id: 'u1', onboarded_at: null } });
+  expect(upsert).toHaveBeenCalledWith({ user_id: 'u1' }, { onConflict: 'user_id', ignoreDuplicates: true });
+});
+test('first-visit insert error is thrown, not hidden', async () => {
+  profile = null;
+  upsertError = new Error('denied');
+  await expect(getProfile()).rejects.toThrow('denied');
 });
 
 test('completeOnboarding rejects bad input without writing', async () => {

@@ -9,6 +9,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      db: { schema: process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || 'scholar' },
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll(cookiesToSet, headers) {
