@@ -1,4 +1,4 @@
-import { wordCount, type PageText } from '../../chunk.js';
+import { wordCount, type PageText } from '../../chunk';
 
 /** Browser only: extracts text per page with pdf.js (imported lazily so SSR never evaluates it). */
 export async function extractPdfPages(file: File): Promise<PageText[]> {

@@ -1,4 +1,4 @@
-import { numberParagraphs } from './llm/prompts.js';
+import { numberParagraphs } from './llm/prompts';
 
 export const CHUNK_WORDS = 1500; // smaller than Phase 0's 3000 so cards stream sooner and stay within free-tier output limits
 
