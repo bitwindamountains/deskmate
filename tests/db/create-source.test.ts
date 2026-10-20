@@ -30,7 +30,7 @@ test('createSource stores chunks with positions 0..n-1 and does not consume quot
 
 test('createSource with another user deckId fails and leaves nothing behind', async () => {
   const { data: deck } = await B.client.from('decks').insert({ user_id: B.userId, title: 'Theirs' }).select('id').single();
-  const r = await insertSource(A.client, A.userId, { deckId: deck!.id, title: 'x', kind: 'text', pages: [{ page: 1, text: 'hello world' }] });
+  const r = await insertSource(A.client, A.userId, { deckId: deck!.id, title: 'x', kind: 'text', pages: [{ page: 1, text: 'w '.repeat(30) }] });
   expect(r).toEqual({ ok: false, error: "We couldn't save your material. Please try again." });
   const { count } = await adminClient().from('sources').select('id', { count: 'exact', head: true }).eq('user_id', A.userId).eq('deck_id', deck!.id);
   expect(count).toBe(0);
