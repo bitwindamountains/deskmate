@@ -100,11 +100,57 @@ test('429 shows the quota message', async () => {
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-test('401 or a redirected login page asks the user to sign in again', async () => {
-  fetchMock.mockResolvedValueOnce(new Response('<html>login</html>', { status: 200, headers: { 'content-type': 'text/html' } }));
+test('401 asks the user to sign in again', async () => {
+  fetchMock.mockResolvedValueOnce(err(401, 'unauthorized', 'Please sign in again.'));
   render(<Triage sourceId={SRC} todo={[0]} pending={[]} existing={[]} />);
   expect((await screen.findByRole('alert')).textContent).toContain('Your session ended. Sign in again.');
   expect(screen.getByRole('link', { name: 'Sign in again' }).getAttribute('href')).toBe(`/login?next=${encodeURIComponent(`/study/triage/${SRC}`)}`);
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+});
+
+test('a redirected response asks the user to sign in again', async () => {
+  const res = new Response('<html>login</html>', { status: 200, headers: { 'content-type': 'text/html' } });
+  Object.defineProperty(res, 'redirected', { value: true });
+  fetchMock.mockResolvedValueOnce(res);
+  render(<Triage sourceId={SRC} todo={[0]} pending={[]} existing={[]} />);
+  expect((await screen.findByRole('alert')).textContent).toContain('Your session ended. Sign in again.');
+});
+
+test('a non-JSON 500 shows the busy message with Try again', async () => {
+  fetchMock.mockResolvedValueOnce(new Response('Internal Server Error', { status: 500, headers: { 'content-type': 'text/plain' } }));
+  render(<Triage sourceId={SRC} todo={[0]} pending={[]} existing={[]} />);
+  expect((await screen.findByRole('alert')).textContent).toContain(BUSY);
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+});
+
+test('a network error shows the busy message with Try again', async () => {
+  fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  render(<Triage sourceId={SRC} todo={[0]} pending={[]} existing={[]} />);
+  expect((await screen.findByRole('alert')).textContent).toContain(BUSY);
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+});
+
+test('unmounting mid-run aborts generation and requests nothing more', async () => {
+  let release!: (r: Response) => void;
+  fetchMock.mockReturnValueOnce(new Promise((r) => { release = r; })).mockResolvedValue(ok([]));
+  const { unmount } = render(<Triage sourceId={SRC} todo={[0, 1, 2]} pending={[]} existing={[]} />);
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  unmount();
+  expect((fetchMock.mock.calls[0][1].signal as AbortSignal).aborted).toBe(true);
+  await act(async () => release(ok([card('a')])));
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+test('after the last card, focus moves to Done reviewing', async () => {
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a')]} existing={[]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Keep' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Done reviewing' })));
+});
+
+test('auto-repeated keys are ignored', () => {
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a'), card('b')]} existing={[]} />);
+  fireEvent.keyDown(window, { key: 'ArrowRight', repeat: true });
+  expect(setCardStatus).not.toHaveBeenCalled();
 });
 
 test('Keep all keeps every pending card', async () => {
