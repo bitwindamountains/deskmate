@@ -1,13 +1,13 @@
 import type { ProviderConfig, TaskName } from './types';
 
-// Verify current free models and data-use terms before use: both change often.
+// Verify current free models and data-use terms before use: both change often (Groq model last checked 2026-10-20).
 // trainsOnInputs is conservative: true unless the free tier's terms say inputs are not used for training.
 export const PROVIDERS: Record<string, ProviderConfig> = {
   groq: {
     id: 'groq',
     kind: 'openai',
     baseUrl: 'https://api.groq.com/openai/v1',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     apiKeyEnv: 'GROQ_API_KEY',
     trainsOnInputs: false,
   },
