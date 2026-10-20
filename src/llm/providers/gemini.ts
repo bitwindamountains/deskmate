@@ -1,5 +1,5 @@
-import type { ChatRequest, ProviderConfig, ProviderOutcome } from '../types.js';
-import { mapFetchError } from './openai-compatible.js';
+import type { ChatRequest, ProviderConfig, ProviderOutcome } from '../types';
+import { mapFetchError } from './openai-compatible';
 
 /** Google Gemini generateContent endpoint. */
 export async function callGemini(p: ProviderConfig, apiKey: string | null, req: ChatRequest): Promise<ProviderOutcome> {

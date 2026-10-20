@@ -1,9 +1,9 @@
 import type { ZodType } from 'zod';
-import { PROVIDERS, TASK_ROUTES } from './config.js';
-import { extractJson } from './json.js';
-import { callGemini } from './providers/gemini.js';
-import { callOpenAICompatible } from './providers/openai-compatible.js';
-import type { CallLog, CallStatus, ProviderConfig, TaskName } from './types.js';
+import { PROVIDERS, TASK_ROUTES } from './config';
+import { extractJson } from './json';
+import { callGemini } from './providers/gemini';
+import { callOpenAICompatible } from './providers/openai-compatible';
+import type { CallLog, CallStatus, ProviderConfig, TaskName } from './types';
 
 export interface CompleteOptions {
   /** Exclude providers whose free tier may train on inputs. Defaults to true; pass false only for synthetic data. Required for real student content. */
