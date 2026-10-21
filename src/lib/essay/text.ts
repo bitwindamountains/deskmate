@@ -5,6 +5,8 @@ import { numberParagraphs } from '@/llm/prompts';
 export const ESSAY_TYPES = ['argumentative', 'expository', 'narrative', 'compare-contrast', 'research', 'personal-statement'] as const;
 export type EssayType = (typeof ESSAY_TYPES)[number];
 export const MIN_WORDS = 50, MAX_WORDS = 2000, MAX_PARAGRAPHS = 40;
+/** localStorage key prefix for unsent essay edits (editor.tsx); sign-out wipes every key with it. */
+export const ESSAY_DRAFT_PREFIX = 'scholar-essay-draft-';
 
 // Same split the prompt uses, so [Pn] labels and stored indices agree.
 export const paragraphs = (content: string): string[] => numberParagraphs(content);
