@@ -119,7 +119,7 @@ const ITEM_RULES = [
 export function essayGlobalPrompt(i: EssayInput): Prompt {
   return {
     system: [
-      `You are a writing coach for ${i.gradeLevel} students.`,
+      'You are a writing coach for students at the grade level given with the essay.',
       'Analyze the essay for thesis, argument, structure, and alignment with the assignment prompt.',
       'Score each rubric criterion with a 1-3 sentence justification that references the essay, and a confidence level (high / medium / low).',
       'Identify 2-3 specific strengths, quoting the essay, and explain why each works.',
@@ -141,7 +141,7 @@ export function essayGlobalPrompt(i: EssayInput): Prompt {
 export function essayParagraphsPrompt(i: EssayInput): Prompt {
   return {
     system: [
-      `You are a writing coach for ${i.gradeLevel} students.`,
+      'You are a writing coach for students at the grade level given with the essay.',
       'For each paragraph, check the topic sentence, evidence, analysis of that evidence, and transitions.',
       'Report only paragraph-level issues: every item has layer "paragraph". At most 2 items per paragraph; skip paragraphs with no real issue.',
       ...(i.onlyParagraphs ? [`Report only on paragraphs ${i.onlyParagraphs.map((n) => `[P${n}]`).join(', ')}; the rest are shown for context.`] : []),
@@ -155,7 +155,9 @@ export function essayParagraphsPrompt(i: EssayInput): Prompt {
 
 type HintInput = { gradeLevel: string; item: { summary: string; quote: string | null; category: string }; paragraph: string };
 
+// The grade level is student-controlled, so it rides in the user message, never the system prompt.
 const hintContext = (i: HintInput) => [
+  `Grade level: ${i.gradeLevel}`,
   `Feedback item (${i.item.category}): ${i.item.summary}`,
   i.item.quote ? `Quoted words: ${wrapData('quote', i.item.quote)}` : 'This item covers the whole essay.',
   `The student's paragraph:\n${wrapData('paragraph', i.paragraph)}`,
@@ -164,7 +166,7 @@ const hintContext = (i: HintInput) => [
 export function hintLadderPrompt(i: HintInput): Prompt {
   return {
     system: [
-      `You are a writing coach for ${i.gradeLevel} students. The student asked for more help with one feedback item.`,
+      'You are a writing coach for students at the grade level given below. The student asked for more help with one feedback item.',
       'explanation: the underlying writing principle in at most 60 words.',
       "example: a short model passage of at most 120 words on DIFFERENT content from the student's essay, showing the principle.",
       'Do not rewrite the student\'s text. Address the student as "you", warmly.',
@@ -178,7 +180,7 @@ export function hintLadderPrompt(i: HintInput): Prompt {
 export function hintRewritePrompt(i: HintInput): Prompt {
   return {
     system: [
-      `You are a writing coach for ${i.gradeLevel} students. The student asked for a suggested revision.`,
+      'You are a writing coach for students at the grade level given below. The student asked for a suggested revision.',
       "Rewrite only the quoted words, keeping the student's voice and meaning. Never rewrite anything else, and never add new ideas.",
       DATA_RULE,
       `Return only JSON with this shape: ${compactSchema(HintRewrite)}`,
@@ -190,7 +192,7 @@ export function hintRewritePrompt(i: HintInput): Prompt {
 export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string }): Prompt {
   return {
     system: [
-      `You create flashcards for ${i.subject} at ${i.level} level from the source text.`,
+      'You create flashcards from the source text, for the subject and level given with it.',
       'Cards are atomic (one idea per card), unambiguous, and self-contained. Basic card answers are under 15 words.',
       'Skip trivia such as page numbers and incidental examples. Split lists longer than 3 items. Include "why" cards for important concepts.',
       'source_quote must be copied exactly from the source text and must support the card. Skip anything you cannot ground in the source.',
@@ -199,7 +201,8 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
       DATA_RULE,
       `Return only JSON with this shape: ${compactSchema(CardGenerate)}`,
     ].join('\n'),
-    user: wrapData('source', i.chunk),
+    // subject comes from the student's deck, so it rides in the user message, never the system prompt
+    user: [`Subject: ${i.subject}`, `Level: ${i.level}`, wrapData('source', i.chunk)].join('\n\n'),
   };
 }
 
