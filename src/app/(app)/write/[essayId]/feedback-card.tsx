@@ -7,7 +7,7 @@ export const LAYER_LABEL = { global: 'Big picture', paragraph: 'Paragraph', sent
 export const LAYER_BG = { global: 'bg-layer-global', paragraph: 'bg-layer-paragraph', sentence: 'bg-layer-sentence', strength: 'bg-layer-strength' } as const;
 export const REWRITE_CAP = 3;
 const LEVEL_LABEL = ['Hint 1', 'Hint 2', 'Explanation', 'Example', 'Suggested rewrite'];
-const STATUS_LABEL: Record<string, string> = { got_it: 'Got it', disputed: 'Disputed', addressed: 'Addressed', partial: 'Partly addressed' };
+export const STATUS_LABEL: Record<string, string> = { got_it: 'Got it', disputed: 'Disputed', addressed: 'Addressed', partial: 'Partly addressed' };
 
 export const isOpen = (status: string) => status === 'open' || status === 'partial';
 

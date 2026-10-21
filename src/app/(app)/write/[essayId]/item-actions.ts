@@ -47,3 +47,16 @@ export async function logViewedLevel(itemId: string, level: 1 | 2): Promise<void
   if (level !== 1 && level !== 2) fail();
   await write(itemId, { highest_level: level }, { action: 'viewed_level', level }, level);
 }
+
+export type CarryOver = { addressed: number; partial: number; open: number };
+
+/** How the items of draft `version` fared once the next draft's global layer judged them. Read through RLS. */
+export async function carryOverCounts(essayId: string, version: number): Promise<CarryOver | null> {
+  if (!Id.safeParse(essayId).success || !Number.isInteger(version) || version < 1) return null;
+  const { db } = await session();
+  const { data, error } = await db.from('feedback_items').select('status,drafts!inner(essay_id,version)')
+    .eq('drafts.essay_id', essayId).eq('drafts.version', version);
+  if (error) return null;
+  const count = (s: string) => data.filter((i) => i.status === s).length;
+  return { addressed: count('addressed'), partial: count('partial'), open: count('open') };
+}
