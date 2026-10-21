@@ -28,8 +28,20 @@ export const EssayGlobal = z.object({
     }),
   ),
   items: z.array(FeedbackItem),
+  /** True when the essay discloses self-harm, abuse, or a crisis (brief E5); the app then leads with support resources. */
+  safety_concern: z.boolean(),
+  /** Re-check only: the model's judgement of each earlier item it was shown. */
+  carried: z.array(z.object({ id: z.string(), status: z.enum(['addressed', 'partial', 'open']) })).default([]),
 });
 export type EssayGlobal = z.infer<typeof EssayGlobal>;
+
+/** Hint levels 3 (principle) and 4 (model example on different content), generated only when the student asks. */
+export const HintLadder = z.object({ explanation: z.string().min(1), example: z.string().min(1) });
+export type HintLadder = z.infer<typeof HintLadder>;
+
+/** Hint level 5: a rewrite of the quoted words only. */
+export const HintRewrite = z.object({ rewrite: z.string().min(1) });
+export type HintRewrite = z.infer<typeof HintRewrite>;
 
 export const EssayParagraphs = z.object({ items: z.array(FeedbackItem) });
 export type EssayParagraphs = z.infer<typeof EssayParagraphs>;
