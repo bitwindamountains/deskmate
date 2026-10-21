@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { insertEssay } from '@/lib/essay/create-essay';
+import { insertDraft, insertEssay } from '@/lib/essay/create-essay';
 import { paragraphHash, paragraphs } from '@/lib/essay/text';
 import { adminClient, createTestUser, deleteTestUsers, type Client } from './helpers';
 
@@ -38,4 +38,33 @@ test('createEssay returns the essay length errors and rejects bad input without 
   expect((await insertEssay(A.client, A.userId, { ...input, title: '   ' })).ok).toBe(false);
   const { data } = await adminClient().from('essays').select('id').eq('user_id', A.userId);
   expect(data).toHaveLength(1);
+});
+
+const edited = content.replace('Second paragraph', 'Revised paragraph');
+
+test('saveDraft with unchanged text returns the existing draft', async () => {
+  const r = await insertEssay(A.client, A.userId, input);
+  if (!r.ok) throw new Error(r.error);
+  const d1 = (await adminClient().from('drafts').select('id').eq('essay_id', r.essayId).single()).data!.id;
+  expect(await insertDraft(A.client, A.userId, r.essayId, content)).toEqual({ ok: true, draftId: d1, version: 1, unchanged: true });
+  expect((await adminClient().from('drafts').select('id').eq('essay_id', r.essayId)).data).toHaveLength(1);
+});
+
+test('two saveDraft calls at once produce versions 2 and 3, no error', async () => {
+  const r = await insertEssay(A.client, A.userId, input);
+  if (!r.ok) throw new Error(r.error);
+  const both = await Promise.all([insertDraft(A.client, A.userId, r.essayId, edited), insertDraft(A.client, A.userId, r.essayId, `${edited} More.`)]);
+  expect(both.every((b) => b.ok)).toBe(true);
+  expect(both.map((b) => (b.ok ? b.version : 0)).sort()).toEqual([2, 3]);
+  const { data } = await adminClient().from('drafts').select('version,paragraph_hashes').eq('essay_id', r.essayId).order('version');
+  expect(data!.map((d) => d.version)).toEqual([1, 2, 3]);
+  expect(data![1].paragraph_hashes[0]).toBe(data![0].paragraph_hashes[0]);
+  expect(data![1].paragraph_hashes[1]).not.toBe(data![0].paragraph_hashes[1]);
+});
+
+test('saveDraft validates length and refuses another user essay', async () => {
+  const r = await insertEssay(A.client, A.userId, input);
+  if (!r.ok) throw new Error(r.error);
+  expect(await insertDraft(A.client, A.userId, r.essayId, 'Too short.')).toEqual({ ok: false, error: 'Add a little more: feedback needs at least 50 words.' });
+  expect(await insertDraft(B.client, B.userId, r.essayId, edited)).toEqual({ ok: false, error: "We couldn't find that essay." });
 });
