@@ -15,7 +15,9 @@ const scheduler = makeScheduler(true);
 
 const startOfDay = (d: Date, offsetDays = 0) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + offsetDays);
 // Whole local calendar days from now's day to the exam's day (Math.round absorbs DST hour shifts).
-const daysUntil = (exam: Date, now: Date) => Math.round((startOfDay(exam).getTime() - startOfDay(now).getTime()) / DAY_MS);
+/** A YYYY-MM-DD day (an exam_date column) as local midnight. */
+export const parseDay = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
+export const daysUntil = (exam: Date, now: Date) => Math.round((startOfDay(exam).getTime() - startOfDay(now).getTime()) / DAY_MS);
 
 export function toFsrs(s: StateRow | null, now: Date): FsrsCard {
   if (!s) return createEmptyCard(now);
@@ -87,4 +89,17 @@ export function readiness(cards: StudyCard[], examDate: Date): number {
 export function newCardCapacity(newCount: number, daysLeft: number, minutes: number): number {
   // a new card needs about 3 reviews before an exam
   return Math.min(newCount, Math.max(0, Math.floor((daysLeft * minutes * 60) / SECONDS_PER_CARD / 3)));
+}
+
+/** The earliest upcoming review day and how many cards fall due by the end of it. */
+export function nextReview(cards: StudyCard[], now: Date): { label: string; count: number } | null {
+  const dues = cards.flatMap((c) => (c.state ? [new Date(c.state.due)] : []));
+  if (!dues.length) return null;
+  const first = new Date(Math.min(...dues.map((d) => d.getTime())));
+  const day = first < now ? startOfDay(now) : startOfDay(first);
+  const end = day.getTime() + DAY_MS;
+  const days = Math.round((day.getTime() - startOfDay(now).getTime()) / DAY_MS);
+  const label = days === 0 ? 'today' : days === 1 ? 'tomorrow'
+    : days < 7 ? day.toLocaleDateString('en', { weekday: 'long' }) : day.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  return { label, count: dues.filter((d) => d.getTime() < end).length };
 }
