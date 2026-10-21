@@ -58,3 +58,10 @@ test('groq runs gpt-oss at low reasoning effort', () => {
   // perf 2026-10-21: medium spent 47-73% of output tokens on hidden reasoning; low cut output 50-56% with valid JSON
   expect(PROVIDERS.groq.reasoningEffort).toBe('low');
 });
+
+test('hints may point to a fix but never hand over a sentence to paste', () => {
+  // QA 2026-10-21: 5 of 80 hints offered a ready-made thesis or sentence on the student's own topic (brief E2)
+  for (const p of [essayGlobalPrompt(base), essayParagraphsPrompt(base)]) {
+    expect(p.system).toContain('Hints never include a sentence the student could copy into the essay');
+  }
+});

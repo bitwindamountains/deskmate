@@ -111,6 +111,7 @@ function essayContext(i: EssayInput): string {
 const ITEM_RULES = [
   'Each feedback item must quote the essay exactly (copy the words verbatim, under 30 words) and give paragraph_index from its [Pn] label.',
   'hints[0] is a guiding question that helps the student notice the issue; hints[1] is a hint pointing to where or how to fix it.',
+  'Hints never include a sentence the student could copy into the essay: no example thesis, topic sentence, transition, or rewrite about their topic. Say what to change, not the words to write.',
   'Do not rewrite the essay or any sentence of it. Do not judge the student as a person. Be specific, warm, and encouraging.',
   'Address the student as "you".',
 ].join('\n');
