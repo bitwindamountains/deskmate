@@ -21,7 +21,7 @@ export async function completeOnboarding(_prev: OnboardingState, fd: FormData): 
   const fields = {
     first_language: v.first_language,
     study_minutes_per_day: v.study_minutes_per_day,
-    preferences: { font: v.font, reduced_motion: v.reduced_motion },
+    preferences: { font: v.font, reduced_motion: v.reduced_motion, show_scores: v.show_scores },
   };
   const q = supabase.from('profiles').update(editing ? fields : { ...fields, adult_attested_at: now, onboarded_at: now }).eq('user_id', userId);
   // first completion only: keep the original consent timestamp from being overwritten

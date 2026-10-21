@@ -20,7 +20,7 @@ test('FeedbackItem rejects empty quote and a hints array of length 1', () => {
 });
 
 test('EssayGlobal rejects 1 strength and 4 strengths', () => {
-  const g = { strengths: [strength, strength], rubric_scores: [], items: [item] };
+  const g = { strengths: [strength, strength], rubric_scores: [], items: [item], safety_concern: false };
   expect(EssayGlobal.safeParse(g).success).toBe(true);
   expect(EssayGlobal.safeParse({ ...g, strengths: [strength] }).success).toBe(false);
   expect(EssayGlobal.safeParse({ ...g, strengths: [strength, strength, strength, strength] }).success).toBe(false);

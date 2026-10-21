@@ -13,6 +13,7 @@ export default async function ProfilePage() {
     ['Daily study time', `${profile.study_minutes_per_day} minutes`],
     ['Reading font', prefs.font === 'dyslexic' ? 'Dyslexia-friendly' : 'Standard'],
     ['Reduce motion', prefs.reduced_motion ? 'On' : 'Off'],
+    ['Show rubric scores', prefs.show_scores === false ? 'Off' : 'On'],
   ];
   return (
     <AppPage current="profile" title="Profile">
