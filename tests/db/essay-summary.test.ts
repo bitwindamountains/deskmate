@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { essayChecksLeft, essaysWithOpenPriorities } from '@/lib/essay/summary';
-import { createTestUser, deleteTestUsers, type Client } from './helpers';
+import { adminClient, createTestUser, deleteTestUsers, type Client } from './helpers';
 
 type User = { client: Client; userId: string };
 let A: User;
@@ -14,7 +14,7 @@ async function essay(u: User, title: string, versions: number, openItems: number
       .select('id').single()).data!.id;
     const n = openItems[v - 1] ?? 0;
     // one request per draft: n open items plus one closed one that must not count
-    const { error } = await u.client.from('feedback_items').insert(Array.from({ length: n + 1 }, (_, i) => ({ user_id: u.userId, draft_id: d,
+    const { error } = await adminClient().from('feedback_items').insert(Array.from({ length: n + 1 }, (_, i) => ({ user_id: u.userId, draft_id: d,
       layer: 'global', category: 'c', severity: 'low', summary: 's', source: 'llm', status: i < n ? 'open' : 'got_it' })));
     if (error) throw error;
   }
