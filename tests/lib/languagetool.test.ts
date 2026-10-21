@@ -39,3 +39,13 @@ test('checkSentences throws LanguageToolUnavailable on 429', async () => {
   await expect(checkSentences(paras, [0], respond([], 429))).rejects.toBeInstanceOf(LanguageToolUnavailable);
   await expect(checkSentences(paras, [0], vi.fn(async () => { throw new TypeError('offline'); }))).rejects.toBeInstanceOf(LanguageToolUnavailable);
 });
+
+test('a LanguageTool request that never answers times out as unavailable', async () => {
+  // the public API answered one of three identical requests in 26.8 s during QA
+  const hang = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+  }));
+  const started = Date.now();
+  await expect(checkSentences(paras, [0], hang as unknown as typeof fetch, 50)).rejects.toBeInstanceOf(LanguageToolUnavailable);
+  expect(Date.now() - started).toBeLessThan(2000);
+});

@@ -8,10 +8,12 @@ import { paragraphs } from './text';
 export type HintResult = { ok: true; text: string } | { ok: false; status: 404 | 409 | 429 | 503; message: string };
 
 type ItemWithDraft = { id: string; draft_id: string; category: string; summary: string; quote: string | null; paragraph_index: number | null;
+  anchor_start: number | null;
   hints: string[]; rewrite: string | null; highest_level: number; drafts: { content: string; essays: { grade_level: string } } };
 
 const NOT_FOUND = { ok: false, status: 404, message: "We couldn't find that feedback." } as const;
 const WHOLE_ESSAY = { ok: false, status: 409, message: "This item covers the whole essay, so there's no single sentence to rewrite." } as const;
+const WORDS_GONE = { ok: false, status: 409, message: "The words this item pointed to are no longer in your essay, so there's nothing to rewrite." } as const;
 const CAP = { ok: false, status: 429, message: "You've used this draft's 3 suggested rewrites." } as const;
 const NO_REWRITE = { ok: false, status: 503, message: "Couldn't make a suggestion for this one." } as const;
 const BUSY = { ok: false, status: 503, message: 'Hints are busy right now. Try again in a minute.' } as const;
@@ -23,12 +25,14 @@ const rewriteCap = (quote: string) => Math.max(25, Math.floor(1.5 * wordCount(qu
 export async function requestHint(db: Db, userId: string, itemId: string, level: 3 | 4 | 5,
   env: Record<string, string | undefined>, completeFn: typeof complete = complete): Promise<HintResult> {
   const { data, error } = await db.from('feedback_items')
-    .select('id,draft_id,category,summary,quote,paragraph_index,hints,rewrite,highest_level,drafts(content,essays(grade_level))')
+    .select('id,draft_id,category,summary,quote,paragraph_index,anchor_start,hints,rewrite,highest_level,drafts(content,essays(grade_level))')
     .eq('id', itemId).maybeSingle();
   if (error) return BUSY;
   if (!data) return NOT_FOUND;
   const item = data as unknown as ItemWithDraft;
   if (level === 5 && !item.quote) return WHOLE_ESSAY;
+  // A carried-over item keeps its quote but loses its anchor once the student deletes those words.
+  if (level === 5 && !item.rewrite && item.anchor_start === null) return WORDS_GONE;
 
   const paras = paragraphs(item.drafts.content);
   const input = { gradeLevel: item.drafts.essays.grade_level, item: { summary: item.summary, quote: item.quote, category: item.category },

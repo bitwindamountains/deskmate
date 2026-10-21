@@ -2,13 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ESSAY_DRAFT_PREFIX } from '@/lib/essay/text';
 import { saveDraft } from '../actions';
 
 const NO_CHANGES = 'No changes since your last check.';
 const OFFLINE = "You're offline. Your edits are saved on this device; re-check when you're back online.";
 const SAVE_FAILED = "We couldn't save that. Try again.";
 
-export const draftKey = (essayId: string) => `scholar-essay-draft-${essayId}`;
+export const draftKey = (essayId: string) => `${ESSAY_DRAFT_PREFIX}${essayId}`;
 
 // Storage can throw (private mode, quota, blocked site data); edits then live only in memory.
 export function storedDraft(essayId: string): string | null {

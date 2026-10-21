@@ -1,5 +1,6 @@
 // Browser-only: the review outbox's network side and the device wipe at sign-out.
 import { Rating } from 'ts-fsrs';
+import { ESSAY_DRAFT_PREFIX } from '@/lib/essay/text';
 import { createClient } from '@/lib/supabase/client';
 import { GradeAnswer } from '@/llm/schemas';
 import type { StateRow } from './schedule';
@@ -45,5 +46,9 @@ export async function unsyncedReviews(): Promise<number> {
   return db.outbox.count().catch(() => 0);
 }
 export async function clearDeviceData(): Promise<void> {
+  try {
+    // unsent essay edits are student text too; a shared device must not keep them
+    for (const k of Object.keys(localStorage)) if (k.startsWith(ESSAY_DRAFT_PREFIX)) localStorage.removeItem(k);
+  } catch { /* storage blocked (private mode): nothing was saved there */ }
   await Promise.allSettled([db.delete(), typeof caches === 'undefined' ? null : caches.delete(SHELL_CACHE)]);
 }

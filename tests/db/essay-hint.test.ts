@@ -31,7 +31,8 @@ async function newItem(u: User, draftId: string, quote: string | null = 'Phones 
   // fixture: admin insert; users may add items only to a paid draft (tested in essays.test.ts)
   const { data, error } = await adminClient().from('feedback_items').insert({
     user_id: u.userId, draft_id: draftId, layer: quote ? 'paragraph' : 'global', category: 'evidence', paragraph_index: quote ? 0 : null,
-    quote, severity: 'high', summary: 'Claim lacks evidence', hints: ['What supports this?', 'Look for a statistic.'], source: 'llm',
+    quote, anchor_start: quote ? 0 : null, anchor_end: quote ? quote.length : null,
+    severity: 'high', summary: 'Claim lacks evidence', hints: ['What supports this?', 'Look for a statistic.'], source: 'llm',
   }).select('id').single();
   if (error) throw error;
   return data.id as string;
@@ -138,6 +139,17 @@ test('a stored hint costs nothing from the daily limit', async () => {
   await requestHint(U.client, U.userId, item, 3, {}, ladder());
   await requestHint(U.client, U.userId, item, 4, {}, ladder());
   expect((await adminClient().from('quota_usage').select('hints').eq('user_id', U.userId).single()).data?.hints).toBe(1);
+});
+
+test('no rewrite for an item whose words were deleted: clear message, no LLM call, no slot used', async () => {
+  const draft = await newDraft(A);
+  const item = await newItem(A, draft);
+  await adminClient().from('feedback_items').update({ anchor_start: null, anchor_end: null, paragraph_index: null }).eq('id', item); // carried over, words gone
+  const fn = rewrite();
+  expect(await requestHint(A.client, A.userId, item, 5, {}, fn))
+    .toEqual({ ok: false, status: 409, message: "The words this item pointed to are no longer in your essay, so there's nothing to rewrite." });
+  expect(fn).not.toHaveBeenCalled();
+  expect((await adminClient().from('feedback_events').select('id').eq('item_id', item).eq('action', 'rewrite')).data).toEqual([]);
 });
 
 const post = (body: unknown) =>

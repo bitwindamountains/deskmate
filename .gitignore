@@ -6,3 +6,6 @@ graphify-out/
 .env.local
 .next/
 *.tsbuildinfo
+
+# Playwright MCP snapshots and logs (local QA only)
+.playwright-mcp/
