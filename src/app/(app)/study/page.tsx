@@ -41,7 +41,12 @@ export default async function StudyPage() {
 
   return (
     <AppPage current="study" title="Study">
-      {summaries.some((d) => d.due + d.fresh > 0) &&<Link href="/study/review" className="btn btn-primary mb-8">Review now</Link>}
+      {summaries.some((d) => d.kept > 0) && (
+        <div className="mb-8 flex flex-wrap gap-3">
+          {summaries.some((d) => d.due + d.fresh > 0) &&<Link href="/study/review" className="btn btn-primary">Review now</Link>}
+          <Link href="/study/mastery" className="btn">Mastery map</Link>
+        </div>
+      )}
       <section aria-labelledby="decks">
         <h2 id="decks" className="mb-4 text-[1.44rem] font-bold">Your decks</h2>
         <DeckList decks={summaries} />

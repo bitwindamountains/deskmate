@@ -12,7 +12,7 @@ const state = (id: string, due: Date, stability = 30): StateRow => ({
   last_review: day(-30).toISOString(),
 });
 const card = (id: string, s: StateRow | null, deckId = 'bio'): ReviewCard =>
-  ({ id, deckId, type: 'basic', importance: 2, state: s, front: 'F', back: 'B', keyPoints: [] });
+  ({ id, deckId, type: 'basic', importance: 2, state: s, front: 'F', back: 'B', keyPoints: [], concept: 'c' });
 const deck = (id: string, title: string, exam_date: string | null = null): Deck => ({ id, title, exam_date });
 type EssayLine = { id: string; title: string; openTop3: number };
 const plan = (decks: Deck[], cards: ReviewCard[], essays: EssayLine[] = []) =>

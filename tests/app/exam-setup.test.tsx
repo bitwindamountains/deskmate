@@ -26,7 +26,7 @@ const DECK = '11111111-1111-4111-8111-111111111111';
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const inDays = (n: number) => ymd(new Date(Date.now() + n * 86400000));
 const fresh = (n: number): ReviewCard[] =>
-  Array.from({ length: n }, (_, i) => ({ id: `c${i}`, deckId: DECK, type: 'basic', importance: 2, state: null, front: 'F', back: 'B', keyPoints: [] }));
+  Array.from({ length: n }, (_, i) => ({ id: `c${i}`, deckId: DECK, type: 'basic', importance: 2, state: null, front: 'F', back: 'B', keyPoints: [], concept: 'c' }));
 
 beforeEach(() => {
   getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } } });
