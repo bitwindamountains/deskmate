@@ -29,6 +29,12 @@ test('posts chat completion and returns text + usage', async () => {
   });
 });
 
+test('sends reasoning_effort only when the provider sets one', async () => {
+  const f = stubFetch(() => json({ choices: [{ message: { content: '{}' } }] }));
+  await callOpenAICompatible({ ...p, reasoningEffort: 'low' }, 'key', req);
+  expect(JSON.parse(f.mock.calls[0][1].body).reasoning_effort).toBe('low');
+});
+
 test('omits Authorization when apiKey is null', async () => {
   const f = stubFetch(() => json({ choices: [{ message: { content: 'x' } }] }));
   await callOpenAICompatible(p, null, req);

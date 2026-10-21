@@ -23,6 +23,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 - Server auth uses `supabase.auth.getClaims()`, never `getSession()`. Never authorize from `user_metadata`.
 - `SUPABASE_SECRET_KEY` is used only in server code and tests, never in a `NEXT_PUBLIC_` variable.
 - Production LLM calls keep `requireNoTraining: true` (the router default). LLM calls are scarce: deterministic code, the device, and caches come first.
+- Before changing a prompt, model, or LLM setting, read `docs/superpowers/notes/2026-10-21-token-budget.md`. It lists what was measured, kept, and rejected. Re-run the eval after the change and add a row.
 - Beta is 18+ only. Accessibility is WCAG 2.2 AA: keyboard works everywhere, color is never the only signal. Mobile first.
 - No guilt-based copy and no streak pressure.
 - Line endings are LF.

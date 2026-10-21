@@ -53,3 +53,8 @@ test('essay and hint tasks lead with a no-training provider and skip the 20b mod
     expect(PROVIDERS[TASK_ROUTES[task][0]].trainsOnInputs).toBe(false);
   }
 });
+
+test('groq runs gpt-oss at low reasoning effort', () => {
+  // perf 2026-10-21: medium spent 47-73% of output tokens on hidden reasoning; low cut output 50-56% with valid JSON
+  expect(PROVIDERS.groq.reasoningEffort).toBe('low');
+});

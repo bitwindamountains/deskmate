@@ -24,6 +24,7 @@ export async function callOpenAICompatible(
         model: p.model,
         temperature: req.temperature,
         response_format: { type: 'json_object' },
+        ...(p.reasoningEffort ? { reasoning_effort: p.reasoningEffort } : {}),
         messages: [
           { role: 'system', content: req.system },
           { role: 'user', content: req.user },
