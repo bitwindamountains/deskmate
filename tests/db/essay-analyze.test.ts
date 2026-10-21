@@ -51,7 +51,9 @@ async function newDraft(u: User, content = ESSAY, essayId?: string, version = 1)
   return { essayId: essay as string, draftId: data.id as string };
 }
 const essays = async (userId: string) => (await adminClient().from('quota_usage').select('essays').eq('user_id', userId).maybeSingle()).data?.essays ?? 0;
-const layers = async (draftId: string) => (await adminClient().from('drafts').select('layers').eq('id', draftId).single()).data!.layers;
+// Status keys only: claim_layer also stores <layer>_at claim times.
+const layers = async (draftId: string) => Object.fromEntries(Object.entries(
+  (await adminClient().from('drafts').select('layers').eq('id', draftId).single()).data!.layers as Record<string, string>).filter(([k]) => !k.endsWith('_at')));
 
 beforeAll(async () => {
   A = await createTestUser(); created.push(A.userId);

@@ -120,7 +120,7 @@ test('layers move only forward: claim from empty or failed, finish only a runnin
   expect((await U.client.rpc('claim_layer', { p_draft_id: draft, p_layer: 'bogus' })).error).not.toBeNull();
   await U.client.from('drafts').update({ layers: {} }).eq('id', draft);
   const { data } = await adminClient().from('drafts').select('layers').eq('id', draft).single();
-  expect(data?.layers).toEqual({ global: 'done' });
+  expect(data?.layers).toMatchObject({ global: 'done' });
   expect((await B.client.rpc('claim_layer', { p_draft_id: draft, p_layer: 'paragraphs' })).error?.code).toBe('42501');
 });
 
@@ -143,4 +143,17 @@ test('student can update status, dispute reason, and highest level of own items'
   expect(error).toBeNull();
   const bad = await A.client.from('feedback_items').update({ status: 'deleted' }).eq('id', itemA);
   expect(bad.error).not.toBeNull();
+});
+
+test('a layer stuck running for over 5 minutes can be claimed again; a fresh one cannot', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const draft = await makeDraft(U, await makeEssay(U));
+  const claim = () => U.client.rpc('claim_layer', { p_draft_id: draft, p_layer: 'global' });
+  expect((await claim()).data).toBe(true);
+  expect((await claim()).data).toBe(false);
+  // Simulate a request killed mid-layer six minutes ago.
+  const stale = new Date(Date.now() - 6 * 60_000).toISOString();
+  await adminClient().from('drafts').update({ layers: { global: 'running', global_at: stale } }).eq('id', draft);
+  expect((await claim()).data).toBe(true);
+  expect((await claim()).data).toBe(false);
 });
