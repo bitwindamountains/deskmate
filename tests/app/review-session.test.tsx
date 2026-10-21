@@ -178,3 +178,41 @@ test('View source shows the card source quote after checking', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'View source' }));
   expect(screen.getByText('The electron transport chain makes most of the ATP.')).toBeTruthy();
 });
+
+const leech = (id: string): ReviewCard => card(id, {
+  state: { card_id: id, due: '2026-01-01T00:00:00.000Z', stability: 1, difficulty: 8, scheduled_days: 0, learning_steps: 0,
+    reps: 9, lapses: 5, state: 3, last_review: '2025-12-31T00:00:00.000Z' },
+});
+const helpBody = { help: { explanation: 'Think of it as the cell\'s power line.', mnemonic: 'ETC = Energy Through Chain.', analogy: 'Like a bucket brigade.' },
+  added: 2, dropped: 0, cached: false };
+
+test('Again on a leech shows the slipping prompt; Get help shows explanation, mnemonic and the new-cards link', async () => {
+  fetchMock.mockResolvedValueOnce(json(200, helpBody));
+  await start([leech('a'), card('b')]);
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Again'));
+  expect(await screen.findByText('This card keeps slipping. Want a different way in?')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Get help' }));
+  expect(await screen.findByText('ETC = Energy Through Chain.')).toBeTruthy();
+  expect(screen.getByText("Think of it as the cell's power line.")).toBeTruthy();
+  expect(screen.getByText('Like a bucket brigade.')).toBeTruthy();
+  expect(screen.getByRole('link', { name: '2 new cards added to your deck for sorting' }).getAttribute('href')).toBe('/study/deck/d');
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ cardId: 'a' });
+});
+
+test('Make a mnemonic asks for help on the current card', async () => {
+  fetchMock.mockResolvedValueOnce(json(200, { ...helpBody, added: 0 }));
+  await start([card('a')]);
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Make a mnemonic' }));
+  expect(await screen.findByText('ETC = Energy Through Chain.')).toBeTruthy();
+  expect(screen.queryByRole('link', { name: /new cards added/ })).toBeNull();
+});
+
+test('a help limit or failure shows the route message', async () => {
+  fetchMock.mockResolvedValueOnce(json(429, { error: 'help_limit', message: "You've asked for a lot of help today. More unlocks at midnight UTC." }));
+  await start([card('a')]);
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Make a mnemonic' }));
+  expect(await screen.findByText("You've asked for a lot of help today. More unlocks at midnight UTC.")).toBeTruthy();
+});

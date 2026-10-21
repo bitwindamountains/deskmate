@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite } from './schemas';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite } from './schemas';
 
 export interface RubricCriterion {
   name: string;
@@ -203,6 +203,25 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
     ].join('\n'),
     // subject comes from the student's deck, so it rides in the user message, never the system prompt
     user: [`Subject: ${i.subject}`, `Level: ${i.level}`, wrapData('source', i.chunk)].join('\n\n'),
+  };
+}
+
+export function cardHelpPrompt(i: { front: string; back: string; keyPoints: string[]; chunk: string }): Prompt {
+  return {
+    system: [
+      'A student keeps forgetting the flashcard below. Help them learn it a different way.',
+      "explanation: the idea in at most 120 words, from a different angle than the card's answer, using only facts in the source text.",
+      'mnemonic: a short memory aid. It must be honest: never state anything false to make it catchy.',
+      'analogy: one everyday comparison that makes the idea concrete.',
+      'split: if the card packs several ideas, up to 3 smaller cards, one idea each; otherwise an empty list.',
+      "Each split card's source_quote must be copied exactly from the source text and support that card.",
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(CardHelp)}`,
+    ].join('\n'),
+    user: [
+      wrapData('card', [`Question: ${i.front}`, `Answer: ${i.back}`, `Key points: ${i.keyPoints.join('; ')}`].join('\n')),
+      wrapData('source', i.chunk),
+    ].join('\n\n'),
   };
 }
 
