@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ rpc: vi.fn() })
 import { ReviewSession } from '@/app/(app)/study/review/session';
 
 const card = (id: string, over: Partial<ReviewCard> = {}): ReviewCard => ({
-  id, deckId: 'd', type: 'basic', importance: 2, state: null, front: `Front ${id}`, back: 'electron transport chain', keyPoints: [],
+  id, deckId: 'd', type: 'basic', importance: 2, state: null, front: `Front ${id}`, back: 'electron transport chain', keyPoints: [], concept: 'c',
   sourceQuote: 'The electron transport chain makes most of the ATP.', ...over,
 });
 const why = card('w', { type: 'why', front: 'Why does ATP synthase spin?', back: 'Protons flow down their gradient', keyPoints: ['proton gradient'] });

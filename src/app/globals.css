@@ -20,6 +20,12 @@
   --layer-paragraph: #f6e3c4;
   --layer-sentence: #f3dcf0;
   --layer-strength: #cdeed8;
+  /* Charts (validated with the dataviz palette checks against --surface). Marks only: text stays in ink tokens and every mark has a text label. */
+  --chart-idle: #eb6834;
+  --chart-review: #2a78d6;
+  --strength-strong: #184f95;
+  --strength-shaky: #3987e5;
+  --strength-weak: #86b6ef;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 @media (prefers-color-scheme: dark) {
@@ -40,6 +46,11 @@
     --layer-paragraph: #4a3512;
     --layer-sentence: #4d2147;
     --layer-strength: #173f2a;
+    --chart-idle: #d95926;
+    --chart-review: #3987e5;
+    --strength-strong: #9ec5f4;
+    --strength-shaky: #5598e7;
+    --strength-weak: #1c5cab;
   }
 }
 
@@ -59,6 +70,11 @@
   --color-layer-paragraph: var(--layer-paragraph);
   --color-layer-sentence: var(--layer-sentence);
   --color-layer-strength: var(--layer-strength);
+  --color-chart-idle: var(--chart-idle);
+  --color-chart-review: var(--chart-review);
+  --color-strength-strong: var(--strength-strong);
+  --color-strength-shaky: var(--strength-shaky);
+  --color-strength-weak: var(--strength-weak);
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
 }
 
