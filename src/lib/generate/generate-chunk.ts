@@ -1,9 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { isGrounded } from '@/grounding';
+import { logCalls, type Db } from '@/lib/llm-calls';
 import { cardGeneratePrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardGenerate } from '@/llm/schemas';
-import type { CallLog } from '@/llm/types';
 
 export type CardRow = { id: string; deck_id: string; source_chunk_id: string | null; type: 'basic' | 'cloze' | 'why'; front: string;
   back: string; key_points: string[]; source_quote: string; concept: string; bloom_level: string; importance: 1 | 2 | 3;
@@ -17,23 +16,7 @@ const NOT_FOUND = { ok: false, status: 404, error: 'not_found', message: "We cou
 const QUOTA = { ok: false, status: 429, error: 'quota', message: "You've used today's 3 card generations. They reset at midnight UTC." } as const;
 const BUSY = { ok: false, status: 503, error: 'busy', message: 'The AI service is busy. Your material is saved; try again in a few minutes.' } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the schema generic differs between server and test clients
-type Db = SupabaseClient<any, any, any>;
 type ChunkRow = { id: string; text: string; page_start: number | null; generated_at: string | null; sources: { deck_id: string; decks: { subject: string | null } | null } };
-
-/** Best effort: a failed log write must never fail the request. */
-async function logCalls(db: Db, userId: string, log: CallLog[]) {
-  if (!log.length) return;
-  try {
-    const { error } = await db.from('llm_calls').insert(log.map((l) => ({
-      user_id: userId, task: l.task, provider: l.provider, model: l.model, status: l.status,
-      tokens_in: l.tokensIn, tokens_out: l.tokensOut, latency_ms: l.latencyMs,
-    })));
-    if (error) console.error('llm_calls insert failed', error.code);
-  } catch {
-    console.error('llm_calls insert failed');
-  }
-}
 
 /**
  * Ordering: cards are inserted before generated_at is set. A crash in between leaves cards with generated_at null;
