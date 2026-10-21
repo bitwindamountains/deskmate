@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
@@ -150,7 +150,9 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     shownAt.current = Date.now();
   }
 
-  useEffect(() => {
+  // Layout effect: a passive effect re-attaches this listener after paint, so a key pressed the instant the rating buttons appear
+  // would reach the previous render's handler, which still sees the answer phase, and be ignored.
+  useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.defaultPrevented || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')) return;
