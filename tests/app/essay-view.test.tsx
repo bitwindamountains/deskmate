@@ -61,7 +61,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
 type Props = Partial<React.ComponentProps<typeof EssayView>>;
 const view = (p: Props = {}) => render(
-  <EssayView draftId={DRAFT} paragraphs={PARAS} layers={DONE} items={ALL} analysis={analysis()} rewritesUsed={0} showScores
+  <EssayView essayId="11111111-1111-4111-8111-111111111111" draftId={DRAFT} version={1} content={PARAS.join('\n\n')} paragraphs={PARAS} layers={DONE} items={ALL} analysis={analysis()} rewritesUsed={0} showScores
     rubricMax={{ Thesis: 4, Evidence: 4 }} {...p} />,
 );
 const card = (id: string) => document.getElementById(`card-${id}`)!;

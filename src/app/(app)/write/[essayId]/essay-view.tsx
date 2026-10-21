@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { ItemRow, Layer } from '@/lib/essay/analyze';
 import { rankFeedback } from '@/rank';
 import { FeedbackCard, isOpen, LAYER_BG, LAYER_LABEL, REWRITE_CAP, type CardApi } from './feedback-card';
+import { Editor, storedDraft } from './editor';
 import { FocusMode } from './focus';
-import { disputeItem, logViewedLevel, markGotIt } from './item-actions';
+import { carryOverCounts, disputeItem, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
 
 export type Score = { criterion: string; score: number; justification: string; confidence: 'high' | 'medium' | 'low' };
 export type Strength = { paragraph_index: number; quote: string; why: string; start: number; end: number };
@@ -27,8 +29,8 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ draftId, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax }: {
-  draftId: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax }: {
+  essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
   rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>;
 }) {
   const [items, setItems] = useState(initialItems);
@@ -44,6 +46,8 @@ export function EssayView({ draftId, paragraphs, layers, items: initialItems, an
   const [sentencesOpen, setSentencesOpen] = useState(false);
   const [focus, setFocus] = useState<{ ids: string[]; id: string | null } | null>(null);
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [carry, setCarry] = useState<CarryOver | null>(null);
 
   const setLayer = (l: Layer, s: LayerState) => setLayerState((x) => ({ ...x, [l]: s }));
 
@@ -58,6 +62,8 @@ export function EssayView({ draftId, paragraphs, layers, items: initialItems, an
         setItems(body.items);
         if (body.analysis) setAnalysis(body.analysis);
         setLayer(l, { state: 'done' });
+        // The global layer is what judges the previous draft's items, so their statuses are final now.
+        if (l === 'global' && version > 1) carryOverCounts(essayId, version - 1).then(setCarry, () => {});
         return null;
       }
       if (res.status === 409 && waits < MAX_WAITS) { await new Promise((r) => setTimeout(r, RETRY_MS)); continue; }
@@ -78,6 +84,10 @@ export function EssayView({ draftId, paragraphs, layers, items: initialItems, an
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per mount
   }, []);
+
+  useEffect(() => {
+    if (storedDraft(essayId) !== null) setEditing(true); // unsent edits from an earlier visit
+  }, [essayId]);
 
   useEffect(() => {
     if (!focusTarget) return;
@@ -183,17 +193,23 @@ export function EssayView({ draftId, paragraphs, layers, items: initialItems, an
   return (
     <div className="grid gap-8 md:grid-cols-[3fr_2fr]">
       <section aria-label="Your essay" className="min-w-0">
-        <a href="#feedback" className="btn mb-6 md:hidden">Jump to feedback</a>
-        <div className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
-          {paragraphs.map((text, i) => {
-            const dimmed = !!focus && focusPara !== null && i !== focusPara;
-            return (
-              <p key={i} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
-                <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />
-              </p>
-            );
-          })}
+        <div className="mb-6 flex flex-wrap gap-3">
+          <a href="#feedback" className="btn md:hidden">Jump to feedback</a>
+          <button type="button" className="btn" aria-pressed={editing} onClick={() => setEditing((v) => !v)}>Edit</button>
+          {version > 1 && <Link href={`/write/${essayId}/compare?from=${version - 1}&to=${version}`} className="btn">Compare with draft {version - 1}</Link>}
         </div>
+        {editing ? <Editor essayId={essayId} content={content} /> : (
+          <div className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+            {paragraphs.map((text, i) => {
+              const dimmed = !!focus && focusPara !== null && i !== focusPara;
+              return (
+                <p key={i} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
+                  <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />
+                </p>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section id="feedback" tabIndex={-1} aria-label="Feedback" className="min-w-0 space-y-8 outline-none">
@@ -208,7 +224,10 @@ export function EssayView({ draftId, paragraphs, layers, items: initialItems, an
           </section>
         )}
 
-        <div role="status" className="empty:hidden">{running && <p className="text-ink-muted">{PROGRESS[running]}</p>}</div>
+        <div role="status" className="space-y-2 empty:hidden">
+          {carry && <p className="font-bold">{`${carry.addressed} addressed · ${carry.partial} partly addressed · ${carry.open} still open since draft ${version - 1}`}</p>}
+          {running && <p className="text-ink-muted">{PROGRESS[running]}</p>}
+        </div>
         {failed.map((l) => (
           <div key={l} role="alert" className="space-y-2 rounded-xl border border-line bg-surface p-4">
             <p className="text-sm font-bold">{LAYER_NAME[l]}</p>

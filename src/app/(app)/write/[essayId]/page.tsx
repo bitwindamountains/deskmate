@@ -20,7 +20,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   const db = await createClient();
   const [essay, draft] = await Promise.all([
     db.from('essays').select('id,title').eq('id', essayId).maybeSingle(),
-    db.from('drafts').select('id,content,layers').eq('essay_id', essayId).order('version', { ascending: false }).limit(1).maybeSingle(),
+    db.from('drafts').select('id,version,content,layers').eq('essay_id', essayId).order('version', { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (essay.error || draft.error) throw new Error(LOAD_FAILED);
   if (!essay.data || !draft.data) notFound();
@@ -36,7 +36,9 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
 
   return (
     <AppPage current="write" title={essay.data.title} wide>
-      <EssayView draftId={draftId} paragraphs={paragraphs(draft.data.content)} layers={(draft.data.layers ?? {}) as Record<string, string>}
+      {/* Keyed on the draft: after a re-check refresh, a fresh view mounts and runs the new draft's layers. */}
+      <EssayView key={draftId} essayId={essayId} draftId={draftId} version={draft.data.version as number} content={draft.data.content}
+        paragraphs={paragraphs(draft.data.content)} layers={(draft.data.layers ?? {}) as Record<string, string>}
         items={items.data as unknown as ItemRow[]} analysis={analysis.data as Analysis | null} rewritesUsed={rewrites.count ?? 0}
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax} />
     </AppPage>
