@@ -70,3 +70,13 @@ export const GradeAnswer = z.object({
   suggested_rating: z.enum(['again', 'hard', 'good', 'easy']),
 });
 export type GradeAnswer = z.infer<typeof GradeAnswer>;
+
+/** On-demand help for a card the student keeps failing (B3.3) or wants a mnemonic for (B3.8). */
+export const CardHelp = z.object({
+  explanation: z.string().min(1),
+  mnemonic: z.string().min(1),
+  analogy: z.string().min(1),
+  /** Smaller cards for a card that tries to hold too much; each must quote the source exactly. */
+  split: z.array(Card.omit({ importance: true })).max(3),
+});
+export type CardHelp = z.infer<typeof CardHelp>;

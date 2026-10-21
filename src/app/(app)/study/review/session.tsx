@@ -11,6 +11,7 @@ import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
 import { applyRating, buildSession, nextReview, parseDay, type Grade } from '@/review/schedule';
 import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/store';
+import { CardHelpPanel } from './card-help';
 import { Summary } from './summary';
 
 export type { ReviewCard };
@@ -20,8 +21,18 @@ type Done = { cardId: string; rating: Grade; confidence?: Confidence };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
 const SAVE_FAILED = "We couldn't save that review. Try again.";
+const LEECH_LAPSES = 4; // brief B3.3
 const CONFIDENCE: [Confidence, string, string][] = [[1, 'Guessing', 'G'], [2, 'Unsure', 'U'], [3, 'Confident', 'C']];
 const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
+
+function Slipping({ slip, onOpen }: { slip: { cardId: string; deckId: string; open: boolean }; onOpen: () => void }) {
+  return (
+    <div className="max-w-xl space-y-3 rounded-xl border border-line bg-surface p-4">
+      <p className="font-bold">This card keeps slipping. Want a different way in?</p>
+      {slip.open ? <CardHelpPanel cardId={slip.cardId} deckId={slip.deckId} /> : <button type="button" className="btn" onClick={onOpen}>Get help</button>}
+    </div>
+  );
+}
 
 function SureNote({ quote }: { quote: string }) {
   return (
@@ -48,6 +59,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   const [sureNote, setSureNote] = useState<string | null>(null); // source quote after a confidently wrong answer (B3.2)
   const [showSource, setShowSource] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false); // "Make a mnemonic" on the current card
+  const [slipping, setSlipping] = useState<{ cardId: string; deckId: string; open: boolean } | null>(null); // last card is a leech (B3.3)
   const shownAt = useRef(Date.now());
   const embedFn = useRef<EmbedFn | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -141,8 +154,10 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     setDone((d) => [...d, { cardId: current.id, rating: g, ...(confidence ? { confidence } : {}) }]);
     // A confident miss is the most memorable kind once corrected, so show where the answer came from.
     setSureNote(confidence === 3 && g === Rating.Again ? current.sourceQuote ?? '' : null);
+    setSlipping(g === Rating.Again && state.lapses >= LEECH_LAPSES ? { cardId: current.id, deckId: current.deckId, open: false } : null);
     setConfidence(null);
     setShowSource(false);
+    setHelpOpen(false);
     setText('');
     setChecked(null);
     setPhase('answer');
@@ -198,6 +213,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     return (
       <>
         {sureNote !== null && <SureNote quote={sureNote} />}
+        {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
         <Summary ratings={done.map((d) => d.rating)} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
           ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />
       </>
@@ -214,6 +230,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
       </div>
 
       {sureNote !== null && <SureNote quote={sureNote} />}
+      {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
 
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
         <h2 className="text-[1.44rem] leading-snug font-bold text-balance">{current.front}</h2>
@@ -256,12 +273,16 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
               <h3 className="text-sm font-bold text-ink-muted">Answer</h3>
               <p className="mt-1">{current.back}</p>
             </div>
-            {current.sourceQuote && (
-              <div className="md:col-span-2">
-                <button type="button" className="text-sm underline" aria-expanded={showSource} onClick={() => setShowSource((v) => !v)}>View source</button>
-                {showSource && <blockquote className="mt-2 border-l-2 border-line pl-3 text-ink-muted">{current.sourceQuote}</blockquote>}
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex flex-wrap gap-x-4">
+                {current.sourceQuote && (
+                  <button type="button" className="text-sm underline" aria-expanded={showSource} onClick={() => setShowSource((v) => !v)}>View source</button>
+                )}
+                {!helpOpen && <button type="button" className="text-sm underline" onClick={() => setHelpOpen(true)}>Make a mnemonic</button>}
               </div>
-            )}
+              {showSource && <blockquote className="border-l-2 border-line pl-3 text-ink-muted">{current.sourceQuote}</blockquote>}
+              {helpOpen && <CardHelpPanel cardId={current.id} deckId={current.deckId} />}
+            </div>
             {(checked.hit.length > 0 || checked.missed.length > 0) && (
               <ul className="space-y-1 md:col-span-2">
                 {checked.hit.map((k) => <li key={`h-${k}`}>✓ Got this: {k}</li>)}
