@@ -85,7 +85,7 @@ test('first-time submit sends both timestamps, only for a not-yet-onboarded row'
   expect(col).toBe('user_id'); expect(id).toBe('u1');
   expect(v.onboarded_at).not.toBe('evil');
   expect(v.adult_attested_at).toBeTruthy();
-  expect(v).toMatchObject({ first_language: 'en', study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false } });
+  expect(v).toMatchObject({ first_language: 'en', study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false, show_scores: false } });
   expect(isCalls).toEqual([['onboarded_at', null]]);
 });
 test('edit submit sends neither timestamp and does not need the 18+ box', async () => {
@@ -111,6 +111,7 @@ test('form shows labelled fields and the verbatim disclosure', () => {
   expect((screen.getByLabelText('I am 18 or older.') as HTMLInputElement).required).toBe(true);
   expect(screen.getByLabelText('Your first language')).toBeTruthy();
   expect(screen.getByRole('group', { name: 'Reading font' })).toBeTruthy();
+  expect((screen.getByLabelText('Show rubric scores') as HTMLInputElement).checked).toBe(true);
   expect(screen.getByText(/Groq's terms say it does not train its models/)).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Start studying' })).toBeTruthy();
 });
@@ -125,5 +126,6 @@ test('edit mode: no 18+ box, button says Save changes, disclosure stays', () => 
   expect(screen.queryByLabelText('I am 18 or older.')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Start studying' })).toBeNull();
   expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
+  expect((screen.getByLabelText('Show rubric scores') as HTMLInputElement).checked).toBe(true); // missing means on
   expect(screen.getByText(/Groq's terms say it does not train its models/)).toBeTruthy();
 });
