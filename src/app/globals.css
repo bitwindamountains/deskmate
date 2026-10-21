@@ -105,6 +105,8 @@ a { text-underline-offset: 0.2em; }
   }
   .btn:hover { background: var(--surface); }
   .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  /* a .btn label around a visually hidden input (the confidence chips) carries that input's focus ring */
+  .btn:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
   .btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--on-mark); }
   .btn-primary:hover { background: var(--ink); color: var(--ground); }
   .field {
@@ -123,3 +125,8 @@ a { text-underline-offset: 0.2em; }
 }
 
 @layer base { input[type='checkbox'], input[type='radio'] { accent-color: var(--ink); width: 1.25rem; height: 1.25rem; } }
+
+/* Mastery chart labels are in viewBox units and the chart scales with its column: on a phone the 400-unit chart is
+   ~343px wide, so labels need a larger unit size to render at ~12px. */
+.chart-label { font-size: 11px; }
+@media (max-width: 640px) { .chart-label { font-size: 14px; } }

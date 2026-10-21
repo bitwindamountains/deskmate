@@ -84,6 +84,18 @@ test('another user card is 404 with no LLM call', async () => {
   expect(fn).not.toHaveBeenCalled();
 });
 
+test('editing a card makes its cached help stale, so the next request asks again', async () => {
+  const card = await makeCard(A);
+  await requestCardHelp(A.client, A.userId, card.id, {}, fake());
+  await adminClient().from('cards').update({ back: 'Glucose becomes two pyruvate, in the cytoplasm' }).eq('id', card.id);
+  const again = fake();
+  expect(await requestCardHelp(A.client, A.userId, card.id, {}, again)).toMatchObject({ ok: true, cached: false });
+  expect(again).toHaveBeenCalledOnce();
+  const third = fake();
+  expect(await requestCardHelp(A.client, A.userId, card.id, {}, third)).toMatchObject({ ok: true, cached: true });
+  expect(third).not.toHaveBeenCalled();
+});
+
 const post = (body: unknown) =>
   POST(new NextRequest('http://localhost/api/cards/help', { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }));
 

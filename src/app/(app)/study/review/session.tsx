@@ -28,19 +28,21 @@ const readMix = () => { try { return localStorage.getItem(MIX_KEY) === '1'; } ca
 const CONFIDENCE: [Confidence, string, string][] = [[1, 'Guessing', 'G'], [2, 'Unsure', 'U'], [3, 'Confident', 'C']];
 const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
 
-function Slipping({ slip, onOpen }: { slip: { cardId: string; deckId: string; open: boolean }; onOpen: () => void }) {
+type Slip = { cardId: string; deckId: string; front: string; open: boolean };
+
+function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
   return (
-    <div className="max-w-xl space-y-3 rounded-xl border border-line bg-surface p-4">
-      <p className="font-bold">This card keeps slipping. Want a different way in?</p>
+    <div className="max-w-xl space-y-3 rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+      <p className="font-bold">“{slip.front}” keeps slipping. Want a different way in?</p>
       {slip.open ? <CardHelpPanel cardId={slip.cardId} deckId={slip.deckId} /> : <button type="button" className="btn" onClick={onOpen}>Get help</button>}
     </div>
   );
 }
 
-function SureNote({ quote }: { quote: string }) {
+function SureNote({ front, quote }: { front: string; quote: string }) {
   return (
-    <div role="status" className="max-w-xl rounded-xl border border-line bg-surface p-4">
-      <p className="font-bold">You felt sure about this one, so it&apos;s worth a second look.</p>
+    <div role="status" className="max-w-xl rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+      <p className="font-bold">You felt sure about “{front}”, so it&apos;s worth a second look.</p>
       {quote && <p className="mt-1 text-ink-muted">From your notes: {quote}</p>}
     </div>
   );
@@ -60,10 +62,10 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [nothingMore, setNothingMore] = useState(false);
   const [confidence, setConfidence] = useState<Confidence | null>(null);
-  const [sureNote, setSureNote] = useState<string | null>(null); // source quote after a confidently wrong answer (B3.2)
+  const [sureNote, setSureNote] = useState<{ front: string; quote: string } | null>(null); // after a confidently wrong answer (B3.2)
   const [showSource, setShowSource] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // "Make a mnemonic" on the current card
-  const [slipping, setSlipping] = useState<{ cardId: string; deckId: string; open: boolean } | null>(null); // last card is a leech (B3.3)
+  const [slipping, setSlipping] = useState<Slip | null>(null); // last card is a leech (B3.3)
   const shownAt = useRef(Date.now());
   const embedFn = useRef<EmbedFn | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -161,8 +163,9 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     setAll((a) => a!.map((c) => (c.id === current.id ? { ...c, state } : c)));
     setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, ...(confidence ? { confidence } : {}) }]);
     // A confident miss is the most memorable kind once corrected, so show where the answer came from.
-    setSureNote(confidence === 3 && g === Rating.Again ? current.sourceQuote ?? '' : null);
-    setSlipping(g === Rating.Again && state.lapses >= LEECH_LAPSES ? { cardId: current.id, deckId: current.deckId, open: false } : null);
+    // Shown above the next card, so it names the card it is about.
+    setSureNote(confidence === 3 && g === Rating.Again ? { front: current.front, quote: current.sourceQuote ?? '' } : null);
+    setSlipping(g === Rating.Again && state.lapses >= LEECH_LAPSES ? { cardId: current.id, deckId: current.deckId, front: current.front, open: false } : null);
     setConfidence(null);
     setShowSource(false);
     setHelpOpen(false);
@@ -209,10 +212,12 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     const next = !mix;
     setMix(next);
     try { localStorage.setItem(MIX_KEY, next ? '1' : '0'); } catch { /* storage blocked: the choice lasts this session only */ }
-    // Reorder only the cards still to come; the ones already reviewed stay where they were.
+    // The card on screen stays put (an answer may already be checked against it); only the cards after it move.
+    // It leads the reorder so interleaving alternates away from its concept first.
     setQueue((q) => {
-      const rest = new Set(q.slice(i).map((c) => c.id));
-      const ordered = base.current.filter((c) => rest.has(c.id));
+      if (i >= q.length) return q;
+      const rest = new Set(q.slice(i + 1).map((c) => c.id));
+      const ordered = [q[i], ...base.current.filter((c) => rest.has(c.id))];
       return [...q.slice(0, i), ...(next ? interleave(ordered) : ordered)];
     });
   }
@@ -233,7 +238,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   if (finished) {
     return (
       <>
-        {sureNote !== null && <SureNote quote={sureNote} />}
+        {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} />}
         {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
         <Summary ratings={done.map((d) => d.rating)} concepts={conceptSummary(done.map((d) => ({ concept: d.concept, rating: d.rating })))} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
           ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />
@@ -258,7 +263,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
         </div>
       </div>
 
-      {sureNote !== null && <SureNote quote={sureNote} />}
+      {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} />}
       {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
 
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">

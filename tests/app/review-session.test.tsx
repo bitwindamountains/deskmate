@@ -148,7 +148,7 @@ test('choosing Confident then rating Again shows the note with the source quote'
   sure('Confident');
   fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
   fireEvent.click(rating('Again'));
-  expect(await screen.findByText("You felt sure about this one, so it's worth a second look.")).toBeTruthy();
+  expect(await screen.findByText("You felt sure about “Front a”, so it's worth a second look.")).toBeTruthy();
   expect(screen.getByText('From your notes: The electron transport chain makes most of the ATP.')).toBeTruthy();
   expect(screen.getByText('Card 2 of 2')).toBeTruthy();
   await waitFor(async () => expect((await outbox())[0].review).toMatchObject({ confidence: 3, final_rating: 1 }));
@@ -191,7 +191,7 @@ test('Again on a leech shows the slipping prompt; Get help shows explanation, mn
   await start([leech('a'), card('b')]);
   fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
   fireEvent.click(rating('Again'));
-  expect(await screen.findByText('This card keeps slipping. Want a different way in?')).toBeTruthy();
+  expect(await screen.findByText('“Front a” keeps slipping. Want a different way in?')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Get help' }));
   expect(await screen.findByText('ETC = Energy Through Chain.')).toBeTruthy();
   expect(screen.getByText("Think of it as the cell's power line.")).toBeTruthy();
@@ -235,4 +235,18 @@ test('summary lists concepts that got stronger and that need another look', asyn
   fireEvent.click(rating('Again'));
   expect(await screen.findByText('Got stronger: Glycolysis')).toBeTruthy();
   expect(screen.getByText('Needs another look: Krebs')).toBeTruthy();
+});
+
+test('switching Mix topics mid-card keeps the card on screen (its answer is rated on that card)', async () => {
+  localStorage.removeItem('scholar-mix-topics');
+  await start([card('a', { concept: 'x' }), card('b', { concept: 'x' }), card('c', { concept: 'y' })]);
+  fireEvent.click(screen.getByRole('switch', { name: 'Mix topics' })); // order a, c, b
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Good'));
+  expect(await screen.findByRole('heading', { name: 'Front c' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(screen.getByRole('switch', { name: 'Mix topics' })); // off: the rest goes back to due order
+  expect(screen.getByRole('heading', { name: 'Front c' })).toBeTruthy();
+  fireEvent.click(rating('Hard'));
+  await waitFor(async () => expect((await outbox()).map((r) => r.review.card_id).sort()).toEqual(['a', 'c']));
 });
