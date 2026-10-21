@@ -12,16 +12,19 @@ import { gradeLocally, scoreToRating } from '@/review/grade';
 import { applyRating, buildSession, nextReview, parseDay, type Grade } from '@/review/schedule';
 import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/store';
 import { CardHelpPanel } from './card-help';
+import { conceptSummary, interleave } from '@/review/interleave';
 import { Summary } from './summary';
 
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
   feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number };
-type Done = { cardId: string; rating: Grade; confidence?: Confidence };
+type Done = { cardId: string; concept: string; rating: Grade; confidence?: Confidence };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
 const SAVE_FAILED = "We couldn't save that review. Try again.";
 const LEECH_LAPSES = 4; // brief B3.3
+const MIX_KEY = 'scholar-mix-topics';
+const readMix = () => { try { return localStorage.getItem(MIX_KEY) === '1'; } catch { return false; } };
 const CONFIDENCE: [Confidence, string, string][] = [[1, 'Guessing', 'G'], [2, 'Unsure', 'U'], [3, 'Confident', 'C']];
 const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
 
@@ -67,6 +70,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const firstRating = useRef<HTMLButtonElement>(null);
   const suggestedBtn = useRef<HTMLButtonElement>(null);
   const introduced = useRef(0);
+  const [mix, setMix] = useState(false); // "Mix topics" (B3.9)
+  const base = useRef<ReviewCard[]>([]); // the session's due order, kept so Mix topics can be switched off again
 
   const examFor = (deckId: string) => (examDates[deckId] ? parseDay(examDates[deckId]!) : null);
   const nearestExam = () => Object.values(examDates).filter((d): d is string => !!d).map(parseDay)
@@ -87,7 +92,10 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
       });
       if (!live) return;
       setAll(merged);
-      setQueue(build(merged, false));
+      const mixed = readMix();
+      base.current = build(merged, false);
+      setMix(mixed);
+      setQueue(mixed ? interleave(base.current) : base.current);
       shownAt.current = Date.now();
     })();
     getEmbedder().then((f) => { embedFn.current = f; }).catch(() => {});
@@ -151,7 +159,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     if (!current.state) introduced.current++;
     setError('');
     setAll((a) => a!.map((c) => (c.id === current.id ? { ...c, state } : c)));
-    setDone((d) => [...d, { cardId: current.id, rating: g, ...(confidence ? { confidence } : {}) }]);
+    setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, ...(confidence ? { confidence } : {}) }]);
     // A confident miss is the most memorable kind once corrected, so show where the answer came from.
     setSureNote(confidence === 3 && g === Rating.Again ? current.sourceQuote ?? '' : null);
     setSlipping(g === Rating.Again && state.lapses >= LEECH_LAPSES ? { cardId: current.id, deckId: current.deckId, open: false } : null);
@@ -187,13 +195,26 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   });
 
   function doMore() {
-    const q = build(all!, true);
+    base.current = build(all!, true);
+    const q = mix ? interleave(base.current) : base.current;
     if (!q.length) { setNothingMore(true); return; }
     setQueue(q);
     setI(0);
     setDone([]);
     setStartedAt(Date.now());
     shownAt.current = Date.now();
+  }
+
+  function toggleMix() {
+    const next = !mix;
+    setMix(next);
+    try { localStorage.setItem(MIX_KEY, next ? '1' : '0'); } catch { /* storage blocked: the choice lasts this session only */ }
+    // Reorder only the cards still to come; the ones already reviewed stay where they were.
+    setQueue((q) => {
+      const rest = new Set(q.slice(i).map((c) => c.id));
+      const ordered = base.current.filter((c) => rest.has(c.id));
+      return [...q.slice(0, i), ...(next ? interleave(ordered) : ordered)];
+    });
   }
 
   if (all === null) return <p className="text-ink-muted">Loading your cards…</p>;
@@ -214,7 +235,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
       <>
         {sureNote !== null && <SureNote quote={sureNote} />}
         {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
-        <Summary ratings={done.map((d) => d.rating)} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
+        <Summary ratings={done.map((d) => d.rating)} concepts={conceptSummary(done.map((d) => ({ concept: d.concept, rating: d.rating })))} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
           ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />
       </>
     );
@@ -223,7 +244,15 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   return (
     <div className="max-w-xl space-y-6">
       <div>
-        <p className="mb-2 text-sm font-bold text-ink-muted">Card {i + 1} of {queue.length}</p>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-bold text-ink-muted">Card {i + 1} of {queue.length}</p>
+          <button type="button" role="switch" aria-checked={mix} onClick={toggleMix} className="inline-flex min-h-11 items-center gap-2 text-sm">
+            <span aria-hidden="true" className={`inline-block h-5 w-9 rounded-full border border-line p-0.5 ${mix ? 'bg-ink' : 'bg-surface'}`}>
+              <span className={`block h-3.5 w-3.5 rounded-full ${mix ? 'translate-x-4 bg-ground' : 'bg-ink-muted'} transition-transform`} />
+            </span>
+            Mix topics
+          </button>
+        </div>
         <div aria-hidden="true" className="h-2 overflow-hidden rounded-full border border-line bg-surface">
           <div className="h-full bg-ink" style={{ width: `${(i / queue.length) * 100}%` }} />
         </div>

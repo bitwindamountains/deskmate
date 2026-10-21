@@ -216,3 +216,23 @@ test('a help limit or failure shows the route message', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Make a mnemonic' }));
   expect(await screen.findByText("You've asked for a lot of help today. More unlocks at midnight UTC.")).toBeTruthy();
 });
+
+test('Mix topics takes one card from each concept in turn and is remembered', async () => {
+  localStorage.removeItem('scholar-mix-topics');
+  await start([card('a', { concept: 'x' }), card('b', { concept: 'x' }), card('c', { concept: 'y' })]);
+  fireEvent.click(screen.getByRole('switch', { name: 'Mix topics' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Good'));
+  expect(await screen.findByRole('heading', { name: 'Front c' })).toBeTruthy();
+  expect(localStorage.getItem('scholar-mix-topics')).toBe('1');
+});
+
+test('summary lists concepts that got stronger and that need another look', async () => {
+  await start([card('a', { concept: 'Glycolysis' }), card('b', { concept: 'Krebs' })]);
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Good'));
+  fireEvent.click(await screen.findByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Again'));
+  expect(await screen.findByText('Got stronger: Glycolysis')).toBeTruthy();
+  expect(screen.getByText('Needs another look: Krebs')).toBeTruthy();
+});
