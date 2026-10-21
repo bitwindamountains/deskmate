@@ -181,6 +181,37 @@ test('draft 2: unchanged paragraph items are copied, changed paragraphs alone ar
   expect((await adminClient().from('feedback_items').select('status').eq('id', oldGlobal.id).single()).data!.status).toBe('addressed');
 });
 
+test('draft 2: a failed paragraphs layer then a retry saves each carried item once', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const now = new Date().toISOString();
+  await adminClient().from('profiles').upsert({ user_id: U.userId, adult_attested_at: now, onboarded_at: now }, { onConflict: 'user_id' });
+  const d1 = await newDraft(U);
+  await analyzeLayer(U.client, U.userId, d1.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: PARAS }) });
+  const d2 = await newDraft(U, [P[0], P[1], 'In conclusion, a ban helps everyone focus.'].join('\n\n'), d1.essayId, 2);
+  expect(await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: failComplete() })).toMatchObject({ ok: false, status: 503 });
+  expect((await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { items: [] } }) })).ok).toBe(true);
+  const carried = (await adminClient().from('feedback_items').select('carried_from_id').eq('draft_id', d2.draftId).not('carried_from_id', 'is', null)).data!;
+  expect(carried).toHaveLength(1); // the P1 item; the P2 item belongs to the global judgement
+});
+
+test('an over-long model summary is clamped to the column limit and the layer still finishes', async () => {
+  const { draftId } = await newDraft(A);
+  const long = { ...GLOBAL, items: [{ ...item('global', 0, 'distract students from learning'), summary: 'x'.repeat(1500) }] };
+  const r = await analyzeLayer(A.client, A.userId, draftId, 'global', {}, { completeFn: fakeComplete({ essay_global: long }) });
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.items[0].summary.length).toBeLessThanOrEqual(1000);
+  expect(await layers(draftId)).toEqual({ global: 'done' });
+});
+
+test('a global retry still finishes when the analyses row already exists', async () => {
+  const { draftId } = await newDraft(A);
+  // as if an earlier attempt saved the analysis and then failed on a later write
+  await A.client.from('analyses').insert({ user_id: A.userId, draft_id: draftId, rubric_scores: [], strengths: [] });
+  const r = await analyzeLayer(A.client, A.userId, draftId, 'global', {}, { completeFn: fakeComplete({ essay_global: GLOBAL }) });
+  expect(r.ok).toBe(true);
+  expect(await layers(draftId)).toEqual({ global: 'done' });
+});
+
 const post = (body: unknown) =>
   POST(new NextRequest('http://localhost/api/essays/analyze', { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }));
 

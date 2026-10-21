@@ -30,15 +30,19 @@ type Row = Omit<ItemRow, 'id' | 'status' | 'highest_level' | 'carried_from_id' |
 
 class Failed extends Error {}
 
+const MAX_TEXT = 1000; // feedback_items.summary and .quote checks
+const clamp = (s: string) => (s.length > MAX_TEXT ? `${s.slice(0, MAX_TEXT - 1)}…` : s);
+
 /** Anchors model items to the essay; items whose quote is not in the essay are dropped (never saved with a guessed anchor). */
 function anchorItems(paras: string[], items: FeedbackItem[], layer: ItemRow['layer']): { rows: Row[]; dropped: number } {
   const rows: Row[] = [];
   for (const it of items) {
-    const a = anchorQuote(paras, it.paragraph_index, it.quote);
+    const a = it.quote.length <= MAX_TEXT ? anchorQuote(paras, it.paragraph_index, it.quote) : null;
     if (!a) continue;
+    // Clamp to the column limits: one over-long model field must not fail the whole insert.
     rows.push({ layer, category: it.category.slice(0, 60), rubric_criterion: it.rubric_criterion.slice(0, 60) || null,
       paragraph_index: a.paragraph_index, quote: it.quote, anchor_start: a.start, anchor_end: a.end, severity: it.severity,
-      summary: it.summary, hints: it.hints, replacements: [], convention: false, source: 'llm' });
+      summary: clamp(it.summary), hints: it.hints.map(clamp), replacements: [], convention: false, source: 'llm' });
   }
   return { rows, dropped: items.length - rows.length };
 }
@@ -133,10 +137,6 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
       const a = anchorQuote(paras, s.paragraph_index, s.quote);
       return a ? [{ paragraph_index: a.paragraph_index, quote: s.quote, why: s.why, start: a.start, end: a.end }] : [];
     });
-    const { error } = await db.from('analyses').insert({ draft_id: draft.id, user_id: userId, rubric_scores: r.data.rubric_scores,
-      strengths, safety_concern: r.data.safety_concern });
-    if (error) throw new Failed();
-
     const carried: Row[] = [];
     if (plan) {
       for (const j of applyJudgement(plan, r.data.carried)) {
@@ -151,24 +151,30 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
       }
     }
     await insert([...rows, ...carried]);
+    // Last, and insert-or-ignore: a row left by an earlier failed attempt must not lock this layer on every retry.
+    const { error } = await db.from('analyses').upsert({ draft_id: draft.id, user_id: userId, rubric_scores: r.data.rubric_scores,
+      strengths, safety_concern: r.data.safety_concern }, { onConflict: 'draft_id', ignoreDuplicates: true });
+    if (error) throw new Failed();
     return dropped + r.data.strengths.length - strengths.length;
   }
 
+  // Carried rows go in with the new ones, in one insert after the external call succeeds,
+  // so a failed call followed by "Try again" never saves them twice.
   if (layer === 'paragraphs') {
-    await insert(keepFor('paragraph'));
-    if (plan && !plan.changed.length) return 0;
+    const kept = keepFor('paragraph');
+    if (plan && !plan.changed.length) { await insert(kept); return 0; }
     const r = await completeFn('essay_paragraphs', essayParagraphsPrompt({ ...input, onlyParagraphs: plan?.changed }), EssayParagraphs, { env });
     await logCalls(db, userId, r.log);
     const { rows, dropped } = anchorItems(paras, r.data.items, 'paragraph');
-    await insert(rows);
+    await insert([...kept, ...rows]);
     return dropped;
   }
 
-  await insert(keepFor('sentence'));
+  const kept = keepFor('sentence');
   const indices = plan ? plan.changed : paras.map((_, i) => i);
   const found = await checkSentences(paras, indices, fetchFn);
-  await insert(found.map((f) => ({ layer: 'sentence', category: f.category, rubric_criterion: 'Conventions', paragraph_index: f.paragraph_index,
+  await insert([...kept, ...found.map((f) => ({ layer: 'sentence', category: f.category, rubric_criterion: 'Conventions', paragraph_index: f.paragraph_index,
     quote: f.quote, anchor_start: f.start, anchor_end: f.end, severity: 'low', summary: f.summary, hints: [], replacements: f.replacements,
-    convention: f.convention, source: 'languagetool' })));
+    convention: f.convention, source: 'languagetool' } as Row))]);
   return 0;
 }
