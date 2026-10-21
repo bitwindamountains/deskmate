@@ -6,9 +6,12 @@ import { buildSession, daysUntil, nextReview, parseDay, readiness } from '@/revi
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const when = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`);
 
-export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now }:
-  { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date }) {
-  if (!cards.length) return <EmptyStudy />;
+/** An essay whose latest draft still has open Top 3 priorities. */
+export type TodayEssay = { id: string; title: string; openTop3: number };
+
+export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essays = [] }:
+  { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date; essays?: TodayEssay[] }) {
+  if (!cards.length && !essays.length) return <EmptyStudy />;
 
   const exams = decks.flatMap((d) => {
     if (!d.exam_date) return [];
@@ -16,14 +19,25 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now }:
     const days = daysUntil(date, now);
     return days < 0 ? [] : [{ deck: d, date, days, ready: Math.round(readiness(cards.filter((c) => c.deckId === d.id), date) * 100) }];
   }).sort((a, b) => a.days - b.days);
-  // Today's reviews are the only item for now (essays arrive in Phase 1b), so they are the primary action.
+  // Spec §8.3 order: reviews, essays with open priorities, exams. Essays have no deadline yet, so due reviews stay primary.
   const { queue, estMinutes } = buildSession(cards, { now, minutes, newIntroducedToday, examDate: exams.find((e) => e.days > 0)?.date ?? null });
   const next = nextReview(cards, now);
   const noExam = decks.filter((d) => !exams.some((e) => e.deck.id === d.id));
+  const essayFirst = !queue.length && essays.length > 0;
+  const essayLines = essayFirst ? essays.slice(1) : essays;
+  const priorities = (n: number) => `${n} of 3 priorities open`;
 
   return (
     <div className="max-w-xl space-y-8">
-      <section aria-labelledby="reviews-h" className="rounded-xl border border-line bg-surface p-6">
+      {essayFirst && (
+        <section aria-labelledby="essay-h" className="rounded-xl border border-line bg-surface p-6 [overflow-wrap:anywhere]">
+          <h2 id="essay-h" className="text-xl font-bold text-balance">{essays[0].title}</h2>
+          <p className="mt-2 text-[1.2rem]">{priorities(essays[0].openTop3)}</p>
+          <Link href={`/write/${essays[0].id}`} className="btn btn-primary mt-6">Keep revising</Link>
+        </section>
+      )}
+
+      {cards.length > 0 && <section aria-labelledby="reviews-h" className="rounded-xl border border-line bg-surface p-6">
         <h2 id="reviews-h" className="text-xl font-bold text-balance">Reviews</h2>
         {queue.length ? (
           <>
@@ -35,9 +49,22 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now }:
             You&apos;re all caught up.{next && ` Next review: ${next.label}, about ${plural(next.count, 'card')}.`}
           </p>
         )}
-      </section>
+      </section>}
 
-      <section aria-labelledby="exams-h">
+      {essayLines.length > 0 && (
+        <section aria-labelledby="essays-h">
+          <h2 id="essays-h" className="mb-3 text-xl font-bold">Essays</h2>
+          <ul className="space-y-3">
+            {essayLines.map((e) => (
+              <li key={e.id} className="[overflow-wrap:anywhere]">
+                <Link href={`/write/${e.id}`} className="underline">{e.title} · {priorities(e.openTop3)}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {decks.length > 0 && <section aria-labelledby="exams-h">
         <h2 id="exams-h" className="mb-3 text-xl font-bold">Exams</h2>
         <ul className="space-y-3">
           {exams.map((e) => (
@@ -52,7 +79,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now }:
             </li>
           ))}
         </ul>
-      </section>
+      </section>}
     </div>
   );
 }

@@ -11,18 +11,31 @@ export function essayStatus(drafts: { version: number; layers: Record<string, st
 
 const NewEssay = ({ className = '' }: { className?: string }) => <Link href="/write/new" className={`btn btn-primary ${className}`}>New essay</Link>;
 
-export function EssayList({ essays }: { essays: EssaySummary[] }) {
+// Spec §6.5: show the quota in plain words.
+function ChecksLeft({ n }: { n: number }) {
+  return (
+    <p className="mb-6 text-ink-muted">
+      {n > 0 ? `${n} essay ${n === 1 ? 'check' : 'checks'} left today` : "You've used today's 5 essay checks. They reset at midnight UTC."}
+    </p>
+  );
+}
+
+export function EssayList({ essays, checksLeft = 5 }: { essays: EssaySummary[]; checksLeft?: number }) {
   if (!essays.length) {
     return (
-      <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
-        <h2 className="text-xl font-bold text-balance">No essays yet</h2>
-        <p className="mt-2 text-ink-muted">Paste a draft and get feedback that helps you revise it yourself.</p>
-        <NewEssay className="mt-6" />
-      </section>
+      <>
+        <ChecksLeft n={checksLeft} />
+        <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+          <h2 className="text-xl font-bold text-balance">No essays yet</h2>
+          <p className="mt-2 text-ink-muted">Paste a draft and get feedback that helps you revise it yourself.</p>
+          <NewEssay className="mt-6" />
+        </section>
+      </>
     );
   }
   return (
     <>
+      <ChecksLeft n={checksLeft} />
       <NewEssay className="mb-8" />
       <ul className="max-w-xl space-y-3">
         {essays.map((e) => (

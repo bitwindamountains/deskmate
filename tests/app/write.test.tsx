@@ -11,6 +11,7 @@ vi.mock('@/app/(app)/write/actions', () => ({ createEssay: (...a: unknown[]) => 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import WritePage from '@/app/(app)/write/page';
+import { EssayList } from '@/app/(app)/write/essays';
 import { NewEssayForm } from '@/app/(app)/write/new/new-essay-form';
 
 afterEach(() => { cleanup(); createEssay.mockReset(); rows = []; });
@@ -65,4 +66,13 @@ test('a .txt upload is refused with the file-type message', async () => {
   const file = new File(['hello'], 'essay.txt', { type: 'text/plain' });
   fireEvent.change(screen.getByLabelText('Or upload a .pdf or .docx file'), { target: { files: [file] } });
   expect((await screen.findByRole('alert')).textContent).toContain('We can only read .pdf and .docx files.');
+});
+
+test('Write list shows essay checks left today', () => {
+  const { rerender } = render(<EssayList essays={[{ id: 'e1', title: 'Climate', status: 'Feedback ready' }]} checksLeft={3} />);
+  expect(screen.getByText('3 essay checks left today')).toBeTruthy();
+  rerender(<EssayList essays={[]} checksLeft={1} />);
+  expect(screen.getByText('1 essay check left today')).toBeTruthy();
+  rerender(<EssayList essays={[]} checksLeft={0} />);
+  expect(screen.getByText("You've used today's 5 essay checks. They reset at midnight UTC.")).toBeTruthy();
 });

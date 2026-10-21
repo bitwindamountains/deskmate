@@ -14,8 +14,9 @@ const state = (id: string, due: Date, stability = 30): StateRow => ({
 const card = (id: string, s: StateRow | null, deckId = 'bio'): ReviewCard =>
   ({ id, deckId, type: 'basic', importance: 2, state: s, front: 'F', back: 'B', keyPoints: [] });
 const deck = (id: string, title: string, exam_date: string | null = null): Deck => ({ id, title, exam_date });
-const plan = (decks: Deck[], cards: ReviewCard[]) =>
-  render(<TodayPlan decks={decks} cards={cards} minutes={20} newIntroducedToday={0} now={now} />);
+type EssayLine = { id: string; title: string; openTop3: number };
+const plan = (decks: Deck[], cards: ReviewCard[], essays: EssayLine[] = []) =>
+  render(<TodayPlan decks={decks} cards={cards} minutes={20} newIntroducedToday={0} now={now} essays={essays} />);
 afterEach(cleanup);
 
 test('Today shows due count with minutes at 25 s per card and a Start link', () => {
@@ -47,4 +48,28 @@ test('Today shows all caught up when nothing is due', () => {
 test('with no cards, Today keeps the empty state', () => {
   plan([], []);
   expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
+});
+
+test('Today lists an essay with open priorities after reviews and before exams', () => {
+  plan([deck('bio', 'Biology', ymd(day(12)))], [card('a', state('a', day(-1)))], [{ id: 'e1', title: 'Climate', openTop3: 2 }]);
+  const link = screen.getByRole('link', { name: 'Climate · 2 of 3 priorities open' });
+  expect(link.getAttribute('href')).toBe('/write/e1');
+  const order = [screen.getByRole('heading', { name: 'Reviews' }), link, screen.getByRole('heading', { name: 'Exams' })];
+  for (let i = 1; i < order.length; i++) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.queryByRole('link', { name: 'Keep revising' })).toBeNull();
+});
+
+test('with no reviews due, the essay becomes the primary card with Keep revising', () => {
+  plan([deck('bio', 'Biology')], [card('a', state('a', day(3)))], [{ id: 'e1', title: 'Climate', openTop3: 3 }, { id: 'e2', title: 'Hamlet', openTop3: 1 }]);
+  const primary = screen.getByRole('link', { name: 'Keep revising' });
+  expect(primary.getAttribute('href')).toBe('/write/e1');
+  expect(primary.className).toContain('btn-primary');
+  expect(screen.getByText(/^You're all caught up\./)).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Hamlet · 1 of 3 priorities open' })).toBeTruthy();
+});
+
+test('essays alone, with no cards yet, still show instead of the empty state', () => {
+  plan([], [], [{ id: 'e1', title: 'Climate', openTop3: 1 }]);
+  expect(screen.queryByRole('heading', { name: 'Nothing to study yet' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Keep revising' })).toBeTruthy();
 });
