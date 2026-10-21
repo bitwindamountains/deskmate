@@ -32,9 +32,12 @@ test.each(['3', '200', 'abc'])('study minutes %s rejected', (m) => {
 });
 test('valid input parses with defaults', () => {
   const r = parseOnboarding(fd({ adult: 'on', first_language: 'en' }));
-  expect(r).toEqual({ ok: true, value: { adult: true, first_language: 'en', study_minutes_per_day: 20, font: 'default', reduced_motion: false } });
+  expect(r).toEqual({ ok: true, value: { adult: true, first_language: 'en', study_minutes_per_day: 20, font: 'default', reduced_motion: false, show_scores: false } });
 });
 test('dyslexic font and reduce motion', () => {
   const r = parseOnboarding(fd({ ...ok, font: 'dyslexic', reduced_motion: 'on' }));
   expect(r).toMatchObject({ ok: true, value: { font: 'dyslexic', reduced_motion: true } });
+});
+test('show rubric scores', () => {
+  expect(parseOnboarding(fd({ ...ok, show_scores: 'on' }))).toMatchObject({ ok: true, value: { show_scores: true } });
 });
