@@ -1,21 +1,5 @@
 import { Rating } from 'ts-fsrs';
-import type { Grade, StudyCard } from '@/review/schedule';
-
-const DAY_MS = 86400000;
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
-/** The earliest upcoming review day and how many cards fall due by the end of it. */
-export function nextReview(cards: StudyCard[], now: Date): { label: string; count: number } | null {
-  const dues = cards.flatMap((c) => (c.state ? [new Date(c.state.due)] : []));
-  if (!dues.length) return null;
-  const first = new Date(Math.min(...dues.map((d) => d.getTime())));
-  const day = first < now ? startOfDay(now) : startOfDay(first);
-  const end = day.getTime() + DAY_MS;
-  const days = Math.round((day.getTime() - startOfDay(now).getTime()) / DAY_MS);
-  const label = days === 0 ? 'today' : days === 1 ? 'tomorrow'
-    : days < 7 ? day.toLocaleDateString('en', { weekday: 'long' }) : day.toLocaleDateString('en', { month: 'short', day: 'numeric' });
-  return { label, count: dues.filter((d) => d.getTime() < end).length };
-}
+import { nextReview, type Grade, type StudyCard } from '@/review/schedule';
 
 export function Summary({ ratings, ms, cards, onDoMore, nothingMore }:
   { ratings: Grade[]; ms: number; cards: StudyCard[]; onDoMore: () => void; nothingMore: boolean }) {

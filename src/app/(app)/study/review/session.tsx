@@ -5,21 +5,20 @@ import { useEffect, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
+import type { ReviewCard } from '@/lib/review/load';
 import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
-import { applyRating, buildSession, type Grade, type StudyCard } from '@/review/schedule';
+import { applyRating, buildSession, nextReview, parseDay, type Grade } from '@/review/schedule';
 import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/store';
-import { nextReview, Summary } from './summary';
+import { Summary } from './summary';
 
-export type ReviewCard = StudyCard & { front: string; back: string; keyPoints: string[] };
+export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
   feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number };
 type Done = { cardId: string; rating: Grade };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
 const SAVE_FAILED = "We couldn't save that review. Try again.";
-
-const localDate = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
 
 /** cards: the user's kept cards with their server state. examDates: deck id → exam day (YYYY-MM-DD) or null. */
 export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
@@ -41,8 +40,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const suggestedBtn = useRef<HTMLButtonElement>(null);
   const introduced = useRef(0);
 
-  const examFor = (deckId: string) => (examDates[deckId] ? localDate(examDates[deckId]!) : null);
-  const nearestExam = () => Object.values(examDates).filter((d): d is string => !!d).map(localDate)
+  const examFor = (deckId: string) => (examDates[deckId] ? parseDay(examDates[deckId]!) : null);
+  const nearestExam = () => Object.values(examDates).filter((d): d is string => !!d).map(parseDay)
     .filter((d) => d.getTime() >= new Date().setHours(0, 0, 0, 0)).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   const build = (from: ReviewCard[], doMore: boolean) => buildSession(from, {
     now: new Date(), minutes, newIntroducedToday: newIntroducedToday + introduced.current, examDate: nearestExam(), doMore,

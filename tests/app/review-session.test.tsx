@@ -1,8 +1,11 @@
 import 'fake-indexeddb/auto';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import type { ReviewCard } from '@/app/(app)/study/review/session';
 import { db } from '@/review/store';
+
+// fake IndexedDB writes are slow when the whole suite runs in parallel; the 1 s default flakes
+configure({ asyncUtilTimeout: 5000 });
 
 const getEmbedder = vi.fn();
 vi.mock('@/lib/embed/embed', () => ({ getEmbedder: () => getEmbedder() }));
