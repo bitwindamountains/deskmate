@@ -10,6 +10,8 @@ export interface ProviderConfig {
   apiKeyEnv: string | null;
   /** From the provider's current terms: may inputs be used for training? */
   trainsOnInputs: boolean;
+  /** Reasoning models only (e.g. gpt-oss on Groq): hidden reasoning tokens count against free-tier token limits. */
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 export interface ChatRequest {
