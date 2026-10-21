@@ -335,7 +335,8 @@ function Marked({ text, spans, onMark }: { text: string; spans: Span[]; onMark: 
       // Not a tab stop: dozens of marks would bury the panel. Keyboard users reach each card directly and come back with Show in essay.
       <mark key={s.id} id={`hl-${s.id}`} tabIndex={-1} onClick={() => onMark(s.id)}
         className={`cursor-pointer rounded-sm px-0.5 text-ink shadow-[inset_0_-2px_var(--line)] [box-decoration-break:clone] ${LAYER_BG[s.layer]}`}>
-        <span className="mr-1 text-sm font-bold">{LAYER_LABEL[s.layer]}</span>
+        {/* the hidden ": " keeps screen readers from running the label into the quote ("Big pictureAttendance…") */}
+        <span className="mr-1 text-sm font-bold">{LAYER_LABEL[s.layer]}<span className="sr-only">: </span></span>
         {text.slice(s.start, s.end)}
       </mark>,
     );

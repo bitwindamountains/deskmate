@@ -18,7 +18,11 @@ export class LanguageToolUnavailable extends Error {
   }
 }
 
-export async function checkSentences(paras: string[], indices: number[], fetchFn: typeof fetch = fetch): Promise<SentenceItem[]> {
+// The free public API is erratic (one of three identical QA requests took 26.8 s); give up and let the student retry.
+const TIMEOUT_MS = 10_000;
+
+export async function checkSentences(paras: string[], indices: number[], fetchFn: typeof fetch = fetch,
+  timeoutMs = TIMEOUT_MS): Promise<SentenceItem[]> {
   if (!indices.length) return [];
   // One request for all paragraphs; starts[k] is where paras[indices[k]] begins in the joined text.
   const starts: number[] = [];
@@ -32,6 +36,7 @@ export async function checkSentences(paras: string[], indices: number[], fetchFn
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ text, language: 'en-US', level: 'default' }).toString(),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) throw new LanguageToolUnavailable();
     matches = ((await res.json()) as { matches?: Match[] }).matches ?? [];
