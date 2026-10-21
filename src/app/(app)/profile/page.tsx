@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AppPage } from '@/components/page';
+import { SignOut } from '@/components/sign-out';
 import { LANGUAGES } from '@/lib/profile/onboarding';
 import { requireOnboardedUser } from '@/lib/profile/require';
 
@@ -27,9 +28,7 @@ export default async function ProfilePage() {
         </dl>
         <Link href="/onboarding?edit=1" className="btn mt-6">Change preferences</Link>
       </section>
-      <form method="post" action="/auth/signout" className="mt-8">
-        <button type="submit" className="btn">Sign out</button>
-      </form>
+      <SignOut />
     </AppPage>
   );
 }
