@@ -4,6 +4,10 @@ import type { Profile } from '@/lib/profile/require';
 
 let profile: Profile;
 vi.mock('@/lib/profile/require', () => ({ requireOnboardedUser: async () => ({ userId: 'u1', profile }) }));
+// every query resolves empty: a chain whose builder methods return itself and which awaits to { data: [] }
+const empty = (): unknown => new Proxy({}, { get: (_, k) => (k === 'then' ? (r: (v: unknown) => void) => r({ data: [], error: null }) : empty) });
+vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from: empty }) }));
+vi.mock('@/lib/review/load', () => ({ loadStudy: async () => ({ decks: [], cards: [], newIntroducedToday: 0 }) }));
 
 import AppLayout from '@/app/(app)/layout';
 import TodayPage from '@/app/(app)/today/page';
@@ -16,8 +20,9 @@ const base: Profile = {
 };
 afterEach(cleanup);
 
-test('Today shows the empty state with an Import material link to /study/import', () => {
-  render(<TodayPage />);
+test('Today shows the empty state with an Import material link to /study/import', async () => {
+  profile = base;
+  render(await TodayPage());
   expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
   expect(screen.getByText('Turn your notes into a few good flashcards.')).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Import material' }).getAttribute('href')).toBe('/study/import');
@@ -42,8 +47,9 @@ test('default preferences set data-font="default" and no reduced motion', async 
   expect(root?.getAttribute('data-reduced-motion')).toBe('false');
 });
 
-test('Study shows Your decks with the same empty state', () => {
-  render(<StudyPage />);
+test('Study shows Your decks with the same empty state', async () => {
+  profile = base;
+  render(await StudyPage());
   expect(screen.getByRole('heading', { name: 'Your decks' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Import material' }).getAttribute('href')).toBe('/study/import');

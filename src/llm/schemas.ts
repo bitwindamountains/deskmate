@@ -42,6 +42,7 @@ export const Card = z.object({
   source_quote: z.string(),
   concept: z.string(),
   bloom_level: z.enum(['remember', 'understand', 'apply', 'analyze']),
+  importance: z.union([z.literal(1), z.literal(2), z.literal(3)]),
 });
 export type Card = z.infer<typeof Card>;
 

@@ -37,6 +37,8 @@
 
 ### Task 1: Review tables and the idempotent `record_review` function
 
+> **Amended 2026-10-20 (shared project, see plans 1a-1 Task 2 and 1a-2 Task 1).** All tables live in schema `scholar`; write the migration by hand at `supabase/migrations/20261020150000_scholar_review.sql`; the controller applies it after the owner sees it. Every table: `revoke all ... from public, anon, authenticated`, then the listed grants, plus `grant all ... to service_role`. `record_review` follows the 1a-2 quota pattern directly: `scholar_private.record_review(p_review jsonb, p_state jsonb)` as `security definer`, `set search_path = ''`, fully qualified names, explicit ownership check that the card belongs to `(select auth.uid())`, every jsonb field validated (types, ranges, `final_rating` 1..4, `state` 0..3, timestamps not in the future by more than 5 minutes); a `scholar.record_review` `security invoker` wrapper; execute granted to `authenticated` on both, revoked from `public`/`anon`. `grade_cache` insert is allowed only for the caller's own cards. Users get no direct insert/update on `card_states` or `reviews`. DB tests reuse `tests/db/helpers.ts` and build fixtures with `insertSource` plus admin card inserts.
+
 **Files:**
 - Create: `supabase/migrations/<timestamp>_review.sql` (via `npx supabase migration new review`)
 - Test: `tests/db/review.test.ts`
