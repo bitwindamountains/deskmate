@@ -7,7 +7,7 @@ vi.mock('@/lib/profile/require', () => ({ requireOnboardedUser: async () => ({ u
 // every query resolves empty: a chain whose builder methods return itself and which awaits to { data: [] }
 const empty = (): unknown => new Proxy({}, { get: (_, k) => (k === 'then' ? (r: (v: unknown) => void) => r({ data: [], error: null }) : empty) });
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from: empty }) }));
-vi.mock('@/lib/review/load', () => ({ loadStudy: async () => ({ decks: [], cards: [], newIntroducedToday: 0 }) }));
+vi.mock('@/lib/review/load', () => ({ loadStudy: async () => ({ decks: [], cards: [], newIntroducedToday: 0 }), loadDeckSummaries: async () => [] }));
 
 import AppLayout from '@/app/(app)/layout';
 import TodayPage from '@/app/(app)/today/page';

@@ -3,13 +3,14 @@ import { afterEach, expect, test } from 'vitest';
 import { DeckList, type DeckSummary } from '@/app/(app)/study/decks';
 
 const deck = (over: Partial<DeckSummary> = {}): DeckSummary =>
-  ({ id: 'd1', title: 'Biology', exam_date: null, kept: 12, due: 3, fresh: 4, triage: [], ...over });
+  ({ id: 'd1', title: 'Biology', exam_date: null, kept: 12, due: 3, fresh: 4, leeches: 0, triage: [], ...over });
 afterEach(cleanup);
 
 test('a deck shows its counts and a link to set an exam date', () => {
   render(<DeckList decks={[deck()]} />);
   expect(screen.getByRole('heading', { name: 'Biology', level: 3 })).toBeTruthy();
   expect(screen.getByText('12 cards · 3 due · 4 new')).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Biology' }).getAttribute('href')).toBe('/study/deck/d1');
   expect(screen.getByRole('link', { name: 'Set Biology exam date' }).getAttribute('href')).toBe('/study/deck/d1/exam');
   expect(screen.getByRole('link', { name: 'Import material' }).getAttribute('href')).toBe('/study/import');
 });
@@ -29,4 +30,9 @@ test('cards waiting for triage link back to their source', () => {
 test('no decks keeps the empty state', () => {
   render(<DeckList decks={[]} />);
   expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
+});
+
+test('a deck with slipping cards says how many', () => {
+  render(<DeckList decks={[deck({ leeches: 2 })]} />);
+  expect(screen.getByText('12 cards · 3 due · 4 new · 2 slipping')).toBeTruthy();
 });
