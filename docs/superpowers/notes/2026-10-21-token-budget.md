@@ -18,3 +18,15 @@ One 170-word essay, probed directly:
 | `reasoning_effort: low` on Groq | essay_global out 2,184 → 1,164; essay_paragraphs out 1,580 → 754; card_generate out 2,069 → 1,206; grade_answer out 232 → 148. **One essay check 5,640 → 3,800 total (−33%)**; latency ~9.1 s → 5.7 s | **kept** | All 18 calls ok. Same core Top 3 issues on all 5 essays; fewer dropped quotes (3 vs 6); cards 11/11 grounded (vs 10/10); grades equivalent. Rubric scores vary ±1 between runs at both settings (existing run-to-run noise). Runs: `eval/out/slow-groq-2026-10-21T06-46-02.505Z` (medium essays), `effort-low-essays-2026-10-21T07-53-42.213Z`, `effort-medium-rest-…07-49-08…`, `effort-low-rest-…07-51-26…`. |
 | `openai/gpt-oss-20b` as a second Groq model (capacity) | 1/10 essay calls ok | **reverted** | `json_validate_failed` / `schema_invalid` on the essay schemas (see the essay eval note). |
 | Compact output shape in prompts (`compactSchema`) instead of the full JSON Schema | input: essay_global 1,097 → 825, essay_paragraphs 780 → 656, card_generate 585 → 476, grade_answer 421 → 347; output also fell (1,164 → 1,039; 754 → 564; 1,206 → 860; 148 → 125). **One essay check 3,795 → 3,084 (−19%)** | **kept** | All 18 calls ok and schema-valid. Top 3 still on each essay's core issues; cards 11/11 grounded; grades 0.95 easy / 0.45 hard (vs 0.95 / 0.5). The zod schema still validates every response, with one retry. Runs: `compact-low-essays-2026-10-21T08-03-45.603Z`, `compact-low-rest-2026-10-21T08-01-30.567Z`. |
+| Groq prompt caching (cached input is free against rate limits) via a static system prompt | Probe: system prompt ~330-430 tokens; Groq caches in 512-token blocks. An identical essay prompt sent 10 min later hit 512 cached tokens; a different essay with the same system prompt hit 0; an identical prompt 4 s later hit 0. | **not adopted** | Our prompts are below one cache block, so different students' essays can't share a cached prefix, and even repeats hit unreliably. Padding prompts past 512 tokens to buy cache hits would be fragile. Re-check if Groq lowers the block size or our system prompts grow past ~600 tokens. |
+| Re-check paragraph pass sends only the intro and the changed paragraphs (not the whole essay) | input 616-696 → 543-578 on 5 short samples (scales to roughly −2,000 on a 2,000-word essay); output unchanged | **rejected** | Quality loss: without the body in view, the model called conclusions unsupported ("provides no specific evidence") on samples 02 and 03. With full context it gave the right advice for a conclusion (restate the thesis, add a transition). |
+
+## Net effect
+
+One essay check (big picture + paragraphs) on the eval essays: **~5,640 → ~3,080 tokens (−45%)**, and faster (~9.1 s → ~5.5 s). Card generation output −58% (2,069 → 860), grading total −27% (653 → 472). On Groq's free tier, that's roughly 1.8× as many essay checks per minute and per day.
+
+## Guards
+
+- `tests/llm/essay-prompts.test.ts` pins `reasoningEffort: 'low'` on Groq.
+- `tests/llm/compact-schema.test.ts` pins every prompt to the compact shape (never the raw JSON Schema).
+- Any prompt or model change re-runs the eval (spec J10) and adds a row here.
