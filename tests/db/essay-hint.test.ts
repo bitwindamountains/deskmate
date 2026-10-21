@@ -28,7 +28,8 @@ async function newDraft(u: User) {
   return data.id as string;
 }
 async function newItem(u: User, draftId: string, quote: string | null = 'Phones should be banned') {
-  const { data, error } = await u.client.from('feedback_items').insert({
+  // fixture: admin insert; users may add items only to a paid draft (tested in essays.test.ts)
+  const { data, error } = await adminClient().from('feedback_items').insert({
     user_id: u.userId, draft_id: draftId, layer: quote ? 'paragraph' : 'global', category: 'evidence', paragraph_index: quote ? 0 : null,
     quote, severity: 'high', summary: 'Claim lacks evidence', hints: ['What supports this?', 'Look for a statistic.'], source: 'llm',
   }).select('id').single();
@@ -117,6 +118,26 @@ test('providers busy is 503 and the call is logged', async () => {
   const fn = vi.fn(async () => { throw new AllProvidersFailedError('x', [{ ...log('hint_ladder')[0], status: 'rate_limited' }] as never); }) as unknown as Fake;
   expect(await requestHint(U.client, U.userId, item, 3, {}, fn)).toEqual({ ok: false, status: 503, message: 'Hints are busy right now. Try again in a minute.' });
   expect((await adminClient().from('llm_calls').select('task,status').eq('user_id', U.userId)).data).toEqual([{ task: 'hint_ladder', status: 'rate_limited' }]);
+});
+
+test('daily hint limit reached is 429 with no LLM call and no rewrite slot used', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const item = await newItem(U, await newDraft(U));
+  await adminClient().from('quota_usage').insert({ user_id: U.userId, day: new Date().toISOString().slice(0, 10), hints: 60 });
+  const fn = ladder();
+  const limit = { ok: false, status: 429, message: "You've asked for a lot of hints today. More unlock at midnight UTC." };
+  expect(await requestHint(U.client, U.userId, item, 3, {}, fn)).toEqual(limit);
+  expect(await requestHint(U.client, U.userId, item, 5, {}, rewrite())).toEqual(limit);
+  expect(fn).not.toHaveBeenCalled();
+  expect((await adminClient().from('feedback_events').select('id').eq('item_id', item).eq('action', 'rewrite')).data).toEqual([]);
+});
+
+test('a stored hint costs nothing from the daily limit', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const item = await newItem(U, await newDraft(U));
+  await requestHint(U.client, U.userId, item, 3, {}, ladder());
+  await requestHint(U.client, U.userId, item, 4, {}, ladder());
+  expect((await adminClient().from('quota_usage').select('hints').eq('user_id', U.userId).single()).data?.hints).toBe(1);
 });
 
 const post = (body: unknown) =>

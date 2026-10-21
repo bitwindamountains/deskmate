@@ -15,6 +15,7 @@ const WHOLE_ESSAY = { ok: false, status: 409, message: "This item covers the who
 const CAP = { ok: false, status: 429, message: "You've used this draft's 3 suggested rewrites." } as const;
 const NO_REWRITE = { ok: false, status: 503, message: "Couldn't make a suggestion for this one." } as const;
 const BUSY = { ok: false, status: 503, message: 'Hints are busy right now. Try again in a minute.' } as const;
+const DAILY_LIMIT = { ok: false, status: 429, message: "You've asked for a lot of hints today. More unlock at midnight UTC." } as const;
 
 // No ghostwriting (brief E2): a rewrite may not outgrow the words it replaces.
 const rewriteCap = (quote: string) => Math.max(25, Math.floor(1.5 * wordCount(quote)));
@@ -33,11 +34,20 @@ export async function requestHint(db: Db, userId: string, itemId: string, level:
   const input = { gradeLevel: item.drafts.essays.grade_level, item: { summary: item.summary, quote: item.quote, category: item.category },
     paragraph: item.paragraph_index !== null ? paras[item.paragraph_index] ?? item.drafts.content : item.drafts.content };
 
+  // Every LLM hint call takes one of the day's hints (migration 20261021140000); a stored hint is free.
+  const takeHint = async (): Promise<HintResult | null> => {
+    const { data: ok, error: qErr } = await db.rpc('consume_hint_quota');
+    if (qErr) return BUSY;
+    return ok ? null : DAILY_LIMIT;
+  };
+
   let text: string;
   try {
     if (level < 5) {
       text = item.hints[level - 1];
       if (!text) {
+        const refused = await takeHint();
+        if (refused) return refused;
         const r = await completeFn('hint_ladder', hintLadderPrompt(input), HintLadder, { env });
         await logCalls(db, userId, r.log);
         const { data: saved, error: saveErr } = await db.rpc('save_hint_levels', { p_item_id: itemId, p_explanation: r.data.explanation, p_example: r.data.example });
@@ -52,6 +62,9 @@ export async function requestHint(db: Db, userId: string, itemId: string, level:
     } else if (item.rewrite) {
       text = item.rewrite;
     } else {
+      // Daily limit first, so a refusal never uses up one of the draft's rewrite slots.
+      const refused = await takeHint();
+      if (refused) return refused;
       // Reserve before calling: the cap must hold even when the call fails (the slot stays used, see plan Task 6).
       const { data: reserved, error: resErr } = await db.rpc('reserve_rewrite', { p_item_id: itemId });
       if (resErr) return BUSY;

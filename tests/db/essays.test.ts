@@ -22,7 +22,8 @@ async function makeDraft(u: User, essayId: string, version = 1) {
   return data.id as string;
 }
 async function makeItem(u: User, draftId: string, quote: string | null = 'Some text') {
-  const { data, error } = await u.client.from('feedback_items').insert({
+  // fixture: admin insert; users may add items only to a paid draft (tested in essays.test.ts)
+  const { data, error } = await adminClient().from('feedback_items').insert({
     user_id: u.userId, draft_id: draftId, layer: quote ? 'paragraph' : 'global', category: 'evidence', paragraph_index: quote ? 0 : null,
     quote, severity: 'high', summary: 's', hints: ['q1', 'h2'], source: 'llm',
   }).select('id').single();
@@ -156,4 +157,27 @@ test('a layer stuck running for over 5 minutes can be claimed again; a fresh one
   await adminClient().from('drafts').update({ layers: { global: 'running', global_at: stale } }).eq('id', draft);
   expect((await claim()).data).toBe(true);
   expect((await claim()).data).toBe(false);
+});
+
+test('feedback items can be added only to a draft whose essay check was paid', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const draft = await makeDraft(U, await makeEssay(U));
+  const add = () => U.client.from('feedback_items')
+    .insert({ user_id: U.userId, draft_id: draft, layer: 'global', category: 'c', severity: 'low', summary: 'my own prompt', source: 'llm' });
+  expect((await add()).error).not.toBeNull();
+  expect((await U.client.rpc('consume_essay_quota', { p_draft_id: draft })).data).toBe(true);
+  expect((await add()).error).toBeNull();
+});
+
+test('consume_hint_quota allows 60 hint calls a day, then refuses', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  const day = new Date().toISOString().slice(0, 10);
+  await adminClient().from('quota_usage').insert({ user_id: U.userId, day, hints: 58 });
+  const take = () => U.client.rpc('consume_hint_quota');
+  expect((await take()).data).toBe(true);
+  expect((await take()).data).toBe(true);
+  expect((await take()).data).toBe(false);
+  expect((await U.client.from('quota_usage').select('hints').single()).data?.hints).toBe(60);
+  await U.client.from('quota_usage').update({ hints: 0 }).eq('user_id', U.userId);
+  expect((await take()).data).toBe(false); // users cannot reset their own counter
 });
