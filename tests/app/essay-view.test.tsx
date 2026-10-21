@@ -126,6 +126,7 @@ test('clicking a highlight focuses its card; Show in essay focuses the highlight
   const mark = document.getElementById('hl-g1')!;
   expect(mark.tagName).toBe('MARK');
   expect(within(mark).getByText('Big picture')).toBeTruthy();
+  expect(mark.textContent).toMatch(/^Big picture: \S/); // label and quote must not run together for screen readers
   fireEvent.click(mark);
   await waitFor(() => expect(document.activeElement).toBe(card('g1')));
   fireEvent.click(within(card('g1')).getByRole('button', { name: 'Show in essay' }));
