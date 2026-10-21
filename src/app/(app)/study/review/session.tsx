@@ -6,6 +6,7 @@ import { Rating } from 'ts-fsrs';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
 import type { ReviewCard } from '@/lib/review/load';
+import type { Confidence } from '@/review/calibration';
 import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
 import { applyRating, buildSession, nextReview, parseDay, type Grade } from '@/review/schedule';
@@ -15,10 +16,21 @@ import { Summary } from './summary';
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
   feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number };
-type Done = { cardId: string; rating: Grade };
+type Done = { cardId: string; rating: Grade; confidence?: Confidence };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
 const SAVE_FAILED = "We couldn't save that review. Try again.";
+const CONFIDENCE: [Confidence, string, string][] = [[1, 'Guessing', 'G'], [2, 'Unsure', 'U'], [3, 'Confident', 'C']];
+const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
+
+function SureNote({ quote }: { quote: string }) {
+  return (
+    <div role="status" className="max-w-xl rounded-xl border border-line bg-surface p-4">
+      <p className="font-bold">You felt sure about this one, so it&apos;s worth a second look.</p>
+      {quote && <p className="mt-1 text-ink-muted">From your notes: {quote}</p>}
+    </div>
+  );
+}
 
 /** cards: the user's kept cards with their server state. examDates: deck id → exam day (YYYY-MM-DD) or null. */
 export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
@@ -33,6 +45,9 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const [error, setError] = useState('');
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [nothingMore, setNothingMore] = useState(false);
+  const [confidence, setConfidence] = useState<Confidence | null>(null);
+  const [sureNote, setSureNote] = useState<string | null>(null); // source quote after a confidently wrong answer (B3.2)
+  const [showSource, setShowSource] = useState(false);
   const shownAt = useRef(Date.now());
   const embedFn = useRef<EmbedFn | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -113,6 +128,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     const review: ReviewPayload = {
       client_review_id: crypto.randomUUID(), card_id: current.id, answer_text: checked.answer, grade_source: checked.source,
       ai_score: checked.score, suggested_rating: checked.suggested, final_rating: g, response_ms: checked.ms, reviewed_at: now.toISOString(),
+      ...(confidence ? { confidence } : {}),
     };
     try {
       await enqueueReview(review, current.state, state, checked.needsRegrade, exam);
@@ -122,7 +138,11 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     if (!current.state) introduced.current++;
     setError('');
     setAll((a) => a!.map((c) => (c.id === current.id ? { ...c, state } : c)));
-    setDone((d) => [...d, { cardId: current.id, rating: g }]);
+    setDone((d) => [...d, { cardId: current.id, rating: g, ...(confidence ? { confidence } : {}) }]);
+    // A confident miss is the most memorable kind once corrected, so show where the answer came from.
+    setSureNote(confidence === 3 && g === Rating.Again ? current.sourceQuote ?? '' : null);
+    setConfidence(null);
+    setShowSource(false);
     setText('');
     setChecked(null);
     setPhase('answer');
@@ -132,8 +152,14 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (phase !== 'rate' || e.defaultPrevented || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.defaultPrevented || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable]')) return;
+      if (phase === 'answer') {
+        const level = CONFIDENCE_KEYS[e.key.toLowerCase()];
+        if (level && !text) { e.preventDefault(); setConfidence(level); }
+        return;
+      }
+      if (phase !== 'rate') return;
       const r = RATINGS[Number(e.key) - 1];
       if (!r) return;
       e.preventDefault();
@@ -167,7 +193,13 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   }
 
   if (finished) {
-    return <Summary ratings={done.map((d) => d.rating)} ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />;
+    return (
+      <>
+        {sureNote !== null && <SureNote quote={sureNote} />}
+        <Summary ratings={done.map((d) => d.rating)} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
+          ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />
+      </>
+    );
   }
 
   return (
@@ -179,11 +211,25 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
         </div>
       </div>
 
+      {sureNote !== null && <SureNote quote={sureNote} />}
+
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
         <h2 className="text-[1.44rem] leading-snug font-bold text-balance">{current.front}</h2>
 
         {phase !== 'rate' ? (
           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void check(); }}>
+            <fieldset disabled={phase === 'checking'}>
+              <legend className="mb-1 font-bold">How sure are you? <span className="font-normal text-ink-muted">(optional)</span></legend>
+              <div className="flex flex-wrap gap-2">
+                {CONFIDENCE.map(([level, label, key]) => (
+                  <label key={level} className={`btn min-h-11 gap-2 ${confidence === level ? 'btn-primary' : ''}`}>
+                    <input type="radio" name="confidence" className="sr-only" checked={confidence === level}
+                      onChange={() => setConfidence(level)} aria-keyshortcuts={key} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <div>
               <label htmlFor="answer" className="mb-1 block font-bold">Your answer</label>
               <textarea ref={field} id="answer" rows={3} maxLength={2000} value={text} className="field" disabled={phase === 'checking'}
@@ -208,6 +254,12 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
               <h3 className="text-sm font-bold text-ink-muted">Answer</h3>
               <p className="mt-1">{current.back}</p>
             </div>
+            {current.sourceQuote && (
+              <div className="md:col-span-2">
+                <button type="button" className="text-sm underline" aria-expanded={showSource} onClick={() => setShowSource((v) => !v)}>View source</button>
+                {showSource && <blockquote className="mt-2 border-l-2 border-line pl-3 text-ink-muted">{current.sourceQuote}</blockquote>}
+              </div>
+            )}
             {(checked.hit.length > 0 || checked.missed.length > 0) && (
               <ul className="space-y-1 md:col-span-2">
                 {checked.hit.map((k) => <li key={`h-${k}`}>✓ Got this: {k}</li>)}
