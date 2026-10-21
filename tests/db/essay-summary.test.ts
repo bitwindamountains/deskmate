@@ -13,10 +13,10 @@ async function essay(u: User, title: string, versions: number, openItems: number
     const d = (await u.client.from('drafts').insert({ user_id: u.userId, essay_id: e, version: v, content: 'x', word_count: 1, paragraph_hashes: [] })
       .select('id').single()).data!.id;
     const n = openItems[v - 1] ?? 0;
-    for (let i = 0; i < n + 1; i++) {
-      await u.client.from('feedback_items').insert({ user_id: u.userId, draft_id: d, layer: 'global', category: 'c', severity: 'low',
-        summary: 's', source: 'llm', status: i < n ? 'open' : 'got_it' });
-    }
+    // one request per draft: n open items plus one closed one that must not count
+    const { error } = await u.client.from('feedback_items').insert(Array.from({ length: n + 1 }, (_, i) => ({ user_id: u.userId, draft_id: d,
+      layer: 'global', category: 'c', severity: 'low', summary: 's', source: 'llm', status: i < n ? 'open' : 'got_it' })));
+    if (error) throw error;
   }
   return e;
 }
