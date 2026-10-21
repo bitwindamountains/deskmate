@@ -11,16 +11,6 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     apiKeyEnv: 'GROQ_API_KEY',
     trainsOnInputs: false,
   },
-  // Groq rate-limits per model, so a second model roughly doubles essay capacity on the free tier (eval note 2026-10-21).
-  // Same provider and terms as above; its essay quality has not been rated yet.
-  'groq-small': {
-    id: 'groq-small',
-    kind: 'openai',
-    baseUrl: 'https://api.groq.com/openai/v1',
-    model: 'openai/gpt-oss-20b',
-    apiKeyEnv: 'GROQ_API_KEY',
-    trainsOnInputs: false,
-  },
   openrouter: {
     id: 'openrouter',
     kind: 'openai',
@@ -49,10 +39,10 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 
 export const TASK_ROUTES: Record<TaskName, string[]> = {
   // Essay text is real student work: no-training providers lead; the router skips the others unless requireNoTraining is false.
-  essay_global: ['groq', 'groq-small', 'gemini', 'openrouter', 'ollama'],
-  essay_paragraphs: ['groq', 'groq-small', 'gemini', 'openrouter', 'ollama'],
-  hint_ladder: ['groq', 'groq-small', 'gemini', 'openrouter', 'ollama'],
-  hint_rewrite: ['groq', 'groq-small', 'gemini', 'openrouter', 'ollama'],
+  essay_global: ['groq', 'gemini', 'openrouter', 'ollama'],
+  essay_paragraphs: ['groq', 'gemini', 'openrouter', 'ollama'],
+  hint_ladder: ['groq', 'gemini', 'openrouter', 'ollama'],
+  hint_rewrite: ['groq', 'gemini', 'openrouter', 'ollama'],
   card_generate: ['gemini', 'groq', 'openrouter', 'ollama'],
   grade_answer: ['groq', 'gemini', 'openrouter', 'ollama'],
 };

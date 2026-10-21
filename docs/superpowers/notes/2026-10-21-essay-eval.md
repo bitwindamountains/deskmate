@@ -29,3 +29,29 @@ Pre-rated by the implementer. **The owner's rating decides the gate:** at least 
 **Two prompt fixes are worth folding into Task 4, without blocking:**
 1. Pass the real essay type, so expository and personal essays aren't judged as arguments. The app does this already; the eval doesn't.
 2. Strengths sometimes speak about "the student" in the third person. Add "address the student as you" to `ITEM_RULES`.
+
+## Gate decision
+
+**The owner approved the gate (pass) on 2026-10-21**, on the ratings above.
+
+## Re-run on the final prompts (spec J10)
+
+The prompts changed after the gate (Phase 1b Task 4): `safety_concern`, `carried` judgement, and "address the student as you". Both Groq models were re-run, one essay per minute.
+
+**`groq` (`openai/gpt-oss-120b`):** `eval/out/slow-groq-2026-10-21T06-46-02.505Z/`
+- All 10 calls ok.
+- Feedback now addresses the student as "you" (for example "You state a clear, direct position…").
+- The Top 3 picks match the first run's quality on all 5 essays.
+- Sample 01 dropped 3 global items whose quotes weren't in the essay. The anchoring guard did its job, and 7 items remained.
+
+**`groq-small` (`openai/gpt-oss-20b`), added as a capacity fallback in Task 4:** `eval/out/slow-groq-small-2026-10-21T06-52-13.924Z/`
+- Only 1 of 10 calls was ok.
+- Groq itself rejected 7 of the essay calls with `json_validate_failed`; the other 3 failed with `schema_invalid` (missing `rubric_scores` and `items`).
+- **Removed from every route.** As a fallback it would only add delay before the "busy" message.
+
+## Open capacity risk
+
+Real essays still have exactly one cloud provider, Groq `gpt-oss-120b`, at roughly **one essay check a minute across all users** on the free tier. When it's rate-limited, the student sees "Feedback is busy right now… try again in a minute." Options before a wider beta:
+- a paid Groq tier;
+- a second no-training provider whose terms allow student text;
+- or a queue that runs checks in turn and tells the student when.

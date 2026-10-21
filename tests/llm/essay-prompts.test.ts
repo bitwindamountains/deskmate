@@ -46,11 +46,10 @@ test('hint prompts wrap the essay paragraph and forbid rewriting beyond the quot
   expect(HintRewrite.safeParse({ rewrite: '' }).success).toBe(false);
 });
 
-test('hint tasks and essay tasks route only to no-training providers first, with a second Groq model', () => {
+test('essay and hint tasks lead with a no-training provider and skip the 20b model that fails their schemas', () => {
+  // eval 2026-10-21: openai/gpt-oss-20b failed 9 of 10 essay calls (json_validate_failed / schema_invalid)
+  expect(Object.values(PROVIDERS).map((p) => p.model)).not.toContain('openai/gpt-oss-20b');
   for (const task of ['essay_global', 'essay_paragraphs', 'hint_ladder', 'hint_rewrite'] as const) {
-    const [first, second] = TASK_ROUTES[task].map((id) => PROVIDERS[id]);
-    expect(first.trainsOnInputs).toBe(false);
-    expect(second.trainsOnInputs).toBe(false);
-    expect(second.model).not.toBe(first.model);
+    expect(PROVIDERS[TASK_ROUTES[task][0]].trainsOnInputs).toBe(false);
   }
 });
