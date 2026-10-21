@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { chunkByWords, runEval } from '../../eval/runEval.js';
+import { runEval } from '../../eval/runEval.js';
 import { AllProvidersFailedError } from '../../src/llm/router.js';
 
 const ESSAY = 'Prompt: Should schools ban phones?\nSchools should ban phones because they distract students.\n\nStudies show focus improves without phones.';
@@ -23,8 +23,8 @@ const paragraphData = {
 };
 const cardData = {
   cards: [
-    { type: 'basic', front: 'What makes ATP?', back: 'Mitochondria', key_points: ['mitochondria'], source_quote: 'Mitochondria produce ATP', concept: 'c', bloom_level: 'remember' },
-    { type: 'basic', front: 'Q2', back: 'A2', key_points: [], source_quote: 'not in the source', concept: 'c', bloom_level: 'remember' },
+    { type: 'basic', front: 'What makes ATP?', back: 'Mitochondria', key_points: ['mitochondria'], source_quote: 'Mitochondria produce ATP', concept: 'c', bloom_level: 'remember', importance: 2 },
+    { type: 'basic', front: 'Q2', back: 'A2', key_points: [], source_quote: 'not in the source', concept: 'c', bloom_level: 'remember', importance: 2 },
   ],
 };
 const gradeData = { score: 0.8, hit: ['k'], missed: [], misconception: null, feedback: 'Nice.', suggested_rating: 'good' };
@@ -51,12 +51,6 @@ beforeEach(async () => {
 });
 
 const opts = () => ({ samplesDir: join(dir, 'samples'), outDir: join(dir, 'out'), env: {}, completeFn: fake as any, log: () => {} });
-
-test('chunkByWords packs paragraphs and keeps an oversize paragraph whole', () => {
-  expect(chunkByWords('a b\n\nc d\n\ne f', 4)).toEqual(['a b\n\nc d', 'e f']);
-  expect(chunkByWords('a b c d e f', 2)).toEqual(['a b c d e f']);
-  expect(chunkByWords('   ', 10)).toEqual([]);
-});
 
 test('empty essay file is skipped with a warning and no call', async () => {
   await writeFile(join(dir, 'samples/essays/blank.txt'), '  \n\n ');

@@ -9,3 +9,10 @@ test('isPublicPath', () => {
   expect(isPublicPath('/_next/static/a.js')).toBe(true);
   expect(isPublicPath('/today')).toBe(false);
 });
+test('api routes are not redirected to login (they answer 401 JSON themselves)', () => {
+  expect(isPublicPath('/api/generate')).toBe(true);
+  expect(isPublicPath('/apix')).toBe(false);
+});
+test('the service worker script is public (browsers reject a redirected worker script)', () => {
+  expect(isPublicPath('/sw.js')).toBe(true);
+});

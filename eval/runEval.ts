@@ -1,6 +1,7 @@
 import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ZodType } from 'zod';
+import { chunkByWords } from '../src/chunk.js';
 import { findAnchor, isGrounded } from '../src/grounding.js';
 import { PROVIDERS } from '../src/llm/config.js';
 import {
@@ -44,25 +45,6 @@ const COLUMNS: (keyof SummaryRow)[] = [
   'task', 'sample', 'status', 'provider', 'model', 'latency_ms', 'items', 'anchors_dropped', 'cards', 'cards_grounded',
 ];
 const CHUNK_WORDS = 3000;
-
-/** Split on blank lines and pack paragraphs into chunks of at most maxWords; an oversize paragraph stays whole. */
-export function chunkByWords(text: string, maxWords: number): string[] {
-  const chunks: string[] = [];
-  let current: string[] = [];
-  let words = 0;
-  for (const para of numberParagraphs(text)) {
-    const n = para.split(/\s+/).length;
-    if (current.length && words + n > maxWords) {
-      chunks.push(current.join('\n\n'));
-      current = [];
-      words = 0;
-    }
-    current.push(para);
-    words += n;
-  }
-  if (current.length) chunks.push(current.join('\n\n'));
-  return chunks;
-}
 
 async function listTxt(dir: string): Promise<string[]> {
   try {
