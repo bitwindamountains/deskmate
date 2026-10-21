@@ -1,0 +1,10 @@
+Prompt: Explain how vaccines train the immune system.
+Vaccines protect people by teaching the immune system to recognize a germ before a real infection happens.
+
+A vaccine contains a harmless piece of a pathogen, such as a protein from its surface, or a weakened form of the whole germ. The body treats this as a threat. White blood cells called B cells make antibodies that fit the protein, and T cells learn to find and destroy infected cells.
+
+After the first response, some of these cells stay in the body as memory cells. They can last for years. If the real pathogen arrives later, memory cells respond within days instead of weeks, so the person usually does not get seriously sick.
+
+Some vaccines need a booster because memory fades. Vaccines are also very safe and have saved millions of lives, they are one of the greatest inventions in history.
+
+This is why vaccines matter.
