@@ -112,7 +112,7 @@ test('form shows labelled fields and the verbatim disclosure', () => {
   expect(screen.getByLabelText('Your first language')).toBeTruthy();
   expect(screen.getByRole('group', { name: 'Reading font' })).toBeTruthy();
   expect((screen.getByLabelText('Show rubric scores') as HTMLInputElement).checked).toBe(true);
-  expect(screen.getByText(/Groq's terms say it does not train its models/)).toBeTruthy();
+  expect(screen.getByText("Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq's terms say it does not train its models on what you send.")).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Start studying' })).toBeTruthy();
 });
 
