@@ -10,6 +10,9 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     model: 'openai/gpt-oss-120b',
     apiKeyEnv: 'GROQ_API_KEY',
     trainsOnInputs: false,
+    // Default (medium) spent 47-73% of output tokens on hidden reasoning; low halves output with no measured quality loss
+    // (docs/superpowers/notes/2026-10-21-token-budget.md).
+    reasoningEffort: 'low',
   },
   openrouter: {
     id: 'openrouter',
