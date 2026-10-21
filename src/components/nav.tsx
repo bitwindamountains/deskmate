@@ -3,6 +3,7 @@ import Link from 'next/link';
 const ITEMS = [
   { key: 'today', label: 'Today', href: '/today' },
   { key: 'study', label: 'Study', href: '/study' },
+  { key: 'write', label: 'Write', href: '/write' },
   { key: 'profile', label: 'Profile', href: '/profile' },
 ] as const;
 
@@ -16,7 +17,7 @@ export function Nav({ current }: { current: NavKey }) {
       className="rail fixed inset-x-0 bottom-0 z-10 bg-rail pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:h-dvh md:w-56 md:shrink-0 md:px-3 md:py-6"
     >
       <p className="hidden px-3 pb-6 text-lg font-bold text-rail-ink-strong md:block">Scholar</p>
-      <ul className="grid grid-cols-3 md:flex md:flex-col md:gap-1">
+      <ul className="grid grid-cols-4 md:flex md:flex-col md:gap-1">
         {ITEMS.map((item) => {
           const here = item.key === current;
           return (
