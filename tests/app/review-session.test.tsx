@@ -30,7 +30,10 @@ beforeEach(async () => {
   vi.stubGlobal('fetch', fetchMock);
   getEmbedder.mockResolvedValue(null);
   syncOutbox.mockResolvedValue({ sent: 0, regraded: 0, failed: 0 });
-  await Promise.all([db.outbox.clear(), db.states.clear(), db.cards.clear()]);
+  // Delete and reopen rather than clear: a previous test's in-flight write (cards reuse ids 'a' and 'b') must abort,
+  // not land after the clear and hand this test a stale local state.
+  await db.delete();
+  await db.open();
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
@@ -124,7 +127,7 @@ test('summary shows count, accuracy, and next review', async () => {
 
 test('keyboard only: Enter checks, digits rate, focus returns to the answer field', async () => {
   const field = await start([card('a'), card('b')]);
-  expect(document.activeElement).toBe(field);
+  await waitFor(() => expect(document.activeElement).toBe(field)); // focus is set by an effect after the field renders
   fireEvent.change(field, { target: { value: 'electron transport chain' } });
   fireEvent.keyDown(field, { key: 'Enter' });
   await waitFor(() => expect(rating('Easy').textContent).toContain('Suggested'));
