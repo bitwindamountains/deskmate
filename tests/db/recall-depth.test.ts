@@ -76,3 +76,12 @@ test('card_aids: owner can insert and read for own card only; no update', async 
   await A.client.from('card_aids').update({ result: { mnemonic: 'changed' } }).eq('card_id', aCard);
   expect((await adminClient().from('card_aids').select('result').eq('card_id', aCard).single()).data?.result).toEqual({ mnemonic: 'm' });
 });
+
+test('card_aids: the owner can delete a stale row; another user cannot', async () => {
+  const card = await makeCard(A);
+  await A.client.from('card_aids').insert({ card_id: card, user_id: A.userId, result: { mnemonic: 'm' } });
+  await B.client.from('card_aids').delete().eq('card_id', card);
+  expect((await adminClient().from('card_aids').select('card_id').eq('card_id', card)).data).toHaveLength(1);
+  expect((await A.client.from('card_aids').delete().eq('card_id', card)).error).toBeNull();
+  expect((await adminClient().from('card_aids').select('card_id').eq('card_id', card)).data).toHaveLength(0);
+});

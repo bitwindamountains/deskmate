@@ -52,7 +52,7 @@ export function MasteryView({ sections }: { sections: MasterySection[] }) {
 }
 
 // viewBox units; the SVG scales with the column, capped so text stays near body size
-const W = 400, H = 200, L = 36, R = 44, T = 12, B = 28;
+const W = 400, H = 200, L = 46, R = 52, T = 14, B = 30; // room for labels at their larger phone size (globals.css .chart-label)
 
 function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -93,18 +93,18 @@ function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
         {[0, 0.5, 1].map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--line)" strokeOpacity={v ? 0.3 : 0.8} strokeWidth={1} />
-            <text x={L - 6} y={y(v)} dy="0.35em" textAnchor="end" fontSize={11} fill="var(--ink-muted)" className="tabular-nums">{pct(v)}</text>
+            <text x={L - 6} y={y(v)} dy="0.35em" textAnchor="end" fontSize={11} fill="var(--ink-muted)" className="chart-label tabular-nums">{pct(v)}</text>
           </g>
         ))}
         {[0, 7, 14, 21, 28].filter((d) => d <= days).map((d) => (
-          <text key={d} x={x(d)} y={H - 8} textAnchor="middle" fontSize={11} fill="var(--ink-muted)">{dayLabel(d)}</text>
+          <text key={d} x={x(d)} y={H - 8} textAnchor="middle" fontSize={11} className="chart-label" fill="var(--ink-muted)">{dayLabel(d)}</text>
         ))}
         <path d={path('ifIdle')} fill="none" stroke="var(--chart-idle)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         <path d={path('ifReviewedToday')} fill="none" stroke="var(--chart-review)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {(['ifIdle', 'ifReviewedToday'] as const).map((k) => (
           <g key={k}>
             <circle cx={x(days)} cy={y(last[k])} r={4} fill={`var(--chart-${k === 'ifIdle' ? 'idle' : 'review'})`} stroke="var(--surface)" strokeWidth={2} />
-            {endLabels && <text x={x(days) + 8} y={y(last[k])} dy="0.35em" fontSize={11} fill="var(--ink)" className="tabular-nums">{pct(last[k])}</text>}
+            {endLabels && <text x={x(days) + 8} y={y(last[k])} dy="0.35em" fontSize={11} fill="var(--ink)" className="chart-label tabular-nums">{pct(last[k])}</text>}
           </g>
         ))}
         {h && (

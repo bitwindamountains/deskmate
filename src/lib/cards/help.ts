@@ -11,6 +11,12 @@ export type CardHelpResult = { ok: true; help: Help; added: number; dropped: num
 type CardRow = { id: string; deck_id: string; source_chunk_id: string | null; front: string; back: string; key_points: string[] | null;
   importance: number; source_chunks: { text: string } | null };
 
+/** Fingerprint of what the help was written for, so editing the card makes its cached help stale. */
+async function cardKey(front: string, back: string): Promise<string> {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode([front, back].join('\n')));
+  return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 const NOT_FOUND = { ok: false, status: 404, message: "We couldn't find that card." } as const;
 const LIMIT = { ok: false, status: 429, message: "You've asked for a lot of help today. More unlocks at midnight UTC." } as const;
 const BUSY = { ok: false, status: 503, message: 'Help is busy right now. Try again in a minute.' } as const;
@@ -24,9 +30,18 @@ export async function requestCardHelp(db: Db, userId: string, cardId: string, en
   if (!data) return NOT_FOUND;
   const card = data as unknown as CardRow;
 
+  const key = await cardKey(card.front, card.back);
   const { data: aid, error: aidErr } = await db.from('card_aids').select('result').eq('card_id', cardId).maybeSingle();
   if (aidErr) return BUSY;
-  if (aid) return { ok: true, help: aid.result as Help, added: 0, dropped: 0, cached: true };
+  const cached = aid?.result as (Help & { card?: string }) | undefined;
+  if (cached?.card === key) {
+    return { ok: true, help: { explanation: cached.explanation, mnemonic: cached.mnemonic, analogy: cached.analogy }, added: 0, dropped: 0, cached: true };
+  }
+  // Help written for the card's old text would teach the old (possibly wrong) answer; drop it and ask again.
+  if (aid) {
+    const { error: delErr } = await db.from('card_aids').delete().eq('card_id', cardId);
+    if (delErr) return BUSY;
+  }
 
   // Same daily budget as essay hints: every on-demand LLM helper call counts once, before the call.
   const { data: allowed, error: qErr } = await db.rpc('consume_hint_quota');
@@ -52,6 +67,6 @@ export async function requestCardHelp(db: Db, userId: string, cardId: string, en
     if (insErr) return BUSY;
   }
   const result: Help = { explanation: help.explanation, mnemonic: help.mnemonic, analogy: help.analogy };
-  await db.from('card_aids').insert({ card_id: cardId, user_id: userId, result }); // best effort: a lost cache row costs one more call later
+  await db.from('card_aids').insert({ card_id: cardId, user_id: userId, result: { ...result, card: key } }); // best effort: a lost row costs one more call later
   return { ok: true, help: result, added: grounded.length, dropped: help.split.length - grounded.length, cached: false };
 }
