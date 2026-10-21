@@ -6,6 +6,8 @@ import { db } from '@/review/store';
 
 // fake IndexedDB writes are slow when the whole suite runs in parallel; the 1 s default flakes
 configure({ asyncUtilTimeout: 5000 });
+// a whole session test makes several 5 s-bounded waits; the default 5 s test budget can't hold them under load
+vi.setConfig({ testTimeout: 20_000 });
 
 const getEmbedder = vi.fn();
 vi.mock('@/lib/embed/embed', () => ({ getEmbedder: () => getEmbedder() }));
