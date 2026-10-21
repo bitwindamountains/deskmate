@@ -61,8 +61,15 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
           <input type="checkbox" name="reduced_motion" defaultChecked={defaults?.preferences?.reduced_motion ?? false} /> Reduce motion
         </label>
 
-        {/* ponytail: this sentence is tied to the `trainsOnInputs: false` providers in src/llm/config.ts; update both together. */}
-        <p>Scholar uses AI to make flashcards and check your answers. Your study material is sent to Groq to do this. Groq&apos;s terms say it does not train its models on what you send.</p>
+        <label className="flex min-h-11 items-center gap-2">
+          {/* missing means on: profiles saved before this option existed keep seeing scores */}
+          <input type="checkbox" name="show_scores" defaultChecked={defaults?.preferences?.show_scores ?? true} /> Show rubric scores
+        </label>
+
+        {/* ponytail: this sentence names every service that receives student text: the `trainsOnInputs: false` providers in
+            src/llm/config.ts and LanguageTool (src/lib/essay/languagetool.ts). Update it with either. Confirm LanguageTool's
+            privacy terms before launch. */}
+        <p>Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq&apos;s terms say it does not train its models on what you send.</p>
 
         <button type="submit" disabled={pending} className="btn btn-primary">{defaults ? 'Save changes' : 'Start studying'}</button>
       </form>
