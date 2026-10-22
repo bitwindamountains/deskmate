@@ -26,6 +26,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ deck
   const title = (deck.data.title as string).trim().slice(0, 60);
   const ascii = title.replace(/[^A-Za-z0-9 _-]+/g, '').trim() || 'deck';
   const ext = FORMAT[format].ext;
+  // encodeURIComponent leaves ' ( ) * as they are, and ' is a delimiter in RFC 5987, so those are encoded too.
+  const encoded = encodeURIComponent(title).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
   return new NextResponse(body, { headers: { 'content-type': FORMAT[format].type,
-    'content-disposition': `attachment; filename="${ascii}.${ext}"; filename*=UTF-8''${encodeURIComponent(title)}.${ext}` } });
+    'content-disposition': `attachment; filename="${ascii}.${ext}"; filename*=UTF-8''${encoded}.${ext}` } });
 }
