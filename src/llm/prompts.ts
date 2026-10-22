@@ -31,6 +31,8 @@ export interface EssayInput {
   previousItems?: { id: string; summary: string; quote: string | null }[];
   /** Re-check: only these paragraphs changed; the paragraph pass reports on them alone. */
   onlyParagraphs?: number[];
+  /** Timed writing (A4.5): the limit the essay was written under, in minutes. */
+  timedMinutes?: number;
 }
 
 type Prompt = { system: string; user: string };
@@ -103,6 +105,8 @@ function essayContext(i: EssayInput): string {
     `Grade level: ${i.gradeLevel}`,
     `Essay type: ${i.essayType}`,
     i.assignmentPrompt ? `Assignment prompt:\n${wrapData('assignment', i.assignmentPrompt)}` : 'Assignment prompt: none given',
+    // It varies per essay, so it rides in the user message and the system prompt stays static.
+    ...(i.timedMinutes ? [`Written under a ${i.timedMinutes}-minute time limit; weigh structure and planning over polish.`] : []),
     `Rubric:\n${rubric}`,
     `Essay (paragraphs numbered [P0], [P1], ...):\n${wrapData('essay', paragraphs)}`,
   ].join('\n\n');

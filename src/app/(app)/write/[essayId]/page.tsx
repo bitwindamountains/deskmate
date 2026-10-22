@@ -22,8 +22,8 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   if (!z.uuid().safeParse(essayId).success) notFound();
   const db = await createClient();
   const [essay, draft] = await Promise.all([
-    db.from('essays').select('id,title').eq('id', essayId).maybeSingle(),
-    db.from('drafts').select('id,version,content,layers,outline').eq('essay_id', essayId).order('version', { ascending: false }).limit(1).maybeSingle(),
+    db.from('essays').select('id,title,timed_minutes').eq('id', essayId).maybeSingle(),
+    db.from('drafts').select('id,version,content,layers,outline,minutes_used').eq('essay_id', essayId).order('version', { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (essay.error || draft.error) throw new Error(LOAD_FAILED);
   if (!essay.data || !draft.data) notFound();
@@ -57,6 +57,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax}
         outline={draft.data.outline as OutlineLine[] | null} threads={threads}
         selfAssessment={selfAssessment}
+        timed={essay.data.timed_minutes ? { limit: essay.data.timed_minutes as number, used: (draft.data.minutes_used as number | null) ?? null } : null}
         language={profile.first_language === 'fil' || profile.first_language === 'es' ? profile.first_language : null} />
     </AppPage>
   );

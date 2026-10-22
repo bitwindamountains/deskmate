@@ -89,3 +89,12 @@ test('a score outside 1..maxScore is rejected at the server and nothing is saved
   expect(r.ok).toBe(false);
   expect((await adminClient().from('essays').select('id').eq('user_id', A.userId)).data!.length).toBe(before);
 });
+
+test('createEssay saves timed_minutes and minutes_used; invalid durations are rejected', async () => {
+  const r = await insertEssay(A.client, A.userId, { ...input, timedMinutes: 30, minutesUsed: 27 });
+  if (!r.ok) throw new Error(r.error);
+  expect((await adminClient().from('essays').select('timed_minutes').eq('id', r.essayId).single()).data!.timed_minutes).toBe(30);
+  expect((await adminClient().from('drafts').select('minutes_used').eq('essay_id', r.essayId).single()).data!.minutes_used).toBe(27);
+  expect((await insertEssay(A.client, A.userId, { ...input, timedMinutes: 25 as never, minutesUsed: 10 })).ok).toBe(false);
+  expect((await insertEssay(A.client, A.userId, { ...input, timedMinutes: 20, minutesUsed: -1 })).ok).toBe(false);
+});

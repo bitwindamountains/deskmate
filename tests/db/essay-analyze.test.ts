@@ -309,3 +309,13 @@ test('re-check judging sends the revised summary for a revised item', async () =
   await analyzeLayer(U.client, U.userId, d2.draftId, 'global', {}, { completeFn: glob });
   expect((glob.mock.calls[0][1] as { user: string }).user).toContain('Name one reason in the thesis.');
 });
+
+test('the analyze layer passes timed minutes from the essay on draft 2 as well', async () => {
+  const U = await freshUser();
+  const d1 = await newDraft(U);
+  await adminClient().from('essays').update({ timed_minutes: 45 }).eq('id', d1.essayId);
+  const d2 = await newDraft(U, [P[0], P[1], 'A new ending paragraph that wraps up the argument clearly.'].join('\n\n'), d1.essayId, 2);
+  const glob = fakeComplete({ essay_global: GLOBAL });
+  await analyzeLayer(U.client, U.userId, d2.draftId, 'global', {}, { completeFn: glob });
+  expect((glob.mock.calls[0][1] as { user: string }).user).toContain('45-minute time limit');
+});
