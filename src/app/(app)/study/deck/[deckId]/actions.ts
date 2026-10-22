@@ -53,3 +53,18 @@ export async function importAnki(deckId: string, cards: unknown): Promise<Import
   if (r.ok && r.added) revalidatePath(`/study/deck/${deckId}`);
   return r;
 }
+
+const GoalsInput = z.object({ deckId: z.uuid(), goals: z.string().max(5000), matched: z.array(z.uuid()).max(2000).nullable() });
+export type SaveGoalsResult = { ok: true; matched: number } | { ok: false; message: string };
+
+/** B4.3: matched holds the card ids the device matched to the goals; null when the model couldn't load (matches stay). */
+export async function saveGoals(deckId: string, goals: string, matched: string[] | null): Promise<SaveGoalsResult> {
+  const failed = { ok: false as const, message: "We couldn't save your goals." };
+  const v = GoalsInput.safeParse({ deckId, goals, matched });
+  if (!v.success) return failed;
+  const { db } = await session();
+  const { data, error } = await db.rpc('set_goal_matches', { p_deck: v.data.deckId, p_goals: v.data.goals, p_ids: v.data.matched });
+  if (error || typeof data !== 'number') return failed;
+  revalidatePath(`/study/deck/${deckId}`);
+  return { ok: true, matched: data };
+}

@@ -10,7 +10,7 @@ export type ReviewCard = StudyCard & { front: string; back: string; keyPoints: s
   quoteIsExample?: boolean };
 export type Deck = { id: string; title: string; exam_date: string | null };
 type Row = { id: string; deck_id: string; type: ReviewCard['type']; importance: ReviewCard['importance']; front: string; back: string;
-  key_points: string[] | null; concept: string; source_quote: string; source_chunk_id: string | null; card_states: StateRow | StateRow[] | null };
+  key_points: string[] | null; concept: string; source_quote: string; source_chunk_id: string | null; goal_match: boolean; card_states: StateRow | StateRow[] | null };
 
 const LOAD_FAILED = "We couldn't load your cards.";
 const iso = (t: string) => new Date(t).toISOString(); // the client compares timestamps as strings against its own toISOString()
@@ -19,7 +19,7 @@ const iso = (t: string) => new Date(t).toISOString(); // the client compares tim
 export async function loadStudy(db: Db, deckId?: string, zone = 'UTC'): Promise<{ decks: Deck[]; cards: ReviewCard[]; newIntroducedToday: number }> {
   // "Today" starts at the student's local midnight (zone comes from their browser), not the server's UTC midnight.
   const today = startOfLocalDay(new Date(), zone).toISOString();
-  let cardQuery = db.from('cards').select('id,deck_id,type,importance,front,back,key_points,concept,source_quote,source_chunk_id,card_states(*)').eq('status', 'kept');
+  let cardQuery = db.from('cards').select('id,deck_id,type,importance,front,back,key_points,concept,source_quote,source_chunk_id,goal_match,card_states(*)').eq('status', 'kept');
   let deckQuery = db.from('decks').select('id,title,exam_date').order('created_at');
   if (deckId) { cardQuery = cardQuery.eq('deck_id', deckId); deckQuery = deckQuery.eq('id', deckId); }
 
@@ -43,7 +43,7 @@ export async function loadStudy(db: Db, deckId?: string, zone = 'UTC'): Promise<
       learning_steps: s.learning_steps, reps: s.reps, lapses: s.lapses, state: s.state, last_review: s.last_review ? iso(s.last_review) : null,
     };
     return { id: r.id, deckId: r.deck_id, type: r.type, importance: r.importance, front: r.front, back: r.back, keyPoints: r.key_points ?? [],
-      concept: r.concept, sourceQuote: r.source_quote, quoteIsExample: r.source_chunk_id === null, state };
+      concept: r.concept, sourceQuote: r.source_quote, quoteIsExample: r.source_chunk_id === null, goalMatch: r.goal_match, state };
   });
   return { decks: decks.data as Deck[], cards: studyCards, newIntroducedToday };
 }
