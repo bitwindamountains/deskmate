@@ -6,6 +6,19 @@ const FAILED = { ok: false, message: "We couldn't import those cards. Try again.
 
 export type ImportResult = { ok: true; added: number; skippedRows: number[]; duplicates: number } | { ok: false; message: string };
 
+const PAGE = 1000; // the API's default row cap
+
+/** Every row of a query, page by page: a single select stops silently at the API's row cap. order() keeps pages stable. */
+export async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[] | null> {
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1);
+    if (error || !data) return null;
+    out.push(...data);
+    if (data.length < PAGE) return out;
+  }
+}
+
 // Same card means the same front and back, ignoring case and outer spaces.
 const keyOf = (front: string, back: string) => `${front.trim().toLowerCase()}\u0000${back.trim().toLowerCase()}`;
 
@@ -19,10 +32,10 @@ export async function importCards(db: Db, userId: string, deckId: string, text: 
   if (!deck) return NO_DECK;
   const parsed = parseCards(text);
   if (parsed.error) return { ok: false, message: parsed.error };
-  // ponytail: reads the deck's fronts and backs once; fine for decks of a few thousand cards.
-  const existing = await db.from('cards').select('front,back').eq('deck_id', deckId);
-  if (existing.error) return FAILED;
-  const seen = new Set(existing.data.map((c) => keyOf(c.front as string, c.back as string)));
+  const existing = await allRows<{ front: string; back: string }>((from, to) =>
+    db.from('cards').select('front,back').eq('deck_id', deckId).order('created_at').order('id').range(from, to));
+  if (!existing) return FAILED;
+  const seen = new Set(existing.map((c) => keyOf(c.front, c.back)));
   const fresh = parsed.cards.filter((c) => {
     const k = keyOf(c.front, c.back);
     if (seen.has(k)) return false;

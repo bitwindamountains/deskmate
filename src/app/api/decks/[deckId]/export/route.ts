@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { toAnkiText, toCsv } from '@/lib/cards/csv';
+import { allRows } from '@/lib/cards/transfer';
 import { createClient } from '@/lib/supabase/server';
 
 const FORMAT = { csv: { type: 'text/csv; charset=utf-8', ext: 'csv' }, anki: { type: 'text/plain; charset=utf-8', ext: 'txt' } } as const;
@@ -15,13 +16,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ deck
   if (!z.uuid().safeParse(deckId).success || (format !== 'csv' && format !== 'anki')) {
     return NextResponse.json({ error: 'bad_request', message: 'Something went wrong with that request.' }, { status: 400 });
   }
+  type Row = { front: string; back: string; concept: string; type: string };
   const [deck, cards] = await Promise.all([
     supabase.from('decks').select('title').eq('id', deckId).maybeSingle(),
-    supabase.from('cards').select('front,back,concept,type').eq('deck_id', deckId).in('status', ['kept', 'suspended']).order('created_at'),
+    // Paged: a deck over 1,000 cards would otherwise export only its first 1,000, silently.
+    allRows<Row>((from, to) => supabase.from('cards').select('front,back,concept,type').eq('deck_id', deckId)
+      .in('status', ['kept', 'suspended']).order('created_at').order('id').range(from, to)),
   ]);
-  if (deck.error || cards.error) return NextResponse.json({ error: 'busy', message: "We couldn't export this deck." }, { status: 503 });
+  if (deck.error || !cards) return NextResponse.json({ error: 'busy', message: "We couldn't export this deck." }, { status: 503 });
   if (!deck.data) return NextResponse.json({ error: 'not_found', message: "We couldn't find that deck." }, { status: 404 });
-  const body = format === 'csv' ? toCsv(cards.data) : toAnkiText(cards.data);
+  const body = format === 'csv' ? toCsv(cards) : toAnkiText(cards);
   // Header values must be Latin-1: an ASCII fallback name, plus the real title as RFC 5987 filename*.
   const title = (deck.data.title as string).trim().slice(0, 60);
   const ascii = title.replace(/[^A-Za-z0-9 _-]+/g, '').trim() || 'deck';

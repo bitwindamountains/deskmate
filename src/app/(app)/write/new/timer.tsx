@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const plural = (n: number) => `${n} ${n === 1 ? 'minute' : 'minutes'} left`;
 const minutesLeft = (minutes: number, startedAt: number, now: number) => Math.max(0, Math.ceil((startedAt + minutes * 60_000 - now) / 60_000));
@@ -25,9 +25,16 @@ function useNow() {
  */
 export function Timer({ minutes, startedAt, stoppedAt, onStop }: { minutes: number; startedAt: number; stoppedAt: number | null; onStop: () => void }) {
   const now = useNow();
+  const stoppedRef = useRef<HTMLParagraphElement>(null);
+  // The Stop button disappears, so focus moves to the result instead of dropping to the page.
+  useEffect(() => { if (stoppedAt !== null) stoppedRef.current?.focus(); }, [stoppedAt]);
   if (stoppedAt !== null) {
-    const used = Math.max(1, Math.ceil((stoppedAt - startedAt) / 60_000));
-    return <div className="rounded-xl border border-line bg-surface p-4"><p className="font-bold">{`Stopped at ${used} ${used === 1 ? 'minute' : 'minutes'}`}</p></div>;
+    const used = Math.max(1, minutesUsed(minutes, startedAt, stoppedAt)); // the same capped value that gets saved
+    return (
+      <div className="rounded-xl border border-line bg-surface p-4">
+        <p ref={stoppedRef} tabIndex={-1} role="status" className="font-bold outline-none">{`Stopped at ${used} ${used === 1 ? 'minute' : 'minutes'}`}</p>
+      </div>
+    );
   }
   const left = minutesLeft(minutes, startedAt, now);
   return (
