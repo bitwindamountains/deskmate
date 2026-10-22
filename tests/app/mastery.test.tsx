@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { MasteryView, type MasterySection } from '@/app/(app)/study/mastery/mastery-view';
 
@@ -48,4 +48,24 @@ test('a deck with no reviewed cards has no curve yet', () => {
 test('no decks keeps the empty state', () => {
   render(<MasteryView sections={[]} />);
   expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
+});
+
+test('arrowing through the forgetting curve announces each day', () => {
+  render(<MasteryView sections={[section()]} />);
+  const chart = screen.getByRole('img', { name: 'Forgetting curve, next 30 days' });
+  fireEvent.focus(chart);
+  const status = screen.getByRole('status');
+  expect(status.textContent).toMatch(/^Today: \d+% reviewed, \d+% stopped$/);
+  fireEvent.keyDown(chart, { key: 'ArrowRight' });
+  expect(status.textContent).toMatch(/% reviewed, \d+% stopped$/);
+  expect(status.textContent).not.toMatch(/^Today/);
+  fireEvent.blur(chart);
+  expect(status.textContent).toBe('');
+});
+
+test('pointer moves over the curve do not announce; only focus and keys do', () => {
+  render(<MasteryView sections={[section()]} />);
+  const chart = screen.getByRole('img', { name: 'Forgetting curve, next 30 days' });
+  fireEvent.pointerMove(chart, { clientX: 200, clientY: 50 });
+  expect(screen.getByRole('status').textContent).toBe('');
 });

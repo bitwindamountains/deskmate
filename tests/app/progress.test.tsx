@@ -39,7 +39,7 @@ test('Progress shows patterns with trend copy and Practice this, the calibration
 });
 
 test('Progress empty states: no essays, no recurring patterns, one-tool calibration', () => {
-  render(<ProgressView {...base} growth={{ essays: 0, recurring: [] }} calibration={{ recall: 80, writing: null, combined: null }} hint={null} leech={null} />);
+  render(<ProgressView {...base} growth={{ essays: 0, recurring: [] }} calibration={{ recall: 80, writing: null, combined: null }} counts={{ answers: 30, criteria: 0 }} hint={null} leech={null} />);
   expect(screen.getByText('Check an essay to see your writing patterns.')).toBeTruthy();
   const cal = screen.getByRole('region', { name: 'Self-check accuracy' });
   expect(cal.textContent).toContain('Flashcards: 80%');
@@ -59,4 +59,21 @@ test('Practice this shows the already-added note and is disabled while sending',
   expect((btn as HTMLButtonElement).disabled).toBe(true);
   resolve({ ok: true, deckId: 'd1', added: 0 });
   expect(await screen.findByText('Already in your Writing practice deck.')).toBeTruthy();
+});
+
+test('the essays line asks for 3 rated criteria when 1-2 were compared', () => {
+  render(<ProgressView {...base} calibration={{ recall: null, writing: null, combined: null }} counts={{ answers: 0, criteria: 2 }} />);
+  expect(screen.getByRole('region', { name: 'Self-check accuracy' }).textContent).toContain('Essays: rate at least 3 criteria yourself to see this.');
+});
+
+test('while one Practice request runs, every Practice button is disabled', async () => {
+  let resolve!: (v: unknown) => void;
+  practicePattern.mockReturnValue(new Promise((r) => { resolve = r; }));
+  const growth = { essays: 3, recurring: [base.growth.recurring[0], { key: 'run_on' as const, label: 'Run-on sentences', essays: 2, latestRate: 1, trend: null }] };
+  render(<ProgressView {...base} growth={growth} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Practice this: Comma splices' }));
+  expect((screen.getByRole('button', { name: 'Practice this: Run-on sentences' }) as HTMLButtonElement).disabled).toBe(true);
+  resolve({ ok: true, deckId: 'd1', added: 4 });
+  await screen.findByText('Added 4 practice cards to Writing practice.');
+  expect((screen.getByRole('button', { name: 'Practice this: Run-on sentences' }) as HTMLButtonElement).disabled).toBe(false);
 });

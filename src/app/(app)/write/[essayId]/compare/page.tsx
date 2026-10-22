@@ -14,7 +14,7 @@ const rubricMax: Record<string, number> = Object.fromEntries(DEFAULT_RUBRIC.map(
 const version = (v: unknown) => (typeof v === 'string' && /^[1-9]\d{0,5}$/.test(v) ? Number(v) : null);
 
 type Draft = { id: string; version: number; content: string };
-type Item = { id: string; layer: keyof typeof LAYER_LABEL; summary: string; status: string };
+type Item = { id: string; layer: keyof typeof LAYER_LABEL; summary: string; revised_summary: string | null; status: string };
 
 export default async function ComparePage({ params, searchParams }: {
   params: Promise<{ essayId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -36,7 +36,7 @@ export default async function ComparePage({ params, searchParams }: {
 
   const [analyses, items] = await Promise.all([
     db.from('analyses').select('draft_id,rubric_scores').in('draft_id', [a.id, b.id]),
-    db.from('feedback_items').select('id,layer,summary,status').eq('draft_id', a.id).order('created_at'),
+    db.from('feedback_items').select('id,layer,summary,revised_summary,status').eq('draft_id', a.id).order('created_at'),
   ]);
   if (analyses.error || items.error) throw new Error(LOAD_FAILED);
   const scoresOf = (id: string) => (analyses.data as { draft_id: string; rubric_scores: Score[] }[]).find((x) => x.draft_id === id)?.rubric_scores ?? [];
@@ -99,7 +99,7 @@ export default async function ComparePage({ params, searchParams }: {
               {(items.data as Item[]).map((it) => (
                 <li key={it.id} className="space-y-1 py-3 [overflow-wrap:anywhere]">
                   <p className="text-sm text-ink-muted">{LAYER_LABEL[it.layer]}</p>
-                  <p>{it.summary}</p>
+                  <p>{it.revised_summary ?? it.summary}</p>
                   <p className="text-sm font-bold">{STATUS_LABEL[it.status] ?? 'Still open'}</p>
                 </li>
               ))}

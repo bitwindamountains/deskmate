@@ -3,11 +3,9 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import type { ItemRow } from '@/lib/essay/analyze';
 
 const markGotIt = vi.fn();
-const disputeItem = vi.fn();
 const logViewedLevel = vi.fn();
 vi.mock('@/app/(app)/write/[essayId]/item-actions', () => ({
   markGotIt: (...a: unknown[]) => markGotIt(...a),
-  disputeItem: (...a: unknown[]) => disputeItem(...a),
   logViewedLevel: (...a: unknown[]) => logViewedLevel(...a),
 }));
 
@@ -56,7 +54,6 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   markGotIt.mockResolvedValue(undefined);
-  disputeItem.mockResolvedValue(undefined);
   logViewedLevel.mockResolvedValue(undefined);
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
@@ -211,15 +208,15 @@ test('a withdraw verdict marks the card withdrawn and it leaves Top 3', async ()
   expect(within(card('g1')).getByText('Withdrawn after your explanation')).toBeTruthy();
 });
 
-test('a modify verdict shows Updated: above the original summary and marks the card Disputed', async () => {
+test('a modify verdict names the card by the revised summary, keeps the original, and marks it Disputed', async () => {
   view();
   const c = card('p1');
   fireEvent.click(within(c).getByRole('button', { name: 'I disagree' }));
   fetchMock.mockResolvedValueOnce(reply({ reply: 'Partly.', verdict: 'modify', revisedSummary: 'Explain how the source backs the claim.' }));
   fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'I cite a source.' } });
   fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
-  expect(await within(c).findByText('Updated: Explain how the source backs the claim.')).toBeTruthy();
-  expect(within(c).getByText('Summary p1')).toBeTruthy();
+  expect(await within(c).findByText('Explain how the source backs the claim.')).toBeTruthy();
+  expect(within(c).getByText('Original: Summary p1')).toBeTruthy();
   expect(within(c).getByText('Disputed')).toBeTruthy();
 });
 
@@ -401,7 +398,7 @@ test('a revised summary drops the earlier translation and asks again', async () 
   fetchMock.mockResolvedValueOnce(reply({ reply: 'Partly.', verdict: 'modify', revisedSummary: 'Explain the source.' }));
   fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'I cite one.' } });
   fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
-  expect(await within(c).findByText('Updated: Explain the source.')).toBeTruthy();
+  expect(await within(c).findByText('Original: Summary p1')).toBeTruthy();
   expect(within(c).queryByText('Lumang salin')).toBeNull();
 });
 
@@ -416,4 +413,30 @@ test('pressing Edit while reading aloud clears the reading outline', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
   fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
   expect(screen.queryByText('Now reading:')).toBeNull();
+});
+
+test('a revised card is named by its revised summary and shows the original below', () => {
+  view({ items: ALL.map((i) => (i.id === 'p1' ? { ...i, revised_summary: 'Explain how the source backs the claim.' } : i)) });
+  const c = card('p1');
+  expect(c.getAttribute('aria-labelledby')).toBeTruthy();
+  expect(document.getElementById(c.getAttribute('aria-labelledby')!)!.textContent).toBe('Explain how the source backs the claim.');
+  expect(within(c).getByText('Original: Summary p1')).toBeTruthy();
+});
+
+test('the self-check top priority uses the revised summary', () => {
+  view({ items: ALL.map((i) => (i.id === 'g1' ? { ...i, revised_summary: 'Revised g1' } : i)),
+    selfAssessment: { scores: [{ criterion: 'Thesis', score: 4 }], weakness: 'Rushed ending.' } });
+  const region = screen.getByRole('region', { name: "Your rating and the coach's" });
+  expect(within(region).getByText('Revised g1')).toBeTruthy();
+});
+
+test('a timed essay shows how long it took; an untimed one shows nothing', () => {
+  view({ timed: { limit: 30, used: 27 } });
+  expect(screen.getByText('Timed practice: written in 27 of 30 minutes')).toBeTruthy();
+  cleanup();
+  view({ timed: { limit: 30, used: null } });
+  expect(screen.getByText('Timed practice: 30 minutes')).toBeTruthy();
+  cleanup();
+  view();
+  expect(screen.queryByText(/Timed practice/)).toBeNull();
 });

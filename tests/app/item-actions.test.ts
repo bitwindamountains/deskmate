@@ -19,7 +19,7 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/profile/is-onboarded', () => ({ isOnboarded: async () => true }));
 vi.mock('next/navigation', () => ({ redirect: (u: string) => { throw new Error(`REDIRECT:${u}`); } }));
 
-import { disputeItem, logViewedLevel, markGotIt } from '@/app/(app)/write/[essayId]/item-actions';
+import { logViewedLevel, markGotIt } from '@/app/(app)/write/[essayId]/item-actions';
 
 const ID = '33333333-3333-4333-8333-333333333333';
 beforeEach(() => { calls.length = 0; insertError = null; });
@@ -30,15 +30,6 @@ test('Got it updates only the caller\'s item and logs a got_it event', async () 
     ['feedback_items', 'update', { status: 'got_it' }], ['feedback_items', 'eq', 'id', ID], ['feedback_items', 'eq', 'user_id', 'u1'],
     ['feedback_events', 'insert', { user_id: 'u1', item_id: ID, action: 'got_it', level: null }],
   ]);
-});
-
-test('a dispute needs a 1-1,000 character reason and never writes a bad one', async () => {
-  await expect(disputeItem(ID, '   ')).rejects.toThrow("We couldn't save that change.");
-  await expect(disputeItem(ID, 'x'.repeat(1001))).rejects.toThrow("We couldn't save that change.");
-  await expect(disputeItem('not-a-uuid', 'fine')).rejects.toThrow();
-  expect(calls).toEqual([]);
-  await disputeItem(ID, ' Too strict ');
-  expect(calls[0]).toEqual(['feedback_items', 'update', { status: 'disputed', dispute_reason: 'Too strict' }]);
 });
 
 test('viewed level only raises highest_level, and a failed event write is a generic error', async () => {

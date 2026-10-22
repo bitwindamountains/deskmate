@@ -6,6 +6,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import { CardList, type EditorCard } from './card-list';
 import { DeckPrompts } from './deck-prompts';
+import { Transfer } from './transfer';
 
 type Row = Omit<EditorCard, 'lapses' | 'sourceId'> & { card_states: { lapses: number } | { lapses: number }[] | null;
   source_chunks: { source_id: string } | null };
@@ -32,9 +33,11 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
     <AppPage current="study" title={deck.data.title}>
       <p className="mb-6">
         <Link href={`/study/deck/${deckId}/exam`} className="underline">{deck.data.exam_date ? 'Change exam date' : 'Set exam date'}</Link>
+        {' · '}<Link href={`/study/deck/${deckId}/test`} className="underline">Practice test</Link>
       </p>
       <DeckPrompts deckTitle={deck.data.title} cards={rows.filter((c) => c.status === 'kept')} />
       <CardList cards={rows} />
+      <Transfer deckId={deckId} />
     </AppPage>
   );
 }

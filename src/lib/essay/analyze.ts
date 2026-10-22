@@ -27,7 +27,7 @@ const BUSY = { ok: false, status: 503, error: 'busy', message: 'Feedback is busy
 const ITEM_LAYER = { global: 'global', paragraphs: 'paragraph', sentences: 'sentence' } as const;
 
 type Draft = { id: string; essay_id: string; version: number; content: string; paragraph_hashes: string[]; layers: Record<string, string>;
-  essays: { essay_type: string; grade_level: string; assignment_prompt: string | null } };
+  essays: { essay_type: string; grade_level: string; assignment_prompt: string | null; timed_minutes: number | null } };
 type Row = Omit<ItemRow, 'id' | 'status' | 'highest_level' | 'carried_from_id' | 'rewrite' | 'revised_summary'>
   & Partial<Pick<ItemRow, 'status' | 'carried_from_id' | 'rewrite' | 'highest_level' | 'revised_summary'>>;
 
@@ -63,7 +63,7 @@ export async function analyzeLayer(db: Db, userId: string, draftId: string, laye
   env: Record<string, string | undefined>, deps: { completeFn?: typeof complete; fetchFn?: typeof fetch } = {}): Promise<AnalyzeResult> {
   const completeFn = deps.completeFn ?? complete;
   const { data, error } = await db.from('drafts')
-    .select('id,essay_id,version,content,paragraph_hashes,layers,essays(essay_type,grade_level,assignment_prompt)').eq('id', draftId).maybeSingle();
+    .select('id,essay_id,version,content,paragraph_hashes,layers,essays(essay_type,grade_level,assignment_prompt,timed_minutes)').eq('id', draftId).maybeSingle();
   if (error) return BUSY;
   if (!data) return NOT_FOUND;
   const draft = data as unknown as Draft;
@@ -136,11 +136,11 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
   const keepFor = (itemLayer: ItemRow['layer']) =>
     (plan?.keep ?? []).flatMap((k) => (byId.get(k.id)?.layer === itemLayer ? [carryRow(paras, byId.get(k.id)!, k.paragraph_index, byId.get(k.id)!.status)] : []));
   const input: EssayInput = { essay: draft.content, gradeLevel: draft.essays.grade_level, essayType: draft.essays.essay_type,
-    assignmentPrompt: draft.essays.assignment_prompt ?? undefined };
+    assignmentPrompt: draft.essays.assignment_prompt ?? undefined, timedMinutes: draft.essays.timed_minutes ?? undefined };
 
   if (layer === 'global') {
     const judge = plan?.judge ?? [];
-    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
+    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
     await logCalls(db, userId, r.log);
     const { rows, dropped } = anchorItems(paras, r.data.items, 'global');
     const strengths = r.data.strengths.flatMap((s) => {

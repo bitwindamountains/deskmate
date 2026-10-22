@@ -21,6 +21,6 @@ test('writingCalibration sums within-one-point across drafts', () => {
 test('hintReliance and leechRate handle empty input as null', () => {
   expect(hintReliance([0, 0, 2, 3, 5])).toBe(3.3);
   expect(hintReliance([0, 0])).toBeNull();
-  expect(leechRate([0, 1, 4, 6])).toBe(50);
-  expect(leechRate([])).toBeNull();
+  expect(leechRate(2, 4)).toBe(50);
+  expect(leechRate(0, 0)).toBeNull();
 });
