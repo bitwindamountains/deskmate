@@ -53,7 +53,8 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
         items={items.data as unknown as ItemRow[]} analysis={analysis.data as Analysis | null} rewritesUsed={rewrites.count ?? 0}
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax}
         outline={draft.data.outline as OutlineLine[] | null} threads={threads}
-        selfAssessment={self.data as SelfAssessment | null} />
+        selfAssessment={self.data as SelfAssessment | null}
+        language={profile.first_language === 'fil' || profile.first_language === 'es' ? profile.first_language : null} />
     </AppPage>
   );
 }

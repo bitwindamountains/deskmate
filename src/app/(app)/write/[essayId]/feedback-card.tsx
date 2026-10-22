@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ItemRow } from '@/lib/essay/analyze';
 import { ItemDialogue, type DialogueKind, type ThreadMessage } from './item-dialogue';
+import { Translation, type Lang, type Translated } from './translation';
 
 export const LAYER_LABEL = { global: 'Big picture', paragraph: 'Paragraph', sentence: 'Sentence', strength: 'Strength' } as const;
 export const LAYER_BG = { global: 'bg-layer-global', paragraph: 'bg-layer-paragraph', sentence: 'bg-layer-sentence', strength: 'bg-layer-strength' } as const;
@@ -27,6 +28,9 @@ export type CardApi = {
   /** Sends a question or a disagreement; resolves to an error message, or null when the reply arrived. */
   send: (it: ItemRow, kind: DialogueKind, message: string) => Promise<string | null>;
   showInEssay: (it: ItemRow) => void;
+  /** The student's first language when feedback can be explained in it (A3.9). */
+  language: Lang | null;
+  translate: (it: ItemRow) => Promise<Translated | string>;
 };
 
 export function FeedbackCard({ item: it, api, heading = 'h3', children }:
@@ -68,6 +72,8 @@ export function FeedbackCard({ item: it, api, heading = 'h3', children }:
       {lt && suggestion && (
         <p><span className="font-bold">Suggestion: </span>{it.replacements.map((r, i) => <span key={i}>{i > 0 && ', '}<q>{r}</q></span>)}</p>
       )}
+
+      {api.language && <Translation lang={api.language} shown={shown} translate={() => api.translate(it)} />}
 
       <div role="status" className="empty:hidden">
         {api.busy(it) && <p className="text-ink-muted">Getting the next hint…</p>}
