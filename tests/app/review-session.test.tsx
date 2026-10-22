@@ -263,3 +263,12 @@ test('a why card rated Again shows Explain it in writing with the prefilled link
   await waitFor(() => expect(screen.getByText('Card 3 of 3')).toBeTruthy());
   expect(screen.queryByRole('link', { name: 'Explain it in writing' })).toBeNull();
 });
+
+test('a practice card sure-but-wrong note says Example:', async () => {
+  await start([card('a', { sourceQuote: 'It rained, we stayed in.', quoteIsExample: true }), card('b')]);
+  sure('Confident');
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Again'));
+  expect(await screen.findByText('Example: It rained, we stayed in.')).toBeTruthy();
+  expect(screen.queryByText(/From your notes/)).toBeNull();
+});

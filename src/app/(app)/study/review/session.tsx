@@ -50,11 +50,11 @@ function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
   );
 }
 
-function SureNote({ front, quote }: { front: string; quote: string }) {
+function SureNote({ front, quote, example }: { front: string; quote: string; example?: boolean }) {
   return (
     <div role="status" className="max-w-xl rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
       <p className="font-bold">You felt sure about “{front}”, so it&apos;s worth a second look.</p>
-      {quote && <p className="mt-1 text-ink-muted">From your notes: {quote}</p>}
+      {quote && <p className="mt-1 text-ink-muted">{example ? 'Example' : 'From your notes'}: {quote}</p>}
     </div>
   );
 }
@@ -73,7 +73,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [nothingMore, setNothingMore] = useState(false);
   const [confidence, setConfidence] = useState<Confidence | null>(null);
-  const [sureNote, setSureNote] = useState<{ front: string; quote: string } | null>(null); // after a confidently wrong answer (B3.2)
+  const [sureNote, setSureNote] = useState<{ front: string; quote: string; example?: boolean } | null>(null); // after a confidently wrong answer (B3.2)
   const [showSource, setShowSource] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // "Make a mnemonic" on the current card
   const [slipping, setSlipping] = useState<Slip | null>(null); // last card is a leech (B3.3)
@@ -176,7 +176,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, ...(confidence ? { confidence } : {}) }]);
     // A confident miss is the most memorable kind once corrected, so show where the answer came from.
     // Shown above the next card, so it names the card it is about.
-    setSureNote(confidence === 3 && g === Rating.Again ? { front: current.front, quote: current.sourceQuote ?? '' } : null);
+    setSureNote(confidence === 3 && g === Rating.Again ? { front: current.front, quote: current.sourceQuote ?? '', example: current.quoteIsExample } : null);
     setSlipping(g === Rating.Again && state.lapses >= LEECH_LAPSES ? { cardId: current.id, deckId: current.deckId, front: current.front, open: false } : null);
     setExplain(current.type === 'why' && g <= Rating.Hard ? current.front : null);
     setConfidence(null);
@@ -251,7 +251,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   if (finished) {
     return (
       <>
-        {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} />}
+        {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} example={sureNote.example} />}
         {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
         {explain && <ExplainNote front={explain} />}
         <Summary ratings={done.map((d) => d.rating)} concepts={conceptSummary(done.map((d) => ({ concept: d.concept, rating: d.rating })))} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
@@ -277,7 +277,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
         </div>
       </div>
 
-      {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} />}
+      {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} example={sureNote.example} />}
       {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
       {explain && <ExplainNote front={explain} />}
 
