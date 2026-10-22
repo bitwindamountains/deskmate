@@ -1,7 +1,7 @@
 import { compareSelf, type SelfScore } from '@/lib/essay/self-check';
 
 const MIN_CRITERIA = 3; // fewer compared criteria say more about luck than calibration
-const LEECH_LAPSES = 4; // brief B3.3, same as the review session
+export const LEECH_LAPSES = 4; // brief B3.3, same as the review session
 
 /** Essay self-assessment accuracy across drafts: criteria the student scored within one point of the coach. */
 export function writingCalibration(drafts: { self: SelfScore[]; ai: SelfScore[] }[]): { within: number; of: number } | null {
@@ -29,7 +29,7 @@ export function hintReliance(levels: number[]): number | null {
   return opened.length ? Math.round((10 * opened.reduce((a, b) => a + b, 0)) / opened.length) / 10 : null;
 }
 
-/** Share of studied cards that are leeches, whole percent. */
-export function leechRate(lapses: number[]): number | null {
-  return lapses.length ? Math.round((100 * lapses.filter((l) => l >= LEECH_LAPSES).length) / lapses.length) : null;
+/** Share of studied cards that are leeches (lapses >= LEECH_LAPSES), whole percent. Counts come from the database. */
+export function leechRate(leeches: number, total: number): number | null {
+  return total ? Math.round((100 * leeches) / total) : null;
 }
