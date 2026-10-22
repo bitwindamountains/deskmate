@@ -19,7 +19,6 @@ export async function completeOnboarding(_prev: OnboardingState, fd: FormData): 
   const v = parsed.value;
   const now = new Date().toISOString();
   const fields = {
-    first_language: v.first_language,
     study_minutes_per_day: v.study_minutes_per_day,
     preferences: { font: v.font, reduced_motion: v.reduced_motion, show_scores: v.show_scores },
   };

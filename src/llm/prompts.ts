@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue, TranslatedFeedback } from './schemas';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 
 export interface RubricCriterion {
   name: string;
@@ -221,26 +221,6 @@ export function itemDialoguePrompt(i: DialogueInput): Prompt {
       ...(i.history.length ? [`Conversation so far:\n${wrapData('conversation', i.history.map((m) => `${m.role}: ${m.text}`).join('\n'))}`] : []),
       `The student's message:\n${wrapData('student_message', i.message)}`,
     ].join('\n\n'),
-  };
-}
-
-const LANGUAGE_NAME = { fil: 'Filipino', es: 'Spanish' } as const;
-
-/** A3.9: feedback explained in the student's first language. The system prompt depends only on the language. */
-export function translateFeedbackPrompt(i: { lang: 'fil' | 'es'; summary: string; hints: string[] }): Prompt {
-  return {
-    system: [
-      `Translate the writing feedback below into ${LANGUAGE_NAME[i.lang]} for a student who reads it more easily than English.`,
-      'Keep anything in quotation marks exactly as written in English: those are words from the essay. Keep rubric criterion names (Thesis, Evidence, Analysis, Organization, Conventions) in English.',
-      'Translate the meaning plainly and naturally. Keep every point and every item in a list; do not shorten or summarize.',
-      `Write every output string in ${LANGUAGE_NAME[i.lang]}, never in English, apart from the quoted words and criterion names above.`,
-      'Add nothing, and never write a sentence the student could copy into the essay.',
-      'Never suggest that writing in another language, or mixing languages, is a weakness.',
-      'Return the summary and one translated hint for each numbered hint, in the same order.',
-      DATA_RULE,
-      `Return only JSON with this shape: ${compactSchema(TranslatedFeedback)}`,
-    ].join('\n'),
-    user: wrapData('feedback', [i.summary, ...(i.hints.length ? ['', 'Hints:', ...i.hints.map((h, n) => `${n + 1}. ${h}`)] : [])].join('\n')),
   };
 }
 
