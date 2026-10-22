@@ -7,7 +7,7 @@ import { paragraphs } from './text';
 
 export type HintResult = { ok: true; text: string } | { ok: false; status: 404 | 409 | 429 | 503; message: string };
 
-type ItemWithDraft = { id: string; draft_id: string; category: string; summary: string; quote: string | null; paragraph_index: number | null;
+type ItemWithDraft = { id: string; draft_id: string; category: string; summary: string; revised_summary: string | null; quote: string | null; paragraph_index: number | null;
   anchor_start: number | null;
   hints: string[]; rewrite: string | null; highest_level: number; drafts: { content: string; essays: { grade_level: string } } };
 
@@ -25,7 +25,7 @@ const rewriteCap = (quote: string) => Math.max(25, Math.floor(1.5 * wordCount(qu
 export async function requestHint(db: Db, userId: string, itemId: string, level: 3 | 4 | 5,
   env: Record<string, string | undefined>, completeFn: typeof complete = complete): Promise<HintResult> {
   const { data, error } = await db.from('feedback_items')
-    .select('id,draft_id,category,summary,quote,paragraph_index,anchor_start,hints,rewrite,highest_level,drafts(content,essays(grade_level))')
+    .select('id,draft_id,category,summary,revised_summary,quote,paragraph_index,anchor_start,hints,rewrite,highest_level,drafts(content,essays(grade_level))')
     .eq('id', itemId).maybeSingle();
   if (error) return BUSY;
   if (!data) return NOT_FOUND;
@@ -35,7 +35,8 @@ export async function requestHint(db: Db, userId: string, itemId: string, level:
   if (level === 5 && !item.rewrite && item.anchor_start === null) return WORDS_GONE;
 
   const paras = paragraphs(item.drafts.content);
-  const input = { gradeLevel: item.drafts.essays.grade_level, item: { summary: item.summary, quote: item.quote, category: item.category },
+  const input = { gradeLevel: item.drafts.essays.grade_level, // a coach revision from a dispute is the feedback now
+    item: { summary: item.revised_summary ?? item.summary, quote: item.quote, category: item.category },
     paragraph: item.paragraph_index !== null ? paras[item.paragraph_index] ?? item.drafts.content : item.drafts.content };
 
   // Every LLM hint call takes one of the day's hints (migration 20261021140000); a stored hint is free.

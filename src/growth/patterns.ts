@@ -21,7 +21,7 @@ export const PATTERNS: Record<PatternKey, string> = {
 const LANGUAGE_TOOL: Record<string, PatternKey | null> = { TYPOS: 'spelling', GRAMMAR: 'grammar', CONFUSED_WORDS: 'grammar', PUNCTUATION: 'punctuation', REDUNDANCY: null };
 const TEXT_RULES: [RegExp, PatternKey][] = [
   [/comma splice/, 'comma_splice'],
-  [/\brun[- ]on\b|fused sentence/, 'run_on'],
+  [/\brun-ons?\b|\brun on sentence|fused sentence/, 'run_on'],
   [/topic sentence/, 'weak_topic_sentence'],
   [/over-?quot|too many quot|long quot/, 'over_quoting'],
   // "cite" alone also appears in evidence comments ("the statistic you cite"), so only naming a source or format counts.

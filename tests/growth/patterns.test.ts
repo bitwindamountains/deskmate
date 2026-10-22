@@ -32,5 +32,6 @@ test('cite and run only count when they name the pattern', () => {
   expect(patternOf(llm('Sources', 'Cite the source of this figure', 'Evidence'))).toBe('citation');
   expect(patternOf(llm('Analysis', 'If you run once more through the logic, explain it', 'Analysis'))).toBe('missing_analysis');
   expect(patternOf(llm('Structure', 'This run-on sentence needs a break'))).toBe('run_on');
+  expect(patternOf(llm('Structure', 'Several run-ons here'))).toBe('run_on');
   expect(PATTERNS.vague_thesis).toBe('Thesis');
 });
