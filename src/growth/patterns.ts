@@ -25,7 +25,7 @@ const TEXT_RULES: [RegExp, PatternKey][] = [
   [/topic sentence/, 'weak_topic_sentence'],
   [/over-?quot|too many quot|long quot/, 'over_quoting'],
   // "cite" alone also appears in evidence comments ("the statistic you cite"), so only naming a source or format counts.
-  [/citation|\bcite (?:your|the|a|each|this) source|source format|in-text/, 'citation'],
+  [/citation|\bcite (?:(?:your|the|a|each|this|these) )?sources?\b|\bcite them\b|source format|\bin-?text\b/, 'citation'],
   [/transition/, 'weak_transitions'],
 ];
 const RUBRIC: Record<string, PatternKey> = { Thesis: 'vague_thesis', Evidence: 'unsupported_claim', Analysis: 'missing_analysis' };
