@@ -12,15 +12,17 @@ export function Prereqs({ deckId, concepts, edges }: { deckId: string; concepts:
   const [concept, setConcept] = useState('');
   const [prereq, setPrereq] = useState('');
   const [error, setError] = useState('');
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   // An edge whose concept lost its cards still shows (by its stored key) so it can be removed.
   const label = (key: string) => concepts.find((c) => c.key === key)?.label ?? key;
 
-  async function run(action: () => Promise<{ ok: true } | { ok: false; message: string }>) {
-    setError(''); setBusy(true);
+  async function run(action: () => Promise<{ ok: true } | { ok: false; message: string }>, done: string) {
+    setError(''); setNote(''); setBusy(true);
     const r = await action().catch(() => ({ ok: false as const, message: "We couldn't save that." }));
     setBusy(false);
     if (!r.ok) { setError(r.message); return; }
+    setNote(done);
     router.refresh();
   }
 
@@ -37,7 +39,7 @@ export function Prereqs({ deckId, concepts, edges }: { deckId: string; concepts:
               <li key={`${e.concept}\n${e.prereq}`} className="flex flex-wrap items-center gap-3">
                 <span>{name}</span>
                 <button type="button" className="btn" disabled={busy} aria-label={`Remove ${name}`}
-                  onClick={() => void run(() => removePrereq(deckId, e.concept, e.prereq))}>Remove</button>
+                  onClick={() => void run(() => removePrereq(deckId, e.concept, e.prereq), 'Removed.')}>Remove</button>
               </li>
             );
           })}
@@ -46,11 +48,11 @@ export function Prereqs({ deckId, concepts, edges }: { deckId: string; concepts:
       {concepts.length >= 2 && (
         <form className="flex flex-wrap items-end gap-3" onSubmit={(ev) => {
           ev.preventDefault();
-          if (concept && prereq) void run(() => addPrereq(deckId, concept, prereq));
+          if (concept && prereq) void run(() => addPrereq(deckId, concept, prereq), 'Added.');
         }}>
           <div>
             <label htmlFor="prereq-concept" className="mb-1 block">This concept</label>
-            <select id="prereq-concept" className="field" value={concept} onChange={(e) => setConcept(e.target.value)}>
+            <select id="prereq-concept" className="field" value={concept} onChange={(e) => { setConcept(e.target.value); if (e.target.value === prereq) setPrereq(''); }}>
               <option value="">Choose…</option>
               {concepts.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
@@ -65,6 +67,7 @@ export function Prereqs({ deckId, concepts, edges }: { deckId: string; concepts:
           <button type="submit" className="btn" disabled={busy || !concept || !prereq}>Add</button>
         </form>
       )}
+      <p role="status" className="empty:hidden">{note}</p>
       {error && <p role="alert" className="error">{error}</p>}
     </section>
   );

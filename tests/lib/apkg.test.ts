@@ -61,7 +61,7 @@ test('readApkg reports files that are not Anki packages and caps the card count'
   expect((await readApkg(new Uint8Array([1, 2, 3]))).error).toBe("That file isn't an Anki package (.apkg).");
   expect((await readApkg(zipSync({ 'x.txt': new Uint8Array(1) }))).error).toBe("That file isn't an Anki package (.apkg).");
   const many = await apkg({ 'collection.anki2': Array.from({ length: 2001 }, (_, i): Note => [`q${i}`, `a${i}`]) });
-  expect((await readApkg(many)).error).toBe('Import at most 2,000 cards at a time.');
+  expect((await readApkg(many)).error).toBe('Import at most 2,000 cards at a time. In Anki, export a smaller subdeck and import that.');
 });
 
 test('Image Occlusion notes are skipped, not turned into cloze cards', async () => {
@@ -69,4 +69,8 @@ test('Image Occlusion notes are skipped, not turned into cloze cards', async () 
   const r = await readApkg(bytes);
   expect(r.cards.map((c) => c.front)).toEqual(['Q']);
   expect(r.skipped).toBe(1);
+});
+
+test('ankiText drops numeric entities that are not real characters instead of failing the import', () => {
+  expect(ankiText('a&#0;b&#99999999;c&#xD800;d')).toBe('abcd');
 });

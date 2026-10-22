@@ -39,3 +39,18 @@ test('a refused edge is an alert', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect((await screen.findByRole('alert')).textContent).toBe('That would make a loop: glycolysis already builds on cell respiration.');
 });
+
+test('adding and removing are announced, and choosing the same concept clears Builds on', async () => {
+  addPrereq.mockResolvedValue({ ok: true });
+  removePrereq.mockResolvedValue({ ok: true });
+  render(<Prereqs deckId={D} concepts={concepts} edges={[{ concept: 'cell respiration', prereq: 'glycolysis' }]} />);
+  fireEvent.change(screen.getByLabelText('Builds on'), { target: { value: 'glycolysis' } });
+  fireEvent.change(screen.getByLabelText('This concept'), { target: { value: 'glycolysis' } });
+  expect((screen.getByLabelText('Builds on') as HTMLSelectElement).value).toBe('');
+  fireEvent.change(screen.getByLabelText('This concept'), { target: { value: 'cell respiration' } });
+  fireEvent.change(screen.getByLabelText('Builds on'), { target: { value: 'glycolysis' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  expect((await screen.findByRole('status')).textContent).toBe('Added.');
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Cell respiration builds on Glycolysis' }));
+  await vi.waitFor(() => expect(screen.getByRole('status').textContent).toBe('Removed.'));
+});
