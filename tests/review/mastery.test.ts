@@ -53,3 +53,16 @@ test('forgettingCurve decays without review and the reviewed-today line stays ab
   }
   expect(forgettingCurve([card('c', 'C', null)], now)).toEqual([]);
 });
+
+test('"due today" in the curve follows the student time zone, not the server day', async () => {
+  const { forgettingCurve } = await import('@/review/mastery');
+  // 10:00 UTC is 18:00 in Manila; a card due at 20:00 UTC is due "today" by the UTC day but tomorrow in Manila.
+  const now = new Date('2026-10-22T10:00:00Z');
+  const state = { due: '2026-10-22T20:00:00.000Z', stability: 3, difficulty: 5, scheduled_days: 3, learning_steps: 0, reps: 3, lapses: 0, state: 2,
+    last_review: '2026-10-19T20:00:00.000Z' };
+  const cards = [{ id: 'c', deckId: 'd', type: 'basic', importance: 2, front: 'F', back: 'B', keyPoints: [], concept: 'x', state }] as never;
+  const utc = forgettingCurve(cards, now, 5, 'UTC');
+  const manila = forgettingCurve(cards, now, 5, 'Asia/Manila');
+  expect(utc[3].ifReviewedToday).not.toBe(utc[3].ifIdle);       // reviewed today under UTC
+  expect(manila.map((p) => p.ifReviewedToday)).toEqual(manila.map((p) => p.ifIdle)); // not due today in Manila
+});

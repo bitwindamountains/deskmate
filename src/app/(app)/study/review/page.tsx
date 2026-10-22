@@ -1,3 +1,4 @@
+import { userTimeZone } from '@/lib/time/user-zone';
 import { AppPage } from '@/components/page';
 import { requireOnboardedUser } from '@/lib/profile/require';
 import { loadStudy } from '@/lib/review/load';
@@ -10,7 +11,7 @@ const conceptKey = (c: string) => c.trim().toLowerCase(); // same grouping as th
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ deck?: string; concept?: string }> }) {
   const { profile } = await requireOnboardedUser();
   const { deck, concept } = await searchParams;
-  const { decks, cards, newIntroducedToday } = await loadStudy(await createClient());
+  const { decks, cards, newIntroducedToday } = await loadStudy(await createClient(), undefined, await userTimeZone());
   const examDates = Object.fromEntries(decks.map((d) => [d.id, d.exam_date]));
   const focus = typeof concept === 'string' && concept.trim() ? conceptKey(concept) : null;
   const shown = focus ? cards.filter((c) => conceptKey(c.concept) === focus && (!deck || c.deckId === deck)) : cards;
