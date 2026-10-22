@@ -1,5 +1,11 @@
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test, vi } from 'vitest';
 import { adminClient, createTestUser, deleteTestUsers, type Client } from './helpers';
+
+const session = vi.hoisted(() => ({ client: null as unknown }));
+vi.mock('@/lib/supabase/server', () => ({ createClient: async () => session.client }));
+vi.mock('@/lib/profile/is-onboarded', () => ({ isOnboarded: async () => true }));
+vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
+const { addPrereq, removePrereq, saveGoals } = await import('@/app/(app)/study/deck/[deckId]/actions');
 
 type User = { client: Client; userId: string };
 let A: User;
@@ -47,4 +53,27 @@ test('concept_prereqs: own deck only, normalized keys, no self edges, private to
   expect((await B.client.from('concept_prereqs').select('id')).data).toEqual([]);
   const del = await A.client.from('concept_prereqs').delete().eq('deck_id', deck).eq('concept', 'cell respiration').select('id');
   expect(del.data).toHaveLength(1);
+});
+
+test('addPrereq normalizes names, refuses loops and self edges, and treats a repeat as done; removePrereq deletes', async () => {
+  session.client = A.client;
+  expect(await addPrereq(deck, ' Krebs Cycle ', 'Glycolysis')).toEqual({ ok: true });
+  expect(await addPrereq(deck, 'krebs cycle', 'glycolysis')).toEqual({ ok: true });
+  expect(await addPrereq(deck, 'Glycolysis', 'krebs cycle')).toEqual({ ok: false, message: 'That would make a loop: krebs cycle already builds on glycolysis.' });
+  expect(await addPrereq(deck, 'ATP', 'atp ')).toEqual({ ok: false, message: "A concept can't build on itself." });
+  const rows = (await adminClient().from('concept_prereqs').select('concept,prereq').eq('deck_id', deck)).data;
+  expect(rows).toEqual([{ concept: 'krebs cycle', prereq: 'glycolysis' }]);
+  session.client = B.client;
+  expect((await addPrereq(deck, 'a', 'b')).ok).toBe(false);
+  session.client = A.client;
+  expect(await removePrereq(deck, 'Krebs cycle', 'glycolysis')).toEqual({ ok: true });
+  expect((await adminClient().from('concept_prereqs').select('id').eq('deck_id', deck)).data).toEqual([]);
+});
+
+test('saveGoals returns the matched count, and refuses bad input without a database call', async () => {
+  session.client = A.client;
+  expect(await saveGoals(deck, 'Explain cell respiration', [ids[0]])).toEqual({ ok: true, matched: 1 });
+  expect(await saveGoals(deck, 'x', ['not-a-uuid'])).toEqual({ ok: false, message: "We couldn't save your goals." });
+  session.client = B.client;
+  expect(await saveGoals(deck, 'x', [])).toEqual({ ok: false, message: "We couldn't save your goals." });
 });

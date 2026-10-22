@@ -1,7 +1,6 @@
 // Browser-only in the app (next.config aliases sql.js away from server bundles); tests run it in node.
 import { unzipSync } from 'fflate';
 import { decompress } from 'fzstd';
-import initSqlJs from 'sql.js';
 import type { CsvCard } from './csv';
 
 const MAX_CARDS = 2000;
@@ -54,7 +53,8 @@ export async function readApkg(bytes: Uint8Array, wasmUrl?: string): Promise<{ c
     const name = COLLECTIONS.find((n) => files[n]);
     if (!name) return { cards: [], skipped: 0, error: NOT_APKG };
     const data = name.endsWith('anki21b') ? decompress(files[name]) : files[name];
-    const SQL = await initSqlJs(wasmUrl ? { locateFile: () => wasmUrl } : undefined);
+    const sqlJs = await import('sql.js'); // lazy, like pdf.js: the server build swaps it for an empty stub
+    const SQL = await sqlJs.default(wasmUrl ? { locateFile: () => wasmUrl } : undefined);
     const db = new SQL.Database(data);
     try {
       notes = (db.exec('select flds, tags from notes order by id')[0]?.values ?? []) as [string, string][];
