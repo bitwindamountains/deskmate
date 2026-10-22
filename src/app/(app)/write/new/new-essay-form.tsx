@@ -6,6 +6,7 @@ import { extractEssayFile } from '@/lib/essay/extract';
 import { validateEssay, type EssayType } from '@/lib/essay/text';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { createEssay } from '../actions';
+import { Timer } from './timer';
 
 const TYPES: [EssayType, string][] = [
   ['argumentative', 'Argumentative'], ['expository', 'Expository'], ['narrative', 'Narrative'],
@@ -31,6 +32,8 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const [citationStyle, setCitationStyle] = useState('');
   const [selfScores, setSelfScores] = useState<Record<string, string>>({});
   const [weakness, setWeakness] = useState('');
+  const [timed, setTimed] = useState<'' | '20' | '30' | '45'>('');
+  const [startedAt, setStartedAt] = useState<number | null>(null);
 
   async function pick(file?: File) {
     setError('');
@@ -53,8 +56,10 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         // A3.7: optional; only the criteria the student rated are sent, and nothing at all when the section is untouched.
         const scores = DEFAULT_RUBRIC.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
         const self = scores.length || weakness.trim() ? { selfAssessment: { scores, weakness: weakness.trim() || null } } : {};
+        // A4.5: only a started timer makes this a timed essay; minutes used are whole minutes, rounded up.
+        const time = timed && startedAt !== null ? { timedMinutes: Number(timed) as 20 | 30 | 45, minutesUsed: Math.min(600, Math.ceil((Date.now() - startedAt) / 60_000)) } : {};
         const r = await createEssay({
-          title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content, ...self,
+          title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content, ...self, ...time,
         });
         if (r.ok) router.push(`/write/${r.essayId}`);
         else setError(r.error);
@@ -68,6 +73,21 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   return (
     <form onSubmit={submit} className="max-w-prose space-y-5">
       {error && <p id="essay-err" role="alert" className="error">{error}</p>}
+
+      <div className="space-y-3">
+        <div>
+          <label htmlFor="timed" className="mb-1 block">Timed practice</label>
+          <select id="timed" value={timed} disabled={startedAt !== null} className="field"
+            onChange={(e) => setTimed(e.target.value as typeof timed)}>
+            <option value="">Off</option>
+            <option value="20">20 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+          </select>
+        </div>
+        {timed && startedAt === null && <button type="button" className="btn" onClick={() => setStartedAt(Date.now())}>Start the timer</button>}
+        {timed && startedAt !== null && <Timer minutes={Number(timed)} startedAt={startedAt} />}
+      </div>
 
       <div>
         <label htmlFor="title" className="mb-1 block">Title</label>

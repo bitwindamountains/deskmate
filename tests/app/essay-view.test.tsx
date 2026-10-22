@@ -429,3 +429,14 @@ test('the self-check top priority uses the revised summary', () => {
   const region = screen.getByRole('region', { name: "Your rating and the coach's" });
   expect(within(region).getByText('Revised g1')).toBeTruthy();
 });
+
+test('a timed essay shows how long it took; an untimed one shows nothing', () => {
+  view({ timed: { limit: 30, used: 27 } });
+  expect(screen.getByText('Timed practice: written in 27 of 30 minutes')).toBeTruthy();
+  cleanup();
+  view({ timed: { limit: 30, used: null } });
+  expect(screen.getByText('Timed practice: 30 minutes')).toBeTruthy();
+  cleanup();
+  view();
+  expect(screen.queryByText(/Timed practice/)).toBeNull();
+});
