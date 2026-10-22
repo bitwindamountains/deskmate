@@ -4,7 +4,8 @@ import { parseCards } from './csv';
 const NO_DECK = { ok: false, message: "We couldn't find that deck." } as const;
 const FAILED = { ok: false, message: "We couldn't import those cards. Try again." } as const;
 
-export type ImportResult = { ok: true; added: number; skippedRows: number[]; duplicates: number } | { ok: false; message: string };
+/** inDeck: cards the deck already has; inFile: rows that repeat an earlier row of the same file. */
+export type ImportResult = { ok: true; added: number; skippedRows: number[]; inDeck: number; inFile: number } | { ok: false; message: string };
 
 const PAGE = 1000; // the API's default row cap
 
@@ -33,13 +34,17 @@ export async function importCards(db: Db, userId: string, deckId: string, text: 
   const parsed = parseCards(text);
   if (parsed.error) return { ok: false, message: parsed.error };
   const existing = await allRows<{ front: string; back: string }>((from, to) =>
-    db.from('cards').select('front,back').eq('deck_id', deckId).order('created_at').order('id').range(from, to));
+    // A card thrown away in triage doesn't count: importing it is the student choosing it again.
+    db.from('cards').select('front,back').eq('deck_id', deckId).neq('status', 'discarded').order('created_at').order('id').range(from, to));
   if (!existing) return FAILED;
-  const seen = new Set(existing.map((c) => keyOf(c.front, c.back)));
+  const deckKeys = new Set(existing.map((c) => keyOf(c.front, c.back)));
+  const fileKeys = new Set<string>();
+  let inDeck = 0, inFile = 0;
   const fresh = parsed.cards.filter((c) => {
     const k = keyOf(c.front, c.back);
-    if (seen.has(k)) return false;
-    seen.add(k);
+    if (deckKeys.has(k)) { inDeck++; return false; }
+    if (fileKeys.has(k)) { inFile++; return false; }
+    fileKeys.add(k);
     return true;
   });
   if (fresh.length) {
@@ -47,5 +52,5 @@ export async function importCards(db: Db, userId: string, deckId: string, text: 
       type: c.type, front: c.front, back: c.back, key_points: [], source_quote: '', concept: c.concept, bloom_level: 'remember', importance: 2, status: 'kept' })));
     if (insErr) return FAILED;
   }
-  return { ok: true, added: fresh.length, skippedRows: parsed.skippedRows, duplicates: parsed.cards.length - fresh.length };
+  return { ok: true, added: fresh.length, skippedRows: parsed.skippedRows, inDeck, inFile };
 }

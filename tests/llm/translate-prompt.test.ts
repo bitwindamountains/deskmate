@@ -21,4 +21,5 @@ test('translate prompt asks to keep every listed item and not shorten', () => {
   const p = translateFeedbackPrompt({ lang: 'fil', summary: 'x', hints: [] });
   expect(p.system).toContain('Keep every point and every item in a list');
   expect(p.system).toContain('do not shorten or summarize');
+  expect(p.system).toContain('Write every output string in Filipino, never in English');
 });

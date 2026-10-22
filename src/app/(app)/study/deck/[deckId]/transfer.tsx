@@ -14,7 +14,8 @@ const MAX_BYTES = 1_000_000; // matches the server action's limit
 const SHOW_ROWS = 5;
 
 const list = (ns: number[]) => (ns.length === 1 ? `${ns[0]}` : `${ns.slice(0, -1).join(', ')} and ${ns.at(-1)}`);
-const duplicatesNote = (n: number) => (n ? `${n} ${n === 1 ? 'was' : 'were'} already in this deck.` : '');
+const inDeckNote = (n: number) => (n ? `${n} already in this deck.` : '');
+const inFileNote = (n: number) => (n ? `${n} repeated in the file.` : '');
 function skippedNote(rows: number[]): string {
   if (!rows.length) return '';
   const shown = rows.slice(0, SHOW_ROWS);
@@ -39,7 +40,7 @@ export function Transfer({ deckId }: { deckId: string }) {
     const r = await importCsv(deckId, await readText(file)).catch(() => ({ ok: false as const, message: "We couldn't import those cards. Try again." }));
     setBusy(false);
     if (!r.ok) { setError(r.message); return; }
-    setNote([`Added ${r.added} ${r.added === 1 ? 'card' : 'cards'}.`, duplicatesNote(r.duplicates), skippedNote(r.skippedRows)].filter(Boolean).join(' '));
+    setNote([`Added ${r.added} ${r.added === 1 ? 'card' : 'cards'}.`, inDeckNote(r.inDeck), inFileNote(r.inFile), skippedNote(r.skippedRows)].filter(Boolean).join(' '));
     router.refresh();
   }
 

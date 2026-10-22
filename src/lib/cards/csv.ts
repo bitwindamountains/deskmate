@@ -28,9 +28,9 @@ function rows(text: string, sep: string): string[][] | null {
   return out.filter((r) => r.some((f) => f.trim()));
 }
 
-/** Excel in many European locales saves "CSV" with semicolons; the header row says which one this file uses. */
+/** Excel in many European locales saves "CSV" with semicolons; the header row (first non-blank line) says which one this file uses. */
 function separator(text: string): string {
-  const head = text.split(/\r?\n/, 1)[0];
+  const head = (text.split(/\r?\n/).find((l) => l.trim()) ?? '').replace(/"[^"]*"/g, ''); // quoted text can hold either character
   return (head.match(/;/g)?.length ?? 0) > (head.match(/,/g)?.length ?? 0) ? ';' : ',';
 }
 
