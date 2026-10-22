@@ -15,17 +15,18 @@ const GRADES = [['high school', 'High school'], ['college', 'College'], ['gradua
 const CITATIONS = ['APA', 'MLA', 'Chicago', 'Harvard'];
 const SAVE_FAILED = "We couldn't save your essay. Please try again.";
 
-export function NewEssayForm() {
+/** initialTitle and initialPrompt come from a card or deck (C1): the form opens as an expository writing task. */
+export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initialTitle?: string; initialPrompt?: string } = {}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setErrorMsg] = useState('');
   const [errField, setErrField] = useState('');
   const setError = (msg: string, field = '') => { setErrorMsg(msg); setErrField(msg ? field : ''); };
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState('');
   const [reading, setReading] = useState(false);
-  const [prompt, setPrompt] = useState('');
-  const [essayType, setEssayType] = useState<EssayType>('argumentative');
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [essayType, setEssayType] = useState<EssayType>(initialPrompt ? 'expository' : 'argumentative');
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
   const [selfScores, setSelfScores] = useState<Record<string, string>>({});
@@ -86,7 +87,7 @@ export function NewEssayForm() {
         {reading && <p className="mt-1" role="status">Reading your file…</p>}
       </div>
 
-      <details className="rounded-xl border border-line bg-surface p-4">
+      <details className="rounded-xl border border-line bg-surface p-4" open={!!initialPrompt}>
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Assignment details (optional)</summary>
         <div className="mt-4 space-y-5">
           <div>
