@@ -6,7 +6,7 @@ import { extractEssayFile } from '@/lib/essay/extract';
 import { validateEssay, type EssayType } from '@/lib/essay/text';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { createEssay } from '../actions';
-import { Timer } from './timer';
+import { minutesUsed, TimeLeft, Timer } from './timer';
 
 const TYPES: [EssayType, string][] = [
   ['argumentative', 'Argumentative'], ['expository', 'Expository'], ['narrative', 'Narrative'],
@@ -34,6 +34,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const [weakness, setWeakness] = useState('');
   const [timed, setTimed] = useState<'' | '20' | '30' | '45'>('');
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [stoppedAt, setStoppedAt] = useState<number | null>(null);
 
   async function pick(file?: File) {
     setError('');
@@ -57,7 +58,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         const scores = DEFAULT_RUBRIC.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
         const self = scores.length || weakness.trim() ? { selfAssessment: { scores, weakness: weakness.trim() || null } } : {};
         // A4.5: only a started timer makes this a timed essay; minutes used are whole minutes, rounded up.
-        const time = timed && startedAt !== null ? { timedMinutes: Number(timed) as 20 | 30 | 45, minutesUsed: Math.min(600, Math.ceil((Date.now() - startedAt) / 60_000)) } : {};
+        const time = timed && startedAt !== null ? { timedMinutes: Number(timed) as 20 | 30 | 45, minutesUsed: minutesUsed(Number(timed), startedAt, stoppedAt) } : {};
         const r = await createEssay({
           title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content, ...self, ...time,
         });
@@ -86,7 +87,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
           </select>
         </div>
         {timed && startedAt === null && <button type="button" className="btn" onClick={() => setStartedAt(Date.now())}>Start the timer</button>}
-        {timed && startedAt !== null && <Timer minutes={Number(timed)} startedAt={startedAt} />}
+        {timed && startedAt !== null && <Timer minutes={Number(timed)} startedAt={startedAt} stoppedAt={stoppedAt} onStop={() => setStoppedAt(Date.now())} />}
       </div>
 
       <div>
@@ -158,7 +159,10 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         </div>
       </details>
 
-      <button type="submit" disabled={pending || reading} className="btn btn-primary">Get feedback</button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={pending || reading} className="btn btn-primary">Get feedback</button>
+        {timed && startedAt !== null && stoppedAt === null && <TimeLeft minutes={Number(timed)} startedAt={startedAt} />}
+      </div>
     </form>
   );
 }

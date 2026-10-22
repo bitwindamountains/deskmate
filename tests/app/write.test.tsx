@@ -108,7 +108,7 @@ test('the timer counts down, announces at 5 and 1 minutes, and at zero shows Tim
     render(<NewEssayForm />);
     fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '20' } });
     fireEvent.click(screen.getByRole('button', { name: 'Start the timer' }));
-    expect(screen.getByText('20 minutes left')).toBeTruthy();
+    expect(screen.getAllByText('20 minutes left')).toHaveLength(2); // by the timer and next to Get feedback
     act(() => { vi.advanceTimersByTime(15 * 60_000); });
     expect(screen.getByRole('status', { name: 'Timer' }).textContent).toBe('5 minutes left');
     act(() => { vi.advanceTimersByTime(4 * 60_000); });
@@ -122,6 +122,38 @@ test('the timer counts down, announces at 5 and 1 minutes, and at zero shows Tim
     fireEvent.change(essay, { target: { value: 'word '.repeat(60) } });
     fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
     expect(createEssay.mock.calls[0][0]).toMatchObject({ timedMinutes: 20, minutesUsed: 20 });
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('Stop the timer freezes the minutes used; a timer left running is capped at the limit plus 30', async () => {
+  vi.useFakeTimers();
+  try {
+    createEssay.mockResolvedValue({ ok: false, error: 'x' });
+    const fill = () => {
+      fireEvent.change(screen.getByLabelText('Title', { exact: true }), { target: { value: 'Timed' } });
+      fireEvent.change(screen.getByLabelText('Your essay', { exact: true }), { target: { value: 'word '.repeat(60) } });
+    };
+    render(<NewEssayForm />);
+    fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start the timer' }));
+    act(() => { vi.advanceTimersByTime(7 * 60_000); });
+    fireEvent.click(screen.getByRole('button', { name: 'Stop the timer' }));
+    expect(screen.getByText('Stopped at 7 minutes')).toBeTruthy();
+    act(() => { vi.advanceTimersByTime(60 * 60_000); });
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+    expect(createEssay.mock.calls[0][0]).toMatchObject({ timedMinutes: 20, minutesUsed: 7 });
+    cleanup();
+
+    render(<NewEssayForm />);
+    fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start the timer' }));
+    act(() => { vi.advanceTimersByTime(120 * 60_000); });
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+    expect(createEssay.mock.calls[1][0]).toMatchObject({ minutesUsed: 50 });
   } finally {
     vi.useRealTimers();
   }
