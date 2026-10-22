@@ -48,4 +48,5 @@ export const TASK_ROUTES: Record<TaskName, string[]> = {
   hint_rewrite: ['groq', 'gemini', 'openrouter', 'ollama'],
   card_generate: ['gemini', 'groq', 'openrouter', 'ollama'],
   grade_answer: ['groq', 'gemini', 'openrouter', 'ollama'],
+  card_help: ['groq', 'gemini', 'openrouter', 'ollama'],
 };

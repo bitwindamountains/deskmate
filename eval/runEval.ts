@@ -7,6 +7,7 @@ import { PROVIDERS } from '../src/llm/config.js';
 import {
   DEFAULT_RUBRIC,
   cardGeneratePrompt,
+  cardHelpPrompt,
   essayGlobalPrompt,
   essayParagraphsPrompt,
   gradeAnswerPrompt,
@@ -14,7 +15,7 @@ import {
   type EssayInput,
 } from '../src/llm/prompts.js';
 import { AllProvidersFailedError, complete, type CompleteResult } from '../src/llm/router.js';
-import { CardGenerate, EssayGlobal, EssayParagraphs, GradeAnswer, type FeedbackItem } from '../src/llm/schemas.js';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, type FeedbackItem } from '../src/llm/schemas.js';
 import type { CallLog, ProviderConfig, TaskName } from '../src/llm/types.js';
 import { rankFeedback } from '../src/rank.js';
 
@@ -180,6 +181,18 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
     }
     await mkdir(join(o.outDir, 'card_generate'), { recursive: true });
     await writeFile(join(o.outDir, 'card_generate', `${name}.json`), JSON.stringify({ cards }, null, 2));
+
+    // Card help (B3.3/B3.8) on the first card, so the token budget covers it; split cards must quote the chunk.
+    const first = cards[0];
+    if (first) {
+      const h = await call('card_help', name, cardHelpPrompt({ front: first.front, back: first.back, keyPoints: first.key_points, chunk: chunks[0] }), CardHelp);
+      if (h) {
+        const split = h.data.split.map((c) => ({ ...c, grounded: isGrounded(chunks[0], c.source_quote) }));
+        row('card_help', name, { ...meta(h), cards: split.length, cards_grounded: split.filter((c) => c.grounded).length });
+        await mkdir(join(o.outDir, 'card_help'), { recursive: true });
+        await writeFile(join(o.outDir, 'card_help', `${name}.json`), JSON.stringify({ card: first, help: { ...h.data, split } }, null, 2));
+      }
+    }
   }
 
   // Answers: semantic grading.
