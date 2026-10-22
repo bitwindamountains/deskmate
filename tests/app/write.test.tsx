@@ -158,3 +158,19 @@ test('Stop the timer freezes the minutes used; a timer left running is capped at
     vi.useRealTimers();
   }
 });
+
+test('stopping the timer is announced and keeps keyboard focus', () => {
+  vi.useFakeTimers();
+  try {
+    render(<NewEssayForm />);
+    fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start the timer' }));
+    act(() => { vi.advanceTimersByTime(3 * 60_000); });
+    fireEvent.click(screen.getByRole('button', { name: 'Stop the timer' }));
+    const stopped = screen.getByText('Stopped at 3 minutes');
+    expect(stopped.getAttribute('role')).toBe('status');
+    expect(document.activeElement).toBe(stopped);
+  } finally {
+    vi.useRealTimers();
+  }
+});
