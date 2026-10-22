@@ -54,6 +54,13 @@ test('a non-ASCII deck title still downloads, with an ASCII fallback name', asyn
   expect(res.headers.get('content-disposition')).toBe(`attachment; filename="Biologa.csv"; filename*=UTF-8''${encodeURIComponent('Biología 生物')}.csv`);
 });
 
+test("a title with ' ( ) * is fully percent-encoded in filename*", async () => {
+  const d = (await A.client.from('decks').insert({ user_id: A.userId, title: "Bio (Kim's) *notes*" }).select('id').single()).data!.id;
+  session.client = A.client;
+  const res = await GET(new NextRequest(`http://localhost/api/decks/${d}/export?format=csv`), { params: Promise.resolve({ deckId: d }) });
+  expect(res.headers.get('content-disposition')).toContain("filename*=UTF-8''Bio%20%28Kim%27s%29%20%2Anotes%2A.csv");
+});
+
 test('importing the same file twice adds nothing the second time, and repeats inside a file count once', async () => {
   const d = (await A.client.from('decks').insert({ user_id: A.userId, title: 'Dup' }).select('id').single()).data!.id;
   const file = 'front,back\nQ1,A1\nq1 , a1\nQ2,A2\n';
