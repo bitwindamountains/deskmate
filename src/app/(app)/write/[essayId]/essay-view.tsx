@@ -10,6 +10,7 @@ import { FeedbackCard, isOpen, LAYER_BG, LAYER_LABEL, REWRITE_CAP, type CardApi 
 import { Editor, storedDraft } from './editor';
 import { FocusMode } from './focus';
 import { Outline, type OutlineLine } from './outline';
+import { ReadAloud, type Reading } from './read-aloud';
 import { SelfCheck } from './self-check';
 import { carryOverCounts, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
 import type { DialogueKind, ThreadMessage } from './item-dialogue';
@@ -44,6 +45,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
   const [analysis, setAnalysis] = useState(initialAnalysis);
   const [outline, setOutline] = useState(initialOutline);
   const [threads, setThreads] = useState(initialThreads);
+  const [reading, setReading] = useState<Reading | null>(null);
   const [layerState, setLayerState] = useState(() =>
     Object.fromEntries(LAYERS.map((l) => [l, { state: layers[l] === 'done' ? 'done' : 'waiting' }])) as Record<Layer, LayerState>);
   const [statusOf, setStatusOf] = useState<Record<string, string>>({});
@@ -239,6 +241,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
           <a href="#feedback" className="btn md:hidden">Jump to feedback</a>
           <button type="button" className="btn" aria-pressed={editing} onClick={() => setEditing((v) => !v)}>Edit</button>
           {version > 1 && <Link href={`/write/${essayId}/compare?from=${version - 1}&to=${version}`} className="btn">Compare with draft {version - 1}</Link>}
+          {!editing && <ReadAloud paragraphs={paragraphs} onSentence={setReading} />}
         </div>
         {editing ? <Editor essayId={essayId} content={content} /> : (
           <div className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
@@ -246,7 +249,14 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
               const dimmed = !!focus && focusPara !== null && i !== focusPara;
               return (
                 <p key={i} id={`para-${i}`} tabIndex={-1} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
-                  <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />
+                  {reading?.para === i ? (
+                    // While read aloud, the paragraph drops its highlights so the sentence outline is the only mark in it.
+                    <>
+                      {text.slice(0, reading.start)}
+                      <span className="rounded-sm outline outline-2 outline-offset-2 outline-ink"><span className="sr-only">Now reading:</span>{text.slice(reading.start, reading.end)}</span>
+                      {text.slice(reading.end)}
+                    </>
+                  ) : <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />}
                 </p>
               );
             })}
