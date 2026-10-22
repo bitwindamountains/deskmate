@@ -87,3 +87,11 @@ export const CardHelp = z.object({
   split: z.array(Card.omit({ importance: true })).max(3),
 });
 export type CardHelp = z.infer<typeof CardHelp>;
+
+/** A coach reply on one feedback item (A2.9 questions, A3.10 disputes). verdict and revised_summary are for disputes only. */
+export const ItemDialogue = z.object({
+  reply: z.string().min(1),
+  verdict: z.enum(['keep', 'modify', 'withdraw']).nullable().default(null),
+  revised_summary: z.string().nullable().default(null),
+});
+export type ItemDialogue = z.infer<typeof ItemDialogue>;

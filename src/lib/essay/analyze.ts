@@ -11,14 +11,15 @@ export type Layer = 'global' | 'paragraphs' | 'sentences';
 export type ItemRow = { id: string; layer: 'global' | 'paragraph' | 'sentence'; category: string; rubric_criterion: string | null;
   paragraph_index: number | null; quote: string | null; anchor_start: number | null; anchor_end: number | null;
   severity: 'low' | 'medium' | 'high'; summary: string; hints: string[]; rewrite: string | null; replacements: string[];
-  convention: boolean; source: 'llm' | 'languagetool'; status: string; highest_level: number; carried_from_id: string | null };
+  convention: boolean; source: 'llm' | 'languagetool'; status: string; highest_level: number; carried_from_id: string | null;
+  revised_summary: string | null };
 type Analysis = { rubric_scores: unknown; strengths: unknown; safety_concern: boolean; prompt_alignment: unknown };
 /** items is every item of the draft after this layer, so the client can replace its state wholesale. */
 export type AnalyzeResult =
   | { ok: true; items: ItemRow[]; analysis?: Analysis; outline?: unknown; dropped: number; already: boolean }
   | { ok: false; status: 404 | 409 | 429 | 503; error: 'not_found' | 'running' | 'quota' | 'busy'; message: string };
 
-const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id';
+const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id,revised_summary';
 const NOT_FOUND = { ok: false, status: 404, error: 'not_found', message: "We couldn't find that essay." } as const;
 const RUNNING = { ok: false, status: 409, error: 'running', message: 'This feedback is already on its way.' } as const;
 const QUOTA = { ok: false, status: 429, error: 'quota', message: "You've used today's 5 essay checks. They reset at midnight UTC." } as const;
@@ -27,7 +28,8 @@ const ITEM_LAYER = { global: 'global', paragraphs: 'paragraph', sentences: 'sent
 
 type Draft = { id: string; essay_id: string; version: number; content: string; paragraph_hashes: string[]; layers: Record<string, string>;
   essays: { essay_type: string; grade_level: string; assignment_prompt: string | null } };
-type Row = Omit<ItemRow, 'id' | 'status' | 'highest_level' | 'carried_from_id' | 'rewrite'> & Partial<Pick<ItemRow, 'status' | 'carried_from_id' | 'rewrite' | 'highest_level'>>;
+type Row = Omit<ItemRow, 'id' | 'status' | 'highest_level' | 'carried_from_id' | 'rewrite' | 'revised_summary'>
+  & Partial<Pick<ItemRow, 'status' | 'carried_from_id' | 'rewrite' | 'highest_level' | 'revised_summary'>>;
 
 class Failed extends Error {}
 type OutlineLine = { paragraph_index: number; summary: string; flag?: EssayParagraphs['outline'][number]['flag'] | null };
@@ -109,7 +111,7 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
     if (!rows.length) return;
     // Same keys on every row: in a batch, supabase-js sends null (not the column default) for a key some rows lack.
     const { error } = await db.from('feedback_items').insert(rows.map((r) =>
-      ({ status: 'open', highest_level: 0, carried_from_id: null, rewrite: null, ...r, user_id: userId, draft_id: draft.id })));
+      ({ status: 'open', highest_level: 0, carried_from_id: null, rewrite: null, revised_summary: null, ...r, user_id: userId, draft_id: draft.id })));
     if (error) throw new Failed();
   };
 

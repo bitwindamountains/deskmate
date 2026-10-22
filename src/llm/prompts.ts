@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite } from './schemas';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 
 export interface RubricCriterion {
   name: string;
@@ -191,6 +191,32 @@ export function hintRewritePrompt(i: HintInput): Prompt {
       `Return only JSON with this shape: ${compactSchema(HintRewrite)}`,
     ].join('\n'),
     user: hintContext(i),
+  };
+}
+
+type DialogueInput = HintInput & { history: { role: 'student' | 'coach'; text: string }[]; kind: 'question' | 'dispute'; message: string };
+
+/** A2.9 / A3.10: one coach turn on a feedback item. The system prompt depends only on kind, never on student text. */
+export function itemDialoguePrompt(i: DialogueInput): Prompt {
+  const dispute = i.kind === 'dispute';
+  return {
+    system: [
+      dispute
+        ? 'You are a writing coach for students at the grade level given below. The student disagrees with one feedback item on their essay.'
+        : 'You are a writing coach for students at the grade level given below. The student has a question about one feedback item on their essay.',
+      ...(dispute
+        ? ["Weigh the student's reason honestly against their paragraph. If they are right, set verdict withdraw. If they are partly right, set verdict modify and give revised_summary: the corrected feedback in one or two sentences. If the feedback still stands, set verdict keep and explain why, specifically and kindly."]
+        : ['Answer the question clearly and specifically, about this item and this paragraph.']),
+      'reply: at most 120 words. Address the student as "you". Do not judge the student as a person.',
+      'Never write a sentence the student could copy into the essay: no example thesis, topic sentence, transition, or rewrite about their topic. Say what to change, not the words to write.',
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(dispute ? ItemDialogue : ItemDialogue.pick({ reply: true }))}`,
+    ].join('\n'),
+    user: [
+      hintContext(i),
+      ...(i.history.length ? [`Conversation so far:\n${wrapData('conversation', i.history.map((m) => `${m.role}: ${m.text}`).join('\n'))}`] : []),
+      `The student's message:\n${wrapData('student_message', i.message)}`,
+    ].join('\n\n'),
   };
 }
 
