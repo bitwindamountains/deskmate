@@ -4,6 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { importCsv } from './actions';
 
+/** UTF-8 when the bytes are valid UTF-8; otherwise Excel's default "CSV (Comma delimited)" encoding, Windows-1252. */
+async function readText(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return new TextDecoder('windows-1252').decode(bytes); }
+}
+
 /** B4.5: bring cards in from a CSV, take them out as CSV or Anki text. */
 export function Transfer({ deckId }: { deckId: string }) {
   const router = useRouter();
@@ -15,7 +21,7 @@ export function Transfer({ deckId }: { deckId: string }) {
     setNote(''); setError('');
     if (!file) return;
     setBusy(true);
-    const r = await importCsv(deckId, await file.text()).catch(() => ({ ok: false as const, message: "We couldn't import those cards. Try again." }));
+    const r = await importCsv(deckId, await readText(file)).catch(() => ({ ok: false as const, message: "We couldn't import those cards. Try again." }));
     setBusy(false);
     if (!r.ok) { setError(r.message); return; }
     const skipped = r.skipped ? ` Skipped ${r.skipped} ${r.skipped === 1 ? 'row' : 'rows'} without a front and back.` : '';

@@ -39,3 +39,25 @@ test('a typed answer the cascade cannot settle asks the student to mark it', asy
   fireEvent.click(screen.getByRole('button', { name: 'Next' }));
   expect(await screen.findByText('2 of 2 right')).toBeTruthy();
 });
+
+test('a correct paraphrase the matcher scores low still goes to Check this one yourself', async () => {
+  const q: TestQuestion = { cardId: 'm', kind: 'short', prompt: 'What do mitochondria do?', answer: "The mitochondria produce most of the cell's ATP through respiration",
+    keyPoints: [], type: 'basic' };
+  render(<TestRunner deckId="d" deckTitle="Bio" questions={[q, Q[0]]} />);
+  fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'it makes energy (ATP) for the cell via cellular respiration' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  expect(await screen.findByText('Check this one yourself')).toBeTruthy();
+  expect(document.activeElement?.textContent).toBe('I got it right');
+});
+
+test('after Next, focus moves to the new question; the result heading gets focus at the end', async () => {
+  render(<TestRunner deckId="d" deckTitle="Bio" questions={Q.slice(0, 2)} />);
+  fireEvent.click(screen.getByRole('radio', { name: 'Mitochondria' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByLabelText('Your answer');
+  expect(document.activeElement?.textContent).toContain('Question 2 of 2');
+  fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: 'deoxyribonucleic acid' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByText(/of 2 right/);
+  expect(document.activeElement?.textContent).toBe('Your result');
+});
