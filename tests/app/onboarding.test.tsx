@@ -85,7 +85,8 @@ test('first-time submit sends both timestamps, only for a not-yet-onboarded row'
   expect(col).toBe('user_id'); expect(id).toBe('u1');
   expect(v.onboarded_at).not.toBe('evil');
   expect(v.adult_attested_at).toBeTruthy();
-  expect(v).toMatchObject({ first_language: 'en', study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false, show_scores: false } });
+  expect(v).not.toHaveProperty('first_language');
+  expect(v).toMatchObject({ study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false, show_scores: false } });
   expect(isCalls).toEqual([['onboarded_at', null]]);
 });
 test('edit submit sends neither timestamp and does not need the 18+ box', async () => {
@@ -109,7 +110,7 @@ test('0-row update returns an error state and does not redirect', async () => {
 test('form shows labelled fields and the verbatim disclosure', () => {
   render(<OnboardingForm />);
   expect((screen.getByLabelText('I am 18 or older.') as HTMLInputElement).required).toBe(true);
-  expect(screen.getByLabelText('Your first language')).toBeTruthy();
+  expect(screen.queryByLabelText('Your first language')).toBeNull();
   expect(screen.getByRole('group', { name: 'Reading font' })).toBeTruthy();
   expect((screen.getByLabelText('Show rubric scores') as HTMLInputElement).checked).toBe(true);
   expect(screen.getByText("Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq's terms say it does not train its models on what you send.")).toBeTruthy();

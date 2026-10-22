@@ -1,15 +1,12 @@
 import Link from 'next/link';
 import { AppPage } from '@/components/page';
 import { SignOut } from '@/components/sign-out';
-import { LANGUAGES } from '@/lib/profile/onboarding';
 import { requireOnboardedUser } from '@/lib/profile/require';
 
 export default async function ProfilePage() {
   const { profile } = await requireOnboardedUser();
   const prefs = profile.preferences ?? {};
-  const lang = LANGUAGES.find(([c]) => c === profile.first_language)?.[1] ?? profile.first_language ?? 'Not set';
   const rows: [string, string][] = [
-    ['First language', lang],
     ['Daily study time', `${profile.study_minutes_per_day} minutes`],
     ['Reading font', prefs.font === 'dyslexic' ? 'Dyslexia-friendly' : 'Standard'],
     ['Reduce motion', prefs.reduced_motion ? 'On' : 'Off'],

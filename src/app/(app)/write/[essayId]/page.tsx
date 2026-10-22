@@ -57,8 +57,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax}
         outline={draft.data.outline as OutlineLine[] | null} threads={threads}
         selfAssessment={selfAssessment}
-        timed={essay.data.timed_minutes ? { limit: essay.data.timed_minutes as number, used: (draft.data.minutes_used as number | null) ?? null } : null}
-        language={profile.first_language === 'fil' || profile.first_language === 'es' ? profile.first_language : null} />
+        timed={essay.data.timed_minutes ? { limit: essay.data.timed_minutes as number, used: (draft.data.minutes_used as number | null) ?? null } : null} />
     </AppPage>
   );
 }
