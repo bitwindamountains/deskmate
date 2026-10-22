@@ -143,6 +143,8 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
         {
           strengths: g?.data.strengths ?? [],
           rubric_scores: g?.data.rubric_scores ?? [],
+          prompt_alignment: g?.data.prompt_alignment ?? null,
+          outline: p?.data.outline ?? [],
           top3: ranked.slice(0, 3),
           items: ranked,
           dropped: [...ga.dropped, ...pa.dropped],

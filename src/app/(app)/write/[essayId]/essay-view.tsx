@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { ItemRow, Layer } from '@/lib/essay/analyze';
 import { rankFeedback } from '@/rank';
+import { Alignment, type AlignmentPart } from './alignment';
 import { FeedbackCard, isOpen, LAYER_BG, LAYER_LABEL, REWRITE_CAP, type CardApi } from './feedback-card';
 import { Editor, storedDraft } from './editor';
 import { FocusMode } from './focus';
+import { Outline, type OutlineLine } from './outline';
 import { carryOverCounts, disputeItem, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
 
 export type Score = { criterion: string; score: number; justification: string; confidence: 'high' | 'medium' | 'low' };
 export type Strength = { paragraph_index: number; quote: string; why: string; start: number; end: number };
-export type Analysis = { rubric_scores: Score[]; strengths: Strength[]; safety_concern: boolean };
+export type Analysis = { rubric_scores: Score[]; strengths: Strength[]; safety_concern: boolean; prompt_alignment?: AlignmentPart[] | null };
 type LayerState = { state: 'waiting' | 'running' | 'done' | 'failed'; message?: string };
 type Span = { id: string; para: number; start: number; end: number; layer: keyof typeof LAYER_LABEL };
 
@@ -29,12 +31,13 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
-  rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>;
+  rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [analysis, setAnalysis] = useState(initialAnalysis);
+  const [outline, setOutline] = useState(initialOutline);
   const [layerState, setLayerState] = useState(() =>
     Object.fromEntries(LAYERS.map((l) => [l, { state: layers[l] === 'done' ? 'done' : 'waiting' }])) as Record<Layer, LayerState>);
   const [statusOf, setStatusOf] = useState<Record<string, string>>({});
@@ -61,6 +64,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
       if (res.ok) {
         setItems(body.items);
         if (body.analysis) setAnalysis(body.analysis);
+        if (body.outline) setOutline(body.outline);
         setLayer(l, { state: 'done' });
         // The global layer is what judges the previous draft's items, so their statuses are final now.
         if (l === 'global' && version > 1) carryOverCounts(essayId, version - 1).then(setCarry, () => {});
@@ -188,6 +192,9 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
   const running = LAYERS.find((l) => layerState[l].state === 'running');
   const failed = LAYERS.filter((l) => layerState[l].state === 'failed');
   const strengths = analysis?.strengths ?? [];
+  const alignment = analysis?.prompt_alignment ?? [];
+  // An essay that misses part of the assignment leads with that (brief A7).
+  const offPrompt = alignment.some((p) => p.status === 'missing');
   const focusPara = focusItem?.paragraph_index ?? null;
 
   return (
@@ -203,13 +210,14 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             {paragraphs.map((text, i) => {
               const dimmed = !!focus && focusPara !== null && i !== focusPara;
               return (
-                <p key={i} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
+                <p key={i} id={`para-${i}`} tabIndex={-1} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
                   <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />
                 </p>
               );
             })}
           </div>
         )}
+        {!editing && outline && outline.length > 0 && <Outline lines={outline} />}
       </section>
 
       <section id="feedback" tabIndex={-1} aria-label="Feedback" className="min-w-0 space-y-8 outline-none">
@@ -242,6 +250,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             onExit={() => { setFocus(null); setFocusTarget('start-focus'); }} />
         ) : (
           <>
+            {offPrompt && <Alignment parts={alignment} />}
             {strengths.length > 0 && (
               <section aria-labelledby="strengths-h" className="space-y-3">
                 <h2 id="strengths-h" className="text-xl font-bold">Strengths</h2>
@@ -272,6 +281,8 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
                 {top3.map((it) => <FeedbackCard key={it.id} item={it} api={api} />)}
               </section>
             )}
+
+            {!offPrompt && alignment.length > 0 && <Alignment parts={alignment} />}
 
             {rest.length > 0 && (
               <div className="space-y-4">
