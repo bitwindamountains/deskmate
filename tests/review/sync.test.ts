@@ -34,7 +34,7 @@ test('outbox rows sync in reviewed_at order and are deleted', async () => {
   await enqueueReview(review('b', at(-1)), null, state('card-b'), false, null);
   await enqueueReview(review('a', at(-5)), null, state('card-a'), false, null);
   const { d, sent } = deps();
-  expect(await syncOutbox(d, now)).toEqual({ sent: 2, regraded: 0, failed: 0 });
+  expect(await syncOutbox(d, now)).toEqual({ sent: 2, regraded: 0, failed: 0, dropped: 0 });
   expect(sent.map((s) => s.review.client_review_id)).toEqual(['a', 'b']);
   expect(await db.outbox.count()).toBe(0);
 });
@@ -48,17 +48,17 @@ test('failed recordReview keeps the row for the next sync', async () => {
   await enqueueReview(review('a', at(-5)), null, state('card-a'), false, null);
   await enqueueReview(review('b', at(-1)), null, state('card-b'), false, null);
   const recordReview = vi.fn(async (r: ReviewPayload) => { if (r.client_review_id === 'a') throw new Error('offline'); });
-  expect(await syncOutbox(deps({ recordReview }).d, now)).toEqual({ sent: 1, regraded: 0, failed: 1 });
+  expect(await syncOutbox(deps({ recordReview }).d, now)).toEqual({ sent: 1, regraded: 0, failed: 1, dropped: 0 });
   expect((await db.outbox.toArray()).map((r) => r.client_review_id)).toEqual(['a']);
   const { d } = deps();
-  expect(await syncOutbox(d, now)).toEqual({ sent: 1, regraded: 0, failed: 0 });
+  expect(await syncOutbox(d, now)).toEqual({ sent: 1, regraded: 0, failed: 0, dropped: 0 });
   expect(await db.outbox.count()).toBe(0);
 });
 
 test('regrade differing by 1 keeps the applied rating', async () => {
   await enqueueReview(review('a', at(-1)), null, state('card-a'), true, null);
   const { d, sent } = deps({ grade: vi.fn(async () => ({ ok: true as const, suggested: Rating.Hard as const, score: 0.5 })) });
-  expect(await syncOutbox(d, now)).toEqual({ sent: 1, regraded: 0, failed: 0 });
+  expect(await syncOutbox(d, now)).toEqual({ sent: 1, regraded: 0, failed: 0, dropped: 0 });
   expect(sent[0].review).toMatchObject({ final_rating: Rating.Good, grade_source: 'embedding', ai_score: 0.7 });
   expect(sent[0].state).toEqual(state('card-a'));
 });
@@ -67,7 +67,7 @@ test('regrade differing by 2 replaces rating and state', async () => {
   const easy = state('card-a', { scheduled_days: 15, due: at(60 * 24 * 15), last_review: at(-1) });
   await enqueueReview(review('a', at(-1), { final_rating: Rating.Easy, suggested_rating: Rating.Easy }), null, easy, true, null);
   const { d, sent } = deps({ grade: vi.fn(async () => ({ ok: true as const, suggested: Rating.Hard as const, score: 0.5 })) });
-  expect(await syncOutbox(d, now)).toEqual({ sent: 1, regraded: 1, failed: 0 });
+  expect(await syncOutbox(d, now)).toEqual({ sent: 1, regraded: 1, failed: 0, dropped: 0 });
   expect(sent[0].review).toMatchObject({ final_rating: Rating.Hard, suggested_rating: Rating.Hard, grade_source: 'llm', ai_score: 0.5 });
   // a new card rated Hard stays in learning, due within the hour; the Easy state was 15 days out
   expect(sent[0].state).toMatchObject({ card_id: 'card-a', state: 1, last_review: at(-1) });
@@ -86,11 +86,25 @@ test('a regrade does not overwrite a newer local state', async () => {
 test('regrade unavailable holds the review, then syncs the local rating after the wait', async () => {
   await enqueueReview(review('a', at(-1)), null, state('card-a'), true, null);
   const { d, sent } = deps();
-  expect(await syncOutbox(d, now)).toEqual({ sent: 0, regraded: 0, failed: 1 });
+  expect(await syncOutbox(d, now)).toEqual({ sent: 0, regraded: 0, failed: 1, dropped: 0 });
   expect((await db.outbox.get('a'))?.needsRegrade).toBe(1);
 
   const later = new Date(now.getTime() + REGRADE_WAIT_MS);
-  expect(await syncOutbox(d, later)).toEqual({ sent: 1, regraded: 0, failed: 0 });
+  expect(await syncOutbox(d, later)).toEqual({ sent: 1, regraded: 0, failed: 0, dropped: 0 });
   expect(sent[0].review).toMatchObject({ final_rating: Rating.Good, grade_source: 'embedding' });
   expect(await db.outbox.count()).toBe(0);
+});
+
+test('a queued review for a deleted card is dropped, other failures stay queued', async () => {
+  await enqueueReview(review('gone', at(-5)), null, state('card-gone'), false, null);
+  await enqueueReview(review('denied', at(-3)), null, state('card-denied'), false, null);
+  await enqueueReview(review('offline', at(-1)), null, state('card-offline'), false, null);
+  const recordReview = vi.fn(async (r: ReviewPayload) => {
+    // record_review raises 42501 'card not found' once the card is deleted; a signed-out call is also 42501, but must stay queued
+    if (r.client_review_id === 'gone') throw { code: '42501', message: 'card not found' };
+    if (r.client_review_id === 'denied') throw { code: '42501', message: 'permission denied for function record_review' };
+    throw new Error('offline');
+  });
+  expect(await syncOutbox(deps({ recordReview }).d, now)).toEqual({ sent: 0, regraded: 0, failed: 2, dropped: 1 });
+  expect((await db.outbox.toArray()).map((r) => r.client_review_id).sort()).toEqual(['denied', 'offline']);
 });

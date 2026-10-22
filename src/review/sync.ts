@@ -29,8 +29,12 @@ async function regrade(row: OutboxRow, deps: SyncDeps): Promise<'held' | 'kept' 
   return 'replaced';
 }
 
-export async function syncOutbox(deps: SyncDeps, now: Date): Promise<{ sent: number; regraded: number; failed: number }> {
-  const out = { sent: 0, regraded: 0, failed: 0 };
+// record_review's ownership check: the card was deleted (or is someone else's), so retrying can never succeed.
+// A signed-out call is also 42501 ('permission denied for function'), so the message is matched too.
+const cardGone = (e: unknown) => (e as { code?: unknown })?.code === '42501' && (e as { message?: unknown }).message === 'card not found';
+
+export async function syncOutbox(deps: SyncDeps, now: Date): Promise<{ sent: number; regraded: number; failed: number; dropped: number }> {
+  const out = { sent: 0, regraded: 0, failed: 0, dropped: 0 };
   for (const row of await db.outbox.orderBy('reviewedAt').toArray()) {
     try {
       if (row.needsRegrade) {
@@ -44,8 +48,11 @@ export async function syncOutbox(deps: SyncDeps, now: Date): Promise<{ sent: num
       await deps.recordReview(row.review, row.state);
       await db.outbox.delete(row.client_review_id);
       out.sent++;
-    } catch {
-      out.failed++; // keep the row for the next sync
+    } catch (e) {
+      if (cardGone(e)) {
+        await db.outbox.delete(row.client_review_id).catch(() => {});
+        out.dropped++;
+      } else out.failed++; // keep the row for the next sync
     }
   }
   return out;
