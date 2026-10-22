@@ -1,5 +1,6 @@
+import { z } from 'zod';
 import type { Db } from '@/lib/llm-calls';
-import { parseCards } from './csv';
+import { type CsvCard, parseCards } from './csv';
 
 const NO_DECK = { ok: false, message: "We couldn't find that deck." } as const;
 const FAILED = { ok: false, message: "We couldn't import those cards. Try again." } as const;
@@ -28,11 +29,26 @@ const keyOf = (front: string, back: string) => `${front.trim().toLowerCase()}\u0
  * or that repeat earlier in the file, are counted as duplicates, so importing the same file twice adds nothing.
  */
 export async function importCards(db: Db, userId: string, deckId: string, text: string): Promise<ImportResult> {
+  const parsed = parseCards(text);
+  if (parsed.error) return { ok: false, message: parsed.error };
+  return insertCards(db, userId, deckId, parsed.cards, parsed.skippedRows);
+}
+
+const Side = z.string().trim().min(1).max(500);
+const AnkiCards = z.array(z.object({ front: Side, back: Side, concept: z.string().trim().max(120), type: z.enum(['basic', 'cloze', 'why']) }))
+  .min(1).max(2000);
+
+/** Cards an .apkg file gave on the device (see apkg.ts). They come from the client, so they are checked again here. */
+export async function importAnkiCards(db: Db, userId: string, deckId: string, input: unknown): Promise<ImportResult> {
+  const v = AnkiCards.safeParse(input);
+  if (!v.success) return { ok: false, message: "We couldn't import that file." };
+  return insertCards(db, userId, deckId, v.data, []);
+}
+
+export async function insertCards(db: Db, userId: string, deckId: string, cards: CsvCard[], skippedRows: number[]): Promise<ImportResult> {
   const { data: deck, error } = await db.from('decks').select('id').eq('id', deckId).maybeSingle();
   if (error) return FAILED;
   if (!deck) return NO_DECK;
-  const parsed = parseCards(text);
-  if (parsed.error) return { ok: false, message: parsed.error };
   const existing = await allRows<{ front: string; back: string }>((from, to) =>
     // A card thrown away in triage doesn't count: importing it is the student choosing it again.
     db.from('cards').select('front,back').eq('deck_id', deckId).neq('status', 'discarded').order('created_at').order('id').range(from, to));
@@ -40,7 +56,7 @@ export async function importCards(db: Db, userId: string, deckId: string, text: 
   const deckKeys = new Set(existing.map((c) => keyOf(c.front, c.back)));
   const fileKeys = new Set<string>();
   let inDeck = 0, inFile = 0;
-  const fresh = parsed.cards.filter((c) => {
+  const fresh = cards.filter((c) => {
     const k = keyOf(c.front, c.back);
     if (deckKeys.has(k)) { inDeck++; return false; }
     if (fileKeys.has(k)) { inFile++; return false; }
@@ -52,5 +68,5 @@ export async function importCards(db: Db, userId: string, deckId: string, text: 
       type: c.type, front: c.front, back: c.back, key_points: [], source_quote: '', concept: c.concept, bloom_level: 'remember', importance: 2, status: 'kept' })));
     if (insErr) return FAILED;
   }
-  return { ok: true, added: fresh.length, skippedRows: parsed.skippedRows, inDeck, inFile };
+  return { ok: true, added: fresh.length, skippedRows, inDeck, inFile };
 }

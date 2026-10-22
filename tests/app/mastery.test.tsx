@@ -69,3 +69,13 @@ test('pointer moves over the curve do not announce; only focus and keys do', () 
   fireEvent.pointerMove(chart, { clientX: 200, clientY: 50 });
   expect(screen.getByRole('status').textContent).toBe('');
 });
+
+test('a struggling concept suggests reviewing what it builds on first', () => {
+  render(<MasteryView sections={[section({ remedies: [{ deckId: 'd1', concept: 'Krebs cycle',
+    prereqs: [{ key: 'glycolysis', label: 'Glycolysis', strength: 'shaky' }] }] })]} />);
+  expect(screen.getByRole('heading', { name: 'Start with the basics', level: 3 })).toBeTruthy();
+  expect(screen.getByText(/Krebs cycle has been tricky\. It builds on Glycolysis \(shaky\)\./)).toBeTruthy();
+  const href = screen.getByRole('link', { name: 'Review Glycolysis' }).getAttribute('href')!;
+  const url = new URL(href, 'https://scholar.example');
+  expect([url.pathname, url.searchParams.get('deck'), url.searchParams.get('concept')]).toEqual(['/study/review', 'd1', 'glycolysis']);
+});
