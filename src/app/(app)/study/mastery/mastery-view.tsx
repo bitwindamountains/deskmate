@@ -36,7 +36,7 @@ export function MasteryView({ sections }: { sections: MasterySection[] }) {
               <ul className="space-y-3">
                 {remedies.map((r) => (
                   <li key={r.concept}>
-                    <p>You keep missing {r.concept}. It builds on {list(r.prereqs.map((p) => `${p.label} (${STRENGTH[p.strength].text.toLowerCase()})`))}.</p>
+                    <p>{r.concept} has been tricky. It builds on {list(r.prereqs.map((p) => `${p.label} (${STRENGTH[p.strength].text.toLowerCase()})`))}.</p>
                     <p className="flex flex-wrap gap-3">
                       {r.prereqs.map((p) => <Link key={p.key} href={reviewHref(r.deckId, p.key)} className="underline">Review {p.label}</Link>)}
                     </p>

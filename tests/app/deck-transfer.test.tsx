@@ -83,3 +83,13 @@ test('an Anki package over 100 MB is refused before reading', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe('Choose an Anki package under 100 MB.');
   expect(readApkg).not.toHaveBeenCalled();
 });
+
+test('a big Anki package is sent in batches that each fit the request limit, and the counts add up', async () => {
+  const many = Array.from({ length: 1200 }, (_, i) => ({ front: `Q${i}`, back: 'A', concept: '', type: 'basic' }));
+  readApkg.mockResolvedValue({ cards: many, skipped: 0 });
+  importAnki.mockImplementation(async (_d: string, cards: unknown[]) => ({ ok: true, added: cards.length - 1, skippedRows: [], inDeck: 1, inFile: 0 }));
+  render(<Transfer deckId={D} />);
+  fireEvent.change(screen.getByLabelText('Import cards from a CSV or Anki file'), { target: { files: [new File(['x'], 'big.apkg')] } });
+  expect(await screen.findByText('Added 1197 cards. 3 already in this deck.')).toBeTruthy();
+  expect(importAnki.mock.calls.map((c) => (c[1] as unknown[]).length)).toEqual([500, 500, 200]);
+});

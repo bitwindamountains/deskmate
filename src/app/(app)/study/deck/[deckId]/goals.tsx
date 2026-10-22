@@ -6,6 +6,7 @@ import { goalLines, matchGoals } from '@/review/goals';
 import { saveGoals } from './actions';
 
 const BATCH = 32;
+const MAX_MATCHES = 2000; // set_goal_matches takes at most this many ids
 const NO_MODEL = "Goals saved. Matching cards needs a model download that didn't finish; try again later.";
 
 /** B4.3: the student pastes course goals; cards are matched to them on the device, and matched cards come up sooner. */
@@ -24,7 +25,8 @@ export function Goals({ deckId, goals, cards }: { deckId: string; goals: string;
     const goalVecs = await embed(lines);
     const vecs: number[][] = [];
     for (let i = 0; i < cards.length; i += BATCH) vecs.push(...await embed(cards.slice(i, i + BATCH).map((c) => `${c.front}\n${c.back}`)));
-    return matchGoals(goalVecs, cards.map((c, i) => ({ id: c.id, vec: vecs[i] })));
+    // ponytail: past 2,000 matches the rest of the deck goes without the boost; rank by closeness if decks get that big.
+    return matchGoals(goalVecs, cards.map((c, i) => ({ id: c.id, vec: vecs[i] }))).slice(0, MAX_MATCHES);
   }
 
   async function save() {
