@@ -311,3 +311,26 @@ test('the paragraph outline lists each line with its flag label and links to the
   expect(within(outline).getByText('Repeats an earlier point')).toBeTruthy();
   expect(document.getElementById('para-1')?.textContent).toContain('evidence badly');
 });
+
+test('the essay view shows the comparison table and the within-one-point line after the global layer', () => {
+  view({ selfAssessment: { scores: [{ criterion: 'Thesis', score: 4 }, { criterion: 'Evidence', score: 2 }], weakness: 'My conclusion is rushed.' } });
+  const region = screen.getByRole('region', { name: "Your rating and the coach's" });
+  const rows = within(region).getAllByRole('row').map((r) => r.textContent);
+  expect(rows).toEqual(['CriterionYouCoach', 'Thesis42', 'Evidence23']);
+  expect(within(region).getByText('You were within one point on 1 of 2 criteria.')).toBeTruthy();
+  expect(within(region).getByText('My conclusion is rushed.')).toBeTruthy();
+  expect(within(region).getByText('Summary g1')).toBeTruthy(); // the coach's top priority, next to the student's own
+});
+
+test('no comparison before the global layer or without a self-rating; hidden scores hide the table', () => {
+  view({ selfAssessment: { scores: [{ criterion: 'Thesis', score: 4 }], weakness: null }, analysis: null }); // no analysis yet: the global layer hasn't run
+  expect(screen.queryByRole('region', { name: "Your rating and the coach's" })).toBeNull();
+  cleanup();
+  view();
+  expect(screen.queryByRole('region', { name: "Your rating and the coach's" })).toBeNull();
+  cleanup();
+  view({ showScores: false, selfAssessment: { scores: [{ criterion: 'Thesis', score: 4 }], weakness: 'Rushed ending.' } });
+  const region = screen.getByRole('region', { name: "Your rating and the coach's" });
+  expect(within(region).queryByRole('table')).toBeNull();
+  expect(within(region).getByText('Rushed ending.')).toBeTruthy();
+});

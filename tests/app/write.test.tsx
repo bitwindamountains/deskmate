@@ -76,3 +76,19 @@ test('Write list shows essay checks left today', () => {
   rerender(<EssayList essays={[]} checksLeft={0} />);
   expect(screen.getByText("You've used today's 5 essay checks. They reset at midnight UTC.")).toBeTruthy();
 });
+
+test('rating it yourself first sends the scores and weakness; untouched criteria are left out', () => {
+  createEssay.mockResolvedValue({ ok: false, error: 'x' });
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Climate' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'word '.repeat(60) } });
+  expect(screen.getByText('Rate it yourself first (optional)').closest('details')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Thesis'), { target: { value: '3' } });
+  fireEvent.change(screen.getByLabelText('Evidence'), { target: { value: '2' } });
+  expect(screen.getByLabelText('Thesis').querySelectorAll('option')).toHaveLength(5); // "Not rated" plus 1-4
+  fireEvent.change(screen.getByLabelText("What's your essay's biggest weakness?"), { target: { value: 'Thin evidence.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(createEssay.mock.calls[0][0].selfAssessment).toEqual({
+    scores: [{ criterion: 'Thesis', score: 3 }, { criterion: 'Evidence', score: 2 }], weakness: 'Thin evidence.',
+  });
+});
