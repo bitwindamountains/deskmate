@@ -14,6 +14,7 @@ async function readText(file: File): Promise<string> {
 const MAX_BYTES = 1_000_000; // matches the server action's limit
 const MAX_APKG_BYTES = 100_000_000; // media makes packages big; only the collection file inside is read
 const SQL_WASM = '/vendor/sql-wasm-1.14.2.wasm';
+const ANKI_BATCH = 500; // 500 cards of 500-character sides stay under the 1 MB server action limit
 const FAILED = { ok: false as const, message: "We couldn't import those cards. Try again." };
 const SHOW_ROWS = 5;
 
@@ -34,7 +35,13 @@ async function importApkg(deckId: string, file: File): Promise<{ r: ImportResult
   const read = await readApkg(new Uint8Array(await file.arrayBuffer()), SQL_WASM);
   if (read.error) return { r: { ok: false, message: read.error }, skipped: 0 };
   if (!read.cards.length) return { r: { ok: false, message: 'That package has no cards Scholar can use.' }, skipped: 0 };
-  return { r: await importAnki(deckId, read.cards), skipped: read.skipped };
+  const total = { ok: true as const, added: 0, skippedRows: [] as number[], inDeck: 0, inFile: 0 };
+  for (let i = 0; i < read.cards.length; i += ANKI_BATCH) {
+    const r = await importAnki(deckId, read.cards.slice(i, i + ANKI_BATCH));
+    if (!r.ok) return { r: total.added ? { ...r, message: `Added ${total.added} cards, then: ${r.message}` } : r, skipped: read.skipped };
+    total.added += r.added; total.inDeck += r.inDeck; total.inFile += r.inFile;
+  }
+  return { r: total, skipped: read.skipped };
 }
 
 /** B4.5: bring cards in from a CSV, take them out as CSV or Anki text. */

@@ -51,3 +51,14 @@ test('a failed save is an alert', async () => {
   save('Explain how cells make energy');
   expect((await screen.findByRole('alert')).textContent).toBe("We couldn't save your goals.");
 });
+
+test('every card is matched and at most 2,000 matches are sent', async () => {
+  getEmbedder.mockResolvedValue(async (texts: string[]) => texts.map(() => [1, 0]));
+  saveGoals.mockResolvedValue({ ok: true, matched: 2000 });
+  const big = Array.from({ length: 2100 }, (_, i) => ({ id: `c${i}`, front: 'cell', back: 'x' }));
+  render(<Goals deckId={D} goals="" cards={big} />);
+  fireEvent.change(screen.getByLabelText(LABEL), { target: { value: 'Explain how cells make energy' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save and match cards' }));
+  await screen.findByText('2000 of 2100 cards match your course goals.');
+  expect((saveGoals.mock.calls[0][2] as string[]).length).toBe(2000);
+});

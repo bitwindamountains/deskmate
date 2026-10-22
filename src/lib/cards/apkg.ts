@@ -71,6 +71,7 @@ export async function readApkg(bytes: Uint8Array, wasmUrl?: string): Promise<{ c
   for (const [flds, tags] of notes) {
     const [first = '', second = ''] = flds.split('\x1f').map(ankiText);
     const concept = conceptOf(tags ?? '');
+    if (/\{\{c\d+::image-occlusion:/.test(first)) { skipped++; continue; } // Image Occlusion: the hidden part is a shape on a picture
     const made = /\{\{c\d+::/.test(first)
       ? clozeCards(first).map((c) => ({ ...c, concept, type: 'cloze' as const }))
       : [{ front: first, back: second, concept, type: 'basic' as const }];

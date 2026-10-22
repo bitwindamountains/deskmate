@@ -63,3 +63,10 @@ test('readApkg reports files that are not Anki packages and caps the card count'
   const many = await apkg({ 'collection.anki2': Array.from({ length: 2001 }, (_, i): Note => [`q${i}`, `a${i}`]) });
   expect((await readApkg(many)).error).toBe('Import at most 2,000 cards at a time.');
 });
+
+test('Image Occlusion notes are skipped, not turned into cloze cards', async () => {
+  const bytes = await apkg({ 'collection.anki2': [['{{c1::image-occlusion:rect:left=.2:top=.3:width=.1:height=.1}}', '<img src="x.png">'], ['Q', 'A']] });
+  const r = await readApkg(bytes);
+  expect(r.cards.map((c) => c.front)).toEqual(['Q']);
+  expect(r.skipped).toBe(1);
+});

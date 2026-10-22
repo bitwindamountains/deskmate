@@ -4,15 +4,13 @@ import { z } from 'zod';
 import { AppPage } from '@/components/page';
 import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
-import { CardList, type EditorCard } from './card-list';
+import { loadDeckCards } from '@/lib/cards/deck-cards';
+import { CardList } from './card-list';
 import { DeckPrompts } from './deck-prompts';
 import { Goals } from './goals';
 import { Prereqs } from './prereqs';
 import { conceptKey } from '@/review/prereqs';
 import { Transfer } from './transfer';
-
-type Row = Omit<EditorCard, 'lapses' | 'sourceId'> & { card_states: { lapses: number } | { lapses: number }[] | null;
-  source_chunks: { source_id: string } | null };
 
 export default async function DeckPage({ params }: { params: Promise<{ deckId: string }> }) {
   await requireOnboardedUser();
@@ -22,17 +20,13 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
   // ponytail: loads the whole deck for client-side search; page it if decks grow past a few thousand cards.
   const [deck, cards, edges] = await Promise.all([
     db.from('decks').select('id,title,exam_date,goals').eq('id', deckId).maybeSingle(),
-    db.from('cards').select('id,type,front,back,concept,status,card_states(lapses),source_chunks(source_id)')
-      .eq('deck_id', deckId).in('status', ['pending', 'kept', 'suspended']).order('created_at'),
+    loadDeckCards(db, deckId),
     db.from('concept_prereqs').select('concept,prereq').eq('deck_id', deckId).order('created_at'),
   ]);
-  if (deck.error || cards.error || edges.error) throw new Error("We couldn't load your cards.");
+  if (deck.error || edges.error) throw new Error("We couldn't load your cards.");
   if (!deck.data) notFound();
 
-  const rows = (cards.data as unknown as Row[]).map(({ card_states, source_chunks, ...c }): EditorCard => {
-    const s = Array.isArray(card_states) ? card_states[0] : card_states;
-    return { ...c, lapses: s?.lapses ?? 0, sourceId: source_chunks?.source_id ?? null };
-  });
+  const rows = cards;
   // One option per concept key, labelled with its most common spelling.
   const spellings = new Map<string, Map<string, number>>();
   for (const c of rows) {
