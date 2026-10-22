@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite } from './schemas';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue, TranslatedFeedback } from './schemas';
 
 export interface RubricCriterion {
   name: string;
@@ -129,8 +129,12 @@ export function essayGlobalPrompt(i: EssayInput): Prompt {
       ...(i.previousItems?.length
         ? ['Earlier feedback items are listed below. For each, judge against this draft whether it is addressed, partial, or still open, and return it in carried with its id.']
         : []),
+      ...(i.assignmentPrompt
+        ? ['Split the assignment prompt into its required parts and judge each in prompt_alignment: addressed, partial, or missing, with a one-sentence note.']
+        : []),
       DATA_RULE,
-      `Return only JSON with this shape: ${compactSchema(EssayGlobal)}`,
+      // Without an assignment the field is left out of the shape, so the model spends no tokens on it.
+      `Return only JSON with this shape: ${compactSchema(i.assignmentPrompt ? EssayGlobal : EssayGlobal.omit({ prompt_alignment: true }))}`,
     ].join('\n'),
     user: i.previousItems?.length
       ? `${essayContext(i)}\n\nEarlier feedback:\n${wrapData('previous_feedback', JSON.stringify(i.previousItems))}`
@@ -145,6 +149,7 @@ export function essayParagraphsPrompt(i: EssayInput): Prompt {
       'For each paragraph, check the topic sentence, evidence, analysis of that evidence, and transitions.',
       'Report only paragraph-level issues: every item has layer "paragraph". At most 2 items per paragraph; skip paragraphs with no real issue.',
       ...(i.onlyParagraphs ? [`Report only on paragraphs ${i.onlyParagraphs.map((n) => `[P${n}]`).join(', ')}; the rest are shown for context.`] : []),
+      'Also return outline: one entry for EVERY paragraph you were asked about, including the introduction, the conclusion and paragraphs with no issue, giving its point in at most 12 words. Add flag only if it applies: repeats (repeats an earlier point), off_topic (drifts from the thesis), order (fits better elsewhere).',
       ITEM_RULES,
       DATA_RULE,
       `Return only JSON with this shape: ${compactSchema(EssayParagraphs)}`,
@@ -186,6 +191,50 @@ export function hintRewritePrompt(i: HintInput): Prompt {
       `Return only JSON with this shape: ${compactSchema(HintRewrite)}`,
     ].join('\n'),
     user: hintContext(i),
+  };
+}
+
+type DialogueInput = HintInput & { history: { role: 'student' | 'coach'; text: string }[]; kind: 'question' | 'dispute'; message: string };
+
+/** A2.9 / A3.10: one coach turn on a feedback item. The system prompt depends only on kind, never on student text. */
+export function itemDialoguePrompt(i: DialogueInput): Prompt {
+  const dispute = i.kind === 'dispute';
+  return {
+    system: [
+      dispute
+        ? 'You are a writing coach for students at the grade level given below. The student disagrees with one feedback item on their essay.'
+        : 'You are a writing coach for students at the grade level given below. The student has a question about one feedback item on their essay.',
+      ...(dispute
+        ? ["Weigh the student's reason honestly against their paragraph. If they are right, set verdict withdraw. If they are partly right, set verdict modify and give revised_summary: the corrected feedback in one or two sentences. If the feedback still stands, set verdict keep and explain why, specifically and kindly."]
+        : ['Answer the question clearly and specifically, about this item and this paragraph.']),
+      'reply: at most 120 words. Address the student as "you". Do not judge the student as a person.',
+      'Never write a sentence the student could copy into the essay: no example thesis, topic sentence, transition, or rewrite about their topic. Say what to change, not the words to write.',
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(dispute ? ItemDialogue : ItemDialogue.pick({ reply: true }))}`,
+    ].join('\n'),
+    user: [
+      hintContext(i),
+      ...(i.history.length ? [`Conversation so far:\n${wrapData('conversation', i.history.map((m) => `${m.role}: ${m.text}`).join('\n'))}`] : []),
+      `The student's message:\n${wrapData('student_message', i.message)}`,
+    ].join('\n\n'),
+  };
+}
+
+const LANGUAGE_NAME = { fil: 'Filipino', es: 'Spanish' } as const;
+
+/** A3.9: feedback explained in the student's first language. The system prompt depends only on the language. */
+export function translateFeedbackPrompt(i: { lang: 'fil' | 'es'; summary: string; hints: string[] }): Prompt {
+  return {
+    system: [
+      `Translate the writing feedback below into ${LANGUAGE_NAME[i.lang]} for a student who reads it more easily than English.`,
+      'Keep anything in quotation marks exactly as written in English: those are words from the essay. Keep rubric criterion names (Thesis, Evidence, Analysis, Organization, Conventions) in English.',
+      'Translate the meaning plainly and naturally. Add nothing, and never write a sentence the student could copy into the essay.',
+      'Never suggest that writing in another language, or mixing languages, is a weakness.',
+      'Return the summary and one translated hint for each numbered hint, in the same order.',
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(TranslatedFeedback)}`,
+    ].join('\n'),
+    user: wrapData('feedback', [i.summary, ...(i.hints.length ? ['', 'Hints:', ...i.hints.map((h, n) => `${n + 1}. ${h}`)] : [])].join('\n')),
   };
 }
 

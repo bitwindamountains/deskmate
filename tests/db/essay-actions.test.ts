@@ -68,3 +68,24 @@ test('saveDraft validates length and refuses another user essay', async () => {
   expect(await insertDraft(A.client, A.userId, r.essayId, 'Too short.')).toEqual({ ok: false, error: 'Add a little more: feedback needs at least 50 words.' });
   expect(await insertDraft(B.client, B.userId, r.essayId, edited)).toEqual({ ok: false, error: "We couldn't find that essay." });
 });
+
+const draftOf = async (essayId: string) => (await adminClient().from('drafts').select('id').eq('essay_id', essayId).eq('version', 1).single()).data!.id;
+
+test('createEssay saves the self-assessment with draft 1 when given and nothing when untouched', async () => {
+  const self = { scores: [{ criterion: 'Thesis', score: 3 }, { criterion: 'Evidence', score: 2 }], weakness: 'My evidence is thin.' };
+  const r = await insertEssay(A.client, A.userId, { ...input, selfAssessment: self });
+  if (!r.ok) throw new Error(r.error);
+  const draftId = await draftOf(r.essayId);
+  expect((await A.client.from('self_assessments').select('scores,weakness').eq('draft_id', draftId).single()).data).toEqual(self);
+
+  const plain = await insertEssay(A.client, A.userId, { ...input, selfAssessment: { scores: [], weakness: '' } });
+  if (!plain.ok) throw new Error(plain.error);
+  expect((await adminClient().from('self_assessments').select('draft_id').eq('draft_id', await draftOf(plain.essayId))).data).toEqual([]);
+});
+
+test('a score outside 1..maxScore is rejected at the server and nothing is saved', async () => {
+  const before = (await adminClient().from('essays').select('id').eq('user_id', A.userId)).data!.length;
+  const r = await insertEssay(A.client, A.userId, { ...input, selfAssessment: { scores: [{ criterion: 'Thesis', score: 9 }], weakness: null } });
+  expect(r.ok).toBe(false);
+  expect((await adminClient().from('essays').select('id').eq('user_id', A.userId)).data!.length).toBe(before);
+});
