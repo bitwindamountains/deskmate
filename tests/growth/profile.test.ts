@@ -35,3 +35,17 @@ test('trendCopy reads down, up, about the same, or nothing', async () => {
   expect(trendCopy(0.08)).toBe('About the same as your first essay');
   expect(trendCopy(null)).toBeNull();
 });
+
+test('trend endpoints skip essays under 250 words, so a short prompt answer does not swing the trend', () => {
+  const r = growthProfile([
+    essay(1, 1000, ['comma_splice', 'comma_splice', 'comma_splice']), // 3 per 1000
+    essay(2, 1000, ['comma_splice']),                                  // 1 per 1000: the latest qualifying essay
+    essay(3, 60, ['comma_splice']),                                     // 16.7 per 1000 but only 60 words
+  ]);
+  const comma = r.recurring.find((p) => p.key === 'comma_splice')!;
+  expect(comma.essays).toBe(3);
+  expect(comma.trend).toBeCloseTo(-2 / 3);
+  expect(comma.latestRate).toBe(1);
+  // only short essays: no trend at all
+  expect(growthProfile([essay(1, 60, ['run_on']), essay(2, 80, ['run_on'])]).recurring[0].trend).toBeNull();
+});

@@ -7,11 +7,12 @@ let A: User;
 let B: User;
 const created: string[] = [];
 
-async function essayWith(u: User, title: string, words: number, items: { category: string; status?: string }[][]) {
+async function essayWith(u: User, title: string, words: number, items: { category: string; status?: string }[][], checked = true) {
   const essay = (await u.client.from('essays').insert({ user_id: u.userId, title, essay_type: 'argumentative' }).select('id').single()).data!.id;
   for (const [i, draftItems] of items.entries()) {
     const draft = (await u.client.from('drafts').insert({ user_id: u.userId, essay_id: essay, version: i + 1, content: `Draft ${i}.`,
       word_count: words, paragraph_hashes: ['a'] }).select('id').single()).data!.id;
+    if (checked) await adminClient().from('drafts').update({ layers: { global: 'done' } }).eq('id', draft);
     if (draftItems.length) {
       const { error } = await adminClient().from('feedback_items').insert(draftItems.map((it) => ({ user_id: u.userId, draft_id: draft, layer: 'global',
         category: it.category, severity: 'medium', summary: 's', rubric_criterion: null, source: 'llm', status: it.status ?? 'open' })));
@@ -37,4 +38,11 @@ test('loadGrowth reads only version-1 drafts and skips withdrawn items; another 
     { title: 'Second', words: 600, patterns: ['comma_splice'] },
   ]);
   expect(await loadGrowth(B.client)).toEqual([]);
+});
+
+test('an essay whose feedback has not finished is left out of the growth profile', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  await essayWith(U, 'Checked', 400, [[{ category: 'Comma splice' }]]);
+  await essayWith(U, 'Saved, never checked', 400, [[]], false);
+  expect((await loadGrowth(U.client)).map((r) => r.title)).toEqual(['Checked']);
 });
