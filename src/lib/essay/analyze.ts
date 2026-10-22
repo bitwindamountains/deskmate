@@ -140,7 +140,7 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
 
   if (layer === 'global') {
     const judge = plan?.judge ?? [];
-    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
+    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
     await logCalls(db, userId, r.log);
     const { rows, dropped } = anchorItems(paras, r.data.items, 'global');
     const strengths = r.data.strengths.flatMap((s) => {

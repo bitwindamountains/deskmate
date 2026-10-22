@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { AppPage } from '@/components/page';
 import type { ItemRow } from '@/lib/essay/analyze';
-import type { SelfAssessment } from '@/lib/essay/self-check';
+import { parseSelfAssessment } from '@/lib/essay/self-check';
 import { paragraphs } from '@/lib/essay/text';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { requireOnboardedUser } from '@/lib/profile/require';
@@ -37,6 +37,9 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
     db.from('self_assessments').select('scores,weakness').eq('draft_id', draftId).maybeSingle(),
   ]);
   if (items.error || analysis.error || rewrites.error || self.error) throw new Error(LOAD_FAILED);
+  // Re-checked on read: a row written straight to the table must not break the page.
+  const parsedSelf = self.data ? parseSelfAssessment(self.data) : null;
+  const selfAssessment = parsedSelf?.ok ? parsedSelf.value : null;
   const ids = items.data.map((i) => i.id as string);
   const messages = ids.length
     ? await db.from('feedback_messages').select('item_id,role,kind,text,verdict').in('item_id', ids).order('created_at')
@@ -53,7 +56,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
         items={items.data as unknown as ItemRow[]} analysis={analysis.data as Analysis | null} rewritesUsed={rewrites.count ?? 0}
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax}
         outline={draft.data.outline as OutlineLine[] | null} threads={threads}
-        selfAssessment={self.data as SelfAssessment | null}
+        selfAssessment={selfAssessment}
         language={profile.first_language === 'fil' || profile.first_language === 'es' ? profile.first_language : null} />
     </AppPage>
   );

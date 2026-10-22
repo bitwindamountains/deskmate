@@ -332,7 +332,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             {!offPrompt && alignment.length > 0 && <Alignment parts={alignment} />}
 
             {selfAssessment && analysis && (
-              <SelfCheck self={selfAssessment} ai={analysis.rubric_scores} topSummary={top3[0]?.summary ?? null} showScores={showScores} />
+              <SelfCheck self={selfAssessment} ai={analysis.rubric_scores} topSummary={top3[0] ? top3[0].revised_summary ?? top3[0].summary : null} showScores={showScores} />
             )}
 
             {rest.length > 0 && (
