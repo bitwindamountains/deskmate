@@ -121,6 +121,8 @@ function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
           </g>
         )}
       </svg>
+      {/* The SVG is one image to assistive tech, so the hovered or arrowed day is read out here. */}
+      <p role="status" className="sr-only">{h ? `${dayLabel(h.day)}: ${pct(h.ifReviewedToday)} reviewed, ${pct(h.ifIdle)} stopped` : ''}</p>
       <figcaption id={summaryId}>
         In 2 weeks you&apos;d remember about {pct(at14.ifIdle)}; reviewing today keeps it near {pct(at14.ifReviewedToday)}.
       </figcaption>

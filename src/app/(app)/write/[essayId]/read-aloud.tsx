@@ -39,7 +39,8 @@ export function ReadAloud({ paragraphs, onSentence }: { paragraphs: string[]; on
       u.rate = rate;
       u.lang = 'en';
       u.onstart = () => onSentence({ para: p.para, start: p.start, end: p.end });
-      u.onerror = () => { setState('idle'); onSentence(null); };
+      // One failed sentence stops the rest too, so the controls never say stopped while speech goes on.
+      u.onerror = () => { synth.cancel(); setState('idle'); onSentence(null); };
       if (k === parts.length - 1) u.onend = () => { setState('idle'); onSentence(null); };
       synth.speak(u);
     });

@@ -4,7 +4,7 @@ import type { ItemRow } from '@/lib/essay/analyze';
 
 const carryOverCounts = vi.fn();
 vi.mock('@/app/(app)/write/[essayId]/item-actions', () => ({
-  markGotIt: vi.fn(), disputeItem: vi.fn(), logViewedLevel: vi.fn(),
+  markGotIt: vi.fn(), logViewedLevel: vi.fn(),
   carryOverCounts: (...a: unknown[]) => carryOverCounts(...a),
 }));
 const saveDraft = vi.fn();
