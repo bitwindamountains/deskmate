@@ -20,12 +20,17 @@ function offsetMs(zone: string, at: number): number {
   return asUtc - Math.floor(at / 1000) * 1000;
 }
 
-/** The instant the local day containing `now` (plus offsetDays) starts in `zone`, correct across daylight-saving changes. */
-export function startOfLocalDay(now: Date, zone: string, offsetDays = 0): Date {
-  const local = new Date(now.getTime() + offsetMs(zone, now.getTime()));
-  const midnightAsUtc = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + offsetDays);
-  // Two passes: the offset at local midnight can differ from the offset now when a DST change falls in between.
+/** The instant a calendar day (year, month 1-12, day) starts in `zone`. Day overflow rolls into the next month, as with Date.UTC. */
+export function localMidnight(year: number, month: number, day: number, zone: string): Date {
+  const midnightAsUtc = Date.UTC(year, month - 1, day);
+  // Two passes: the offset at local midnight can differ from the first guess when a DST change falls in between.
   let at = midnightAsUtc - offsetMs(zone, midnightAsUtc);
   at = midnightAsUtc - offsetMs(zone, at);
   return new Date(at);
+}
+
+/** The instant the local day containing `now` (plus offsetDays) starts in `zone`, correct across daylight-saving changes. */
+export function startOfLocalDay(now: Date, zone: string, offsetDays = 0): Date {
+  const local = new Date(now.getTime() + offsetMs(zone, now.getTime()));
+  return localMidnight(local.getUTCFullYear(), local.getUTCMonth() + 1, local.getUTCDate() + offsetDays, zone);
 }
