@@ -7,6 +7,7 @@ import { importAnkiCards, importCards, type ImportResult } from '@/lib/cards/tra
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { deleteCards, updateCard, updateStatus } from '@/lib/triage/card-actions';
 import { createClient } from '@/lib/supabase/server';
+import { conceptKey, wouldCycle } from '@/review/prereqs';
 
 async function session() {
   const db = await createClient();
@@ -67,4 +68,38 @@ export async function saveGoals(deckId: string, goals: string, matched: string[]
   if (error || typeof data !== 'number') return failed;
   revalidatePath(`/study/deck/${deckId}`);
   return { ok: true, matched: data };
+}
+
+const Edge = z.object({ deckId: z.uuid(), concept: z.string().transform(conceptKey).pipe(z.string().min(1).max(120)),
+  prereq: z.string().transform(conceptKey).pipe(z.string().min(1).max(120)) });
+export type PrereqResult = { ok: true } | { ok: false; message: string };
+const PREREQ_FAILED = { ok: false as const, message: "We couldn't save that." };
+
+/** B4.1: concept builds on prereq. RLS limits it to the student's own deck. */
+export async function addPrereq(deckId: string, concept: string, prereq: string): Promise<PrereqResult> {
+  const v = Edge.safeParse({ deckId, concept, prereq });
+  if (!v.success) return PREREQ_FAILED;
+  const e = v.data;
+  if (e.concept === e.prereq) return { ok: false, message: "A concept can't build on itself." };
+  const { db, userId } = await session();
+  const { data, error } = await db.from('concept_prereqs').select('concept,prereq').eq('deck_id', e.deckId);
+  if (error) return PREREQ_FAILED;
+  if (wouldCycle(data.map((r) => ({ deckId: e.deckId, concept: r.concept, prereq: r.prereq })), e.deckId, e.concept, e.prereq)) {
+    return { ok: false, message: `That would make a loop: ${e.prereq} already builds on ${e.concept}.` };
+  }
+  const ins = await db.from('concept_prereqs').insert({ user_id: userId, deck_id: e.deckId, concept: e.concept, prereq: e.prereq });
+  if (ins.error && ins.error.code !== '23505') return PREREQ_FAILED; // 23505: already there, which is what the student wanted
+  revalidatePath('/study/mastery');
+  return { ok: true };
+}
+
+export async function removePrereq(deckId: string, concept: string, prereq: string): Promise<PrereqResult> {
+  const v = Edge.safeParse({ deckId, concept, prereq });
+  if (!v.success) return PREREQ_FAILED;
+  const { db } = await session();
+  const { error } = await db.from('concept_prereqs').delete()
+    .eq('deck_id', v.data.deckId).eq('concept', v.data.concept).eq('prereq', v.data.prereq);
+  if (error) return PREREQ_FAILED;
+  revalidatePath('/study/mastery');
+  return { ok: true };
 }
