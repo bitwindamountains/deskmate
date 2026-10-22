@@ -10,6 +10,18 @@ async function readText(file: File): Promise<string> {
   try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return new TextDecoder('windows-1252').decode(bytes); }
 }
 
+const MAX_BYTES = 1_000_000; // matches the server action's limit
+const SHOW_ROWS = 5;
+
+const list = (ns: number[]) => (ns.length === 1 ? `${ns[0]}` : `${ns.slice(0, -1).join(', ')} and ${ns.at(-1)}`);
+const duplicatesNote = (n: number) => (n ? `${n} ${n === 1 ? 'was' : 'were'} already in this deck.` : '');
+function skippedNote(rows: number[]): string {
+  if (!rows.length) return '';
+  const shown = rows.slice(0, SHOW_ROWS);
+  const more = rows.length > SHOW_ROWS ? ` and ${rows.length - SHOW_ROWS} more` : '';
+  return `Skipped ${rows.length === 1 ? 'row' : 'rows'} ${list(shown)}${more}: a front or back was empty or over 500 characters.`;
+}
+
 /** B4.5: bring cards in from a CSV, take them out as CSV or Anki text. */
 export function Transfer({ deckId }: { deckId: string }) {
   const router = useRouter();
@@ -17,15 +29,17 @@ export function Transfer({ deckId }: { deckId: string }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function pick(file?: File) {
+  async function pick(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    input.value = ''; // so picking the same file again still imports
     setNote(''); setError('');
     if (!file) return;
+    if (file.size > MAX_BYTES) { setError('Choose a CSV under 1 MB.'); return; } // checked before reading the whole file
     setBusy(true);
     const r = await importCsv(deckId, await readText(file)).catch(() => ({ ok: false as const, message: "We couldn't import those cards. Try again." }));
     setBusy(false);
     if (!r.ok) { setError(r.message); return; }
-    const skipped = r.skipped ? ` Skipped ${r.skipped} ${r.skipped === 1 ? 'row' : 'rows'} without a front and back.` : '';
-    setNote(`Added ${r.added} ${r.added === 1 ? 'card' : 'cards'}.${skipped}`);
+    setNote([`Added ${r.added} ${r.added === 1 ? 'card' : 'cards'}.`, duplicatesNote(r.duplicates), skippedNote(r.skippedRows)].filter(Boolean).join(' '));
     router.refresh();
   }
 
@@ -35,7 +49,7 @@ export function Transfer({ deckId }: { deckId: string }) {
       <div>
         <label htmlFor="csv-file" className="mb-1 block">Import cards from a CSV file</label>
         <input id="csv-file" type="file" accept=".csv,text/csv" className="field" disabled={busy}
-          aria-describedby="csv-help" onChange={(e) => void pick(e.target.files?.[0])} />
+          aria-describedby="csv-help" onChange={(e) => void pick(e.target)} />
         <p id="csv-help" className="mt-1 text-sm text-ink-muted">The first row needs &quot;front&quot; and &quot;back&quot; columns; &quot;concept&quot; and &quot;type&quot; are optional.</p>
       </div>
       <p role="status" className="empty:hidden">{busy ? 'Importing…' : note}</p>
