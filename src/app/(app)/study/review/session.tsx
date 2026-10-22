@@ -88,7 +88,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const base = useRef<ReviewCard[]>([]); // the session's due order, kept so Mix topics can be switched off again
 
   const examFor = (deckId: string) => (examDates[deckId] ? parseDay(examDates[deckId]!) : null);
-  const nearestExam = () => Object.values(examDates).filter((d): d is string => !!d).map(parseDay)
+  const nearestExam = () => Object.values(examDates).filter((d): d is string => !!d).map((d) => parseDay(d))
     .filter((d) => d.getTime() >= new Date().setHours(0, 0, 0, 0)).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   const build = (from: ReviewCard[], doMore: boolean) => buildSession(from, {
     now: new Date(), minutes, newIntroducedToday: newIntroducedToday + introduced.current, examDate: nearestExam(), doMore,

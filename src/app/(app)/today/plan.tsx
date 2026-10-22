@@ -9,19 +9,20 @@ const when = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorrow' :
 /** An essay whose latest draft still has open Top 3 priorities. */
 export type TodayEssay = { id: string; title: string; openTop3: number };
 
-export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essays = [] }:
-  { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date; essays?: TodayEssay[] }) {
+/** zone: the student's time zone, since this renders on the server (whose clock is UTC). */
+export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essays = [], zone = 'UTC' }:
+  { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date; essays?: TodayEssay[]; zone?: string }) {
   if (!cards.length && !essays.length) return <EmptyStudy />;
 
   const exams = decks.flatMap((d) => {
     if (!d.exam_date) return [];
-    const date = parseDay(d.exam_date);
-    const days = daysUntil(date, now);
+    const date = parseDay(d.exam_date, zone);
+    const days = daysUntil(date, now, zone);
     return days < 0 ? [] : [{ deck: d, date, days, ready: Math.round(readiness(cards.filter((c) => c.deckId === d.id), date) * 100) }];
   }).sort((a, b) => a.days - b.days);
   // Spec §8.3 order: reviews, essays with open priorities, exams. Essays have no deadline yet, so due reviews stay primary.
-  const { queue, estMinutes } = buildSession(cards, { now, minutes, newIntroducedToday, examDate: exams.find((e) => e.days > 0)?.date ?? null });
-  const next = nextReview(cards, now);
+  const { queue, estMinutes } = buildSession(cards, { now, minutes, newIntroducedToday, examDate: exams.find((e) => e.days > 0)?.date ?? null, zone });
+  const next = nextReview(cards, now, zone);
   const noExam = decks.filter((d) => !exams.some((e) => e.deck.id === d.id));
   const essayFirst = !queue.length && essays.length > 0;
   const essayLines = essayFirst ? essays.slice(1) : essays;

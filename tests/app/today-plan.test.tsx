@@ -73,3 +73,19 @@ test('essays alone, with no cards yet, still show instead of the empty state', (
   expect(screen.queryByRole('heading', { name: 'Nothing to study yet' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Keep revising' })).toBeTruthy();
 });
+
+test('Today counts days and the next review on the student calendar when given their zone', () => {
+  // 23:00 UTC on Oct 22 is 07:00 on Oct 23 in Manila.
+  const at = new Date('2026-10-22T23:00:00Z');
+  const s: StateRow = { card_id: 'm', due: '2026-10-23T01:00:00.000Z', stability: 30, difficulty: 5, scheduled_days: 3, learning_steps: 0, reps: 5,
+    lapses: 0, state: 2, last_review: '2026-10-20T01:00:00.000Z' };
+  const show = (zone: string) => render(<TodayPlan decks={[deck('bio', 'Biology', '2026-10-25')]} cards={[card('m', s)]} minutes={20}
+    newIntroducedToday={0} now={at} zone={zone} />);
+  show('Asia/Manila');
+  expect(screen.getByText(/Next review: today/)).toBeTruthy();
+  expect(screen.getByText(/in 2 days/)).toBeTruthy();
+  cleanup();
+  show('UTC');
+  expect(screen.getByText(/Next review: tomorrow/)).toBeTruthy();
+  expect(screen.getByText(/in 3 days/)).toBeTruthy();
+});
