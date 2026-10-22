@@ -18,8 +18,11 @@ export function ankiText(html: string): string {
     .replace(/<br\s*\/?>|<\/(?:div|p|li)>/gi, '\n')
     .replace(/<[^>]*>/g, '')
     .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+|#39);/gi, (m, e: string) => {
-      if (e.startsWith('#x') || e.startsWith('#X')) return String.fromCodePoint(parseInt(e.slice(2), 16));
-      if (e.startsWith('#') && e !== '#39') return String.fromCodePoint(Number(e.slice(1)));
+      if (e.startsWith('#') && e !== '#39') {
+        const n = /^#x/i.test(e) ? parseInt(e.slice(2), 16) : Number(e.slice(1));
+        // NUL (Postgres rejects it), surrogates and out-of-range numbers aren't characters: drop them rather than fail the import
+        return n > 0 && n <= 0x10ffff && (n < 0xd800 || n > 0xdfff) ? String.fromCodePoint(n) : '';
+      }
       return ENTITIES[e.toLowerCase()] ?? m;
     })
     .split('\n').map((l) => l.trim()).join('\n')
@@ -77,7 +80,7 @@ export async function readApkg(bytes: Uint8Array, wasmUrl?: string): Promise<{ c
       : [{ front: first, back: second, concept, type: 'basic' as const }];
     if (!made.length || made.some((c) => !fits(c.front) || !fits(c.back))) { skipped++; continue; }
     cards.push(...made);
-    if (cards.length > MAX_CARDS) return { cards: [], skipped: 0, error: 'Import at most 2,000 cards at a time.' };
+    if (cards.length > MAX_CARDS) return { cards: [], skipped: 0, error: 'Import at most 2,000 cards at a time. In Anki, export a smaller subdeck and import that.' };
   }
   return { cards, skipped };
 }

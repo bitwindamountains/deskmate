@@ -62,3 +62,18 @@ test('every card is matched and at most 2,000 matches are sent', async () => {
   await screen.findByText('2000 of 2100 cards match your course goals.');
   expect((saveGoals.mock.calls[0][2] as string[]).length).toBe(2000);
 });
+
+test('matching a big deck shows how far it has got', async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((r) => { release = r; });
+  let calls = 0;
+  getEmbedder.mockResolvedValue(async (texts: string[]) => { if (++calls === 3) await gate; return texts.map(() => [1, 0]); });
+  saveGoals.mockResolvedValue({ ok: true, matched: 40 });
+  const big = Array.from({ length: 40 }, (_, i) => ({ id: `c${i}`, front: 'cell', back: 'x' }));
+  render(<Goals deckId={D} goals="" cards={big} />);
+  fireEvent.change(screen.getByLabelText(LABEL), { target: { value: 'Explain how cells make energy' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save and match cards' }));
+  expect(await screen.findByText('Matching cards… 32 of 40')).toBeTruthy();
+  release();
+  await screen.findByText('40 of 40 cards match your course goals.');
+});

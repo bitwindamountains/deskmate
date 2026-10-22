@@ -15,6 +15,7 @@ export function Goals({ deckId, goals, cards }: { deckId: string; goals: string;
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0); // cards embedded so far, for the progress line
 
   /** Card ids matching the goals, [] when there are no goal lines, null when the model can't load. */
   async function match(): Promise<string[] | null> {
@@ -24,13 +25,16 @@ export function Goals({ deckId, goals, cards }: { deckId: string; goals: string;
     if (!embed) return null;
     const goalVecs = await embed(lines);
     const vecs: number[][] = [];
-    for (let i = 0; i < cards.length; i += BATCH) vecs.push(...await embed(cards.slice(i, i + BATCH).map((c) => `${c.front}\n${c.back}`)));
+    for (let i = 0; i < cards.length; i += BATCH) {
+      vecs.push(...await embed(cards.slice(i, i + BATCH).map((c) => `${c.front}\n${c.back}`)));
+      setDone(vecs.length);
+    }
     // ponytail: past 2,000 matches the rest of the deck goes without the boost; rank by closeness if decks get that big.
     return matchGoals(goalVecs, cards.map((c, i) => ({ id: c.id, vec: vecs[i] }))).slice(0, MAX_MATCHES);
   }
 
   async function save() {
-    setNote(''); setError(''); setBusy(true);
+    setNote(''); setError(''); setDone(0); setBusy(true);
     const matched = await match().catch(() => null);
     const r = await saveGoals(deckId, text, matched).catch(() => ({ ok: false as const, message: "We couldn't save your goals." }));
     setBusy(false);
@@ -51,7 +55,7 @@ export function Goals({ deckId, goals, cards }: { deckId: string; goals: string;
         <p id="goals-help" className="mt-1 text-sm text-ink-muted">Matched cards come up sooner in reviews. Save again after adding cards.</p>
       </div>
       <button type="button" className="btn" disabled={busy} onClick={() => void save()}>Save and match cards</button>
-      <p role="status" className="empty:hidden">{busy ? 'Matching cards…' : note}</p>
+      <p role="status" className="empty:hidden">{busy ? `Matching cards…${done ? ` ${done} of ${cards.length}` : ''}` : note}</p>
       {error && <p role="alert" className="error">{error}</p>}
     </section>
   );
