@@ -285,3 +285,15 @@ test('a failed outline save then a retry saves each paragraph item once', async 
   expect((await adminClient().from('feedback_items').select('id').eq('draft_id', draftId).eq('layer', 'paragraph')).data).toHaveLength(2);
   expect(await outlineOf(draftId)).toEqual(outline);
 });
+
+test('POST returns the saved outline with the items', async () => {
+  const U = await freshUser();
+  const { draftId } = await newDraft(U);
+  const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
+  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  session.client = U.client;
+  // The layer is done, so this answers from the database without an LLM call.
+  const res = await POST(new NextRequest('http://localhost/api/essays/analyze', { method: 'POST', body: JSON.stringify({ draftId, layer: 'paragraphs' }) }));
+  expect(res.status).toBe(200);
+  expect((await res.json()).outline).toEqual(outline);
+});
