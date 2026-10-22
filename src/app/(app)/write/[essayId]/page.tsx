@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { AppPage } from '@/components/page';
 import type { ItemRow } from '@/lib/essay/analyze';
+import type { SelfAssessment } from '@/lib/essay/self-check';
 import { paragraphs } from '@/lib/essay/text';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { requireOnboardedUser } from '@/lib/profile/require';
@@ -28,13 +29,14 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   if (!essay.data || !draft.data) notFound();
 
   const draftId = draft.data.id as string;
-  const [items, analysis, rewrites] = await Promise.all([
+  const [items, analysis, rewrites, self] = await Promise.all([
     db.from('feedback_items').select(ITEM_COLS).eq('draft_id', draftId).order('created_at'),
     db.from('analyses').select('rubric_scores,strengths,safety_concern,prompt_alignment').eq('draft_id', draftId).maybeSingle(),
     db.from('feedback_events').select('id,feedback_items!inner(draft_id)', { count: 'exact', head: true })
       .eq('action', 'rewrite').eq('feedback_items.draft_id', draftId),
+    db.from('self_assessments').select('scores,weakness').eq('draft_id', draftId).maybeSingle(),
   ]);
-  if (items.error || analysis.error || rewrites.error) throw new Error(LOAD_FAILED);
+  if (items.error || analysis.error || rewrites.error || self.error) throw new Error(LOAD_FAILED);
   const ids = items.data.map((i) => i.id as string);
   const messages = ids.length
     ? await db.from('feedback_messages').select('item_id,role,kind,text,verdict').in('item_id', ids).order('created_at')
@@ -50,7 +52,8 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
         paragraphs={paragraphs(draft.data.content)} layers={(draft.data.layers ?? {}) as Record<string, string>}
         items={items.data as unknown as ItemRow[]} analysis={analysis.data as Analysis | null} rewritesUsed={rewrites.count ?? 0}
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax}
-        outline={draft.data.outline as OutlineLine[] | null} threads={threads} />
+        outline={draft.data.outline as OutlineLine[] | null} threads={threads}
+        selfAssessment={self.data as SelfAssessment | null} />
     </AppPage>
   );
 }

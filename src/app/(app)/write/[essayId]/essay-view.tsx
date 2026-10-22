@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { ItemRow, Layer } from '@/lib/essay/analyze';
+import type { SelfAssessment } from '@/lib/essay/self-check';
 import { rankFeedback } from '@/rank';
 import { Alignment, type AlignmentPart } from './alignment';
 import { FeedbackCard, isOpen, LAYER_BG, LAYER_LABEL, REWRITE_CAP, type CardApi } from './feedback-card';
 import { Editor, storedDraft } from './editor';
 import { FocusMode } from './focus';
 import { Outline, type OutlineLine } from './outline';
+import { SelfCheck } from './self-check';
 import { carryOverCounts, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
 import type { DialogueKind, ThreadMessage } from './item-dialogue';
 
@@ -32,10 +34,10 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {} }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
   rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
-  threads?: Record<string, ThreadMessage[]>;
+  threads?: Record<string, ThreadMessage[]>; selfAssessment?: SelfAssessment | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [analysis, setAnalysis] = useState(initialAnalysis);
@@ -305,6 +307,10 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             )}
 
             {!offPrompt && alignment.length > 0 && <Alignment parts={alignment} />}
+
+            {selfAssessment && analysis && (
+              <SelfCheck self={selfAssessment} ai={analysis.rubric_scores} topSummary={top3[0]?.summary ?? null} showScores={showScores} />
+            )}
 
             {rest.length > 0 && (
               <div className="space-y-4">
