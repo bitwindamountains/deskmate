@@ -1,3 +1,4 @@
+import { startOfLocalDay } from '@/lib/time/zone';
 import { Rating } from 'ts-fsrs';
 import type { ReviewCard } from '@/lib/review/load';
 import { applyRating, makeScheduler, retrievability } from './schedule';
@@ -35,10 +36,11 @@ export function conceptMastery(cards: ReviewCard[], now: Date): ConceptMastery[]
 }
 
 /** Mean retrievability of the reviewed cards for each of the next `days` days, idle vs. after a Good on everything due today. */
-export function forgettingCurve(cards: ReviewCard[], now: Date, days = 30): CurvePoint[] {
+export function forgettingCurve(cards: ReviewCard[], now: Date, days = 30, zone = 'UTC'): CurvePoint[] {
   const reviewed = cards.filter((c) => c.state);
   if (!reviewed.length) return [];
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  // "Today" is the student's day: the server runs in UTC, the student may not.
+  const endOfToday = startOfLocalDay(now, zone, 1).getTime();
   const after = reviewed.map((c) => (new Date(c.state!.due).getTime() < endOfToday ? applyRating(c, Rating.Good, now, null, noFuzz).state : c.state));
   return Array.from({ length: days + 1 }, (_, day) => {
     const at = new Date(now.getTime() + day * DAY_MS);
