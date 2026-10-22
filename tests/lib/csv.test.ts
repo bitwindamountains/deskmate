@@ -49,6 +49,11 @@ test('a semicolon CSV imports like a comma one', () => {
   expect(parseCards('front;back;concept\nWhere, exactly?;Here;Place\n').cards).toEqual([{ front: 'Where, exactly?', back: 'Here', concept: 'Place', type: 'basic' }]);
 });
 
+test('the separator is read from the first non-blank line, ignoring quoted text', () => {
+  expect(parseCards('\n\nfront;back\nQ;A\n').cards).toEqual([{ front: 'Q', back: 'A', concept: '', type: 'basic' }]);
+  expect(parseCards('front,"notes; with; semicolons",back\nQ,n,A\n').cards).toEqual([{ front: 'Q', back: 'A', concept: '', type: 'basic' }]);
+});
+
 test('one apostrophe before a formula character is removed on import, undoing the export guard', () => {
   const cards = [{ front: '=1+1', back: '-5 degrees', concept: '@home', type: 'basic' }];
   expect(parseCards(toCsv(cards)).cards).toEqual(cards);
