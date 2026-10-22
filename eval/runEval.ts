@@ -9,6 +9,7 @@ import {
   cardGeneratePrompt,
   cardHelpPrompt,
   itemDialoguePrompt,
+  translateFeedbackPrompt,
   essayGlobalPrompt,
   essayParagraphsPrompt,
   gradeAnswerPrompt,
@@ -16,7 +17,7 @@ import {
   type EssayInput,
 } from '../src/llm/prompts.js';
 import { AllProvidersFailedError, complete, type CompleteResult } from '../src/llm/router.js';
-import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, ItemDialogue, type FeedbackItem } from '../src/llm/schemas.js';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, ItemDialogue, TranslatedFeedback, type FeedbackItem } from '../src/llm/schemas.js';
 import type { CallLog, ProviderConfig, TaskName } from '../src/llm/types.js';
 import { rankFeedback } from '../src/rank.js';
 
@@ -151,6 +152,13 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
         row('item_dialogue', name, meta(d));
         await mkdir(join(o.outDir, 'item_dialogue'), { recursive: true });
         await writeFile(join(o.outDir, 'item_dialogue', `${name}.json`), JSON.stringify({ item: top, message, result: d.data }, null, 2));
+      }
+      // First-language explanation (A3.9) of the same item, with both analysis hints revealed.
+      const t = await call('translate_feedback', name, translateFeedbackPrompt({ lang: 'fil', summary: top.summary, hints: top.hints }), TranslatedFeedback);
+      if (t) {
+        row('translate_feedback', name, meta(t));
+        await mkdir(join(o.outDir, 'translate_feedback'), { recursive: true });
+        await writeFile(join(o.outDir, 'translate_feedback', `${name}.json`), JSON.stringify({ item: top, result: t.data }, null, 2));
       }
     }
     await mkdir(join(o.outDir, 'essay'), { recursive: true });

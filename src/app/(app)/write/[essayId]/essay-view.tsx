@@ -13,6 +13,7 @@ import { Outline, type OutlineLine } from './outline';
 import { SelfCheck } from './self-check';
 import { carryOverCounts, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
 import type { DialogueKind, ThreadMessage } from './item-dialogue';
+import type { Lang, Translated } from './translation';
 
 export type Score = { criterion: string; score: number; justification: string; confidence: 'high' | 'medium' | 'low' };
 export type Strength = { paragraph_index: number; quote: string; why: string; start: number; end: number };
@@ -34,10 +35,10 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null, language = null }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
   rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
-  threads?: Record<string, ThreadMessage[]>; selfAssessment?: SelfAssessment | null;
+  threads?: Record<string, ThreadMessage[]>; selfAssessment?: SelfAssessment | null; language?: Lang | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [analysis, setAnalysis] = useState(initialAnalysis);
@@ -209,6 +210,16 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
     nextHint: (it) => void nextHint(it),
     gotIt: (it) => save(it, 'got_it', () => markGotIt(it.id)),
     thread: (it) => threads[it.id] ?? [],
+    language,
+    translate: async (it) => {
+      try {
+        const res = await post('/api/essays/translate', { itemId: it.id, lang: language });
+        const body = await res.json().catch(() => ({}));
+        return res.ok && typeof body.summary === 'string' ? { summary: body.summary, hints: body.hints ?? [] } : body.message ?? OFFLINE;
+      } catch {
+        return OFFLINE;
+      }
+    },
     send,
     showInEssay: (it) => document.getElementById(markOf[it.id])?.focus(),
   };

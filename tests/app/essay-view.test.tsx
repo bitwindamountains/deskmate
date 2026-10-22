@@ -334,3 +334,24 @@ test('no comparison before the global layer or without a self-rating; hidden sco
   expect(within(region).queryByRole('table')).toBeNull();
   expect(within(region).getByText('Rushed ending.')).toBeTruthy();
 });
+
+test('the Explain in Filipino toggle shows only for fil/es profiles and marks the block lang="fil"', async () => {
+  view({ language: 'fil' });
+  const c = card('p1');
+  fetchMock.mockResolvedValueOnce(json({ summary: 'Kulang sa ebidensya ang pahayag.', hints: [] }));
+  const toggle = within(c).getByRole('button', { name: 'Explain in Filipino' });
+  fireEvent.click(toggle);
+  const block = await within(c).findByText('Kulang sa ebidensya ang pahayag.');
+  expect(block.closest('[lang]')?.getAttribute('lang')).toBe('fil');
+  expect(sent()).toEqual({ itemId: 'p1', lang: 'fil' });
+  expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  expect(within(c).getByText('Summary p1')).toBeTruthy(); // the English stays
+  fireEvent.click(toggle);
+  expect(within(c).queryByText('Kulang sa ebidensya ang pahayag.')).toBeNull();
+  cleanup();
+  view({ language: 'es' });
+  expect(within(card('p1')).getByRole('button', { name: 'Explain in Spanish' })).toBeTruthy();
+  cleanup();
+  view();
+  expect(within(card('p1')).queryByRole('button', { name: /Explain in/ })).toBeNull();
+});
