@@ -22,7 +22,7 @@ afterAll(async () => { await deleteTestUsers(created); });
 
 test('importCards adds kept cards to the deck and refuses another user deck', async () => {
   const r = await importCards(A.client, A.userId, deck, 'front,back,concept\nWhere is ATP made?,Mitochondria,Cells\n,skip me,\n');
-  expect(r).toEqual({ ok: true, added: 1, skipped: 1 });
+  expect(r).toEqual({ ok: true, added: 1, skippedRows: [3], duplicates: 0 });
   const cards = (await adminClient().from('cards').select('front,status,source_chunk_id,concept').eq('deck_id', deck)).data!;
   expect(cards).toEqual([{ front: 'Where is ATP made?', status: 'kept', source_chunk_id: null, concept: 'Cells' }]);
   expect(await importCards(B.client, B.userId, deck, 'front,back\nQ,A')).toEqual({ ok: false, message: "We couldn't find that deck." });
@@ -53,3 +53,30 @@ test('a non-ASCII deck title still downloads, with an ASCII fallback name', asyn
   expect(res.status).toBe(200);
   expect(res.headers.get('content-disposition')).toBe(`attachment; filename="Biologa.csv"; filename*=UTF-8''${encodeURIComponent('Biología 生物')}.csv`);
 });
+
+test("a title with ' ( ) * is fully percent-encoded in filename*", async () => {
+  const d = (await A.client.from('decks').insert({ user_id: A.userId, title: "Bio (Kim's) *notes*" }).select('id').single()).data!.id;
+  session.client = A.client;
+  const res = await GET(new NextRequest(`http://localhost/api/decks/${d}/export?format=csv`), { params: Promise.resolve({ deckId: d }) });
+  expect(res.headers.get('content-disposition')).toContain("filename*=UTF-8''Bio%20%28Kim%27s%29%20%2Anotes%2A.csv");
+});
+
+test('importing the same file twice adds nothing the second time, and repeats inside a file count once', async () => {
+  const d = (await A.client.from('decks').insert({ user_id: A.userId, title: 'Dup' }).select('id').single()).data!.id;
+  const file = 'front,back\nQ1,A1\nq1 , a1\nQ2,A2\n';
+  expect(await importCards(A.client, A.userId, d, file)).toEqual({ ok: true, added: 2, skippedRows: [], duplicates: 1 });
+  expect(await importCards(A.client, A.userId, d, file)).toEqual({ ok: true, added: 0, skippedRows: [], duplicates: 3 });
+  expect((await adminClient().from('cards').select('id').eq('deck_id', d)).data).toHaveLength(2);
+});
+
+test('a deck over 1,000 cards: duplicates are found past the first 1,000, and export includes every card', async () => {
+  const d = (await A.client.from('decks').insert({ user_id: A.userId, title: 'Big' }).select('id').single()).data!.id;
+  const rows = Array.from({ length: 1005 }, (_, k) => ({ user_id: A.userId, deck_id: d, type: 'basic', front: `Q${k}`, back: `A${k}`,
+    source_quote: '', concept: '', bloom_level: 'remember', importance: 2, status: 'kept' }));
+  const { error } = await adminClient().from('cards').insert(rows);
+  if (error) throw error;
+  expect(await importCards(A.client, A.userId, d, 'front,back\nQ1004,A1004\nQ0,A0\n')).toEqual({ ok: true, added: 0, skippedRows: [], duplicates: 2 });
+  session.client = A.client;
+  const res = await GET(new NextRequest(`http://localhost/api/decks/${d}/export?format=csv`), { params: Promise.resolve({ deckId: d }) });
+  expect((await res.text()).trim().split('\r\n')).toHaveLength(1006); // header + 1,005 cards
+}, 60_000);

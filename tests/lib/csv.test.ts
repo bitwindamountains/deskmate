@@ -13,7 +13,7 @@ test('parseCards handles BOM, CRLF, quoted commas, quotes and newlines; skips ro
     { front: 'Two\nlines', back: 'Answer', concept: '', type: 'why' },
     { front: 'Q', back: 'A', concept: '', type: 'basic' },
   ]);
-  expect(r.skipped).toBe(1);
+  expect(r.skippedRows).toEqual([4]);
 });
 
 test('parseCards needs front and back columns, and caps rows and field length', () => {
@@ -23,7 +23,7 @@ test('parseCards needs front and back columns, and caps rows and field length', 
   expect(parseCards(many).error).toBe('Import at most 2,000 cards at a time.');
   const r = parseCards(`front,back\n${'x'.repeat(501)},a\nok,fine`);
   expect(r.cards).toHaveLength(1);
-  expect(r.skipped).toBe(1);
+  expect(r.skippedRows).toEqual([2]);
 });
 
 test('toCsv quotes fields and prefixes formula characters with an apostrophe', () => {
@@ -43,4 +43,14 @@ test('a quote mark inside an unquoted field is plain text; an unclosed quoted fi
     { front: 'Q2', back: 'A2', concept: '', type: 'basic' },
   ]);
   expect(parseCards('front,back\n"Unclosed,A\nQ2,A2\n').error).toBe("A quote mark in the file isn't closed.");
+});
+
+test('a semicolon CSV imports like a comma one', () => {
+  expect(parseCards('front;back;concept\nWhere, exactly?;Here;Place\n').cards).toEqual([{ front: 'Where, exactly?', back: 'Here', concept: 'Place', type: 'basic' }]);
+});
+
+test('one apostrophe before a formula character is removed on import, undoing the export guard', () => {
+  const cards = [{ front: '=1+1', back: '-5 degrees', concept: '@home', type: 'basic' }];
+  expect(parseCards(toCsv(cards)).cards).toEqual(cards);
+  expect(parseCards("front,back\n'plain,ok").cards[0].front).toBe("'plain");
 });
