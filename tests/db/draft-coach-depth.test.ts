@@ -86,3 +86,10 @@ test('item_translations and self_assessments: owner-only insert and select', asy
   expect((await A.client.from('self_assessments').insert({ ...sa, weakness: 'x'.repeat(301) })).error).not.toBeNull();
   expect((await B.client.from('self_assessments').select('draft_id').eq('draft_id', aDraft)).data).toEqual([]);
 });
+
+test('revise_item clears that item\'s cached translations so they are not shown for the old summary', async () => {
+  const id = await newItem(A, aDraft);
+  await A.client.from('item_translations').insert({ item_id: id, user_id: A.userId, lang: 'fil', level: 0, result: { summary: 'luma', hints: [] } });
+  expect((await A.client.rpc('revise_item', { p_item_id: id, p_summary: 'Explain the source.' })).error).toBeNull();
+  expect((await adminClient().from('item_translations').select('item_id').eq('item_id', id)).data).toEqual([]);
+});

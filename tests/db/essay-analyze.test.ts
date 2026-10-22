@@ -268,3 +268,20 @@ test('re-check carries outline lines of unchanged paragraphs and fills changed o
     { paragraph_index: 3, summary: 'Point 2', flag: null },
   ]);
 });
+
+test('a failed outline save then a retry saves each paragraph item once', async () => {
+  const U = await freshUser();
+  const { draftId } = await newDraft(U);
+  const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
+  // The same client, except that set_outline fails the first time.
+  let failOnce = true;
+  const flaky = new Proxy(U.client, { get: (t, k) => (k === 'rpc'
+    ? (name: string, args: unknown) => (name === 'set_outline' && failOnce ? (failOnce = false, Promise.resolve({ data: null, error: { message: 'boom' } })) : t.rpc(name, args as never))
+    : Reflect.get(t, k)) }) as typeof U.client;
+  const first = await analyzeLayer(flaky, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  expect(first.ok).toBe(false);
+  const retry = await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  expect(retry.ok).toBe(true);
+  expect((await adminClient().from('feedback_items').select('id').eq('draft_id', draftId).eq('layer', 'paragraph')).data).toHaveLength(2);
+  expect(await outlineOf(draftId)).toEqual(outline);
+});

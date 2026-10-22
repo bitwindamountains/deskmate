@@ -11,6 +11,8 @@ vi.mock('@/app/(app)/write/[essayId]/item-actions', () => ({
   logViewedLevel: (...a: unknown[]) => logViewedLevel(...a),
 }));
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+
 import { EssayView, type Analysis } from '@/app/(app)/write/[essayId]/essay-view';
 
 const DRAFT = '22222222-2222-4222-8222-222222222222';
@@ -369,5 +371,49 @@ test('read-aloud outlines the sentence being read with a text label, and Stop cl
   expect(label.parentElement!.textContent).toBe('Now reading:Here the evidence badly supports the claim here.');
   expect(label.parentElement!.closest('[data-paragraph]')!.getAttribute('data-paragraph')).toBe('1');
   fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  expect(screen.queryByText('Now reading:')).toBeNull();
+});
+
+test('a withdraw after an earlier keep shows the card Withdrawn, not Disputed', async () => {
+  view();
+  const c = card('p1');
+  fireEvent.click(within(c).getByRole('button', { name: 'I disagree' }));
+  fetchMock.mockResolvedValueOnce(reply({ reply: 'It stands.', verdict: 'keep' }));
+  fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'I cite one.' } });
+  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
+  expect(await within(c).findByText('It stands.')).toBeTruthy();
+  fetchMock.mockResolvedValueOnce(reply({ reply: 'You are right.', verdict: 'withdraw' }));
+  fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'See paragraph 3.' } });
+  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
+  await waitFor(() => expect(within(screen.getByRole('heading', { name: 'Top 3 priorities' }).closest('section')!).queryByText('Summary p1')).toBeNull());
+  fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+  expect(within(card('p1')).getByText('Withdrawn after your explanation')).toBeTruthy();
+  expect(within(card('p1')).queryByText('Disputed')).toBeNull();
+});
+
+test('a revised summary drops the earlier translation and asks again', async () => {
+  view({ language: 'fil' });
+  const c = card('p1');
+  fetchMock.mockResolvedValueOnce(json({ summary: 'Lumang salin', hints: [] }));
+  fireEvent.click(within(c).getByRole('button', { name: 'Explain in Filipino' }));
+  expect(await within(c).findByText('Lumang salin')).toBeTruthy();
+  fireEvent.click(within(c).getByRole('button', { name: 'I disagree' }));
+  fetchMock.mockResolvedValueOnce(reply({ reply: 'Partly.', verdict: 'modify', revisedSummary: 'Explain the source.' }));
+  fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'I cite one.' } });
+  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
+  expect(await within(c).findByText('Updated: Explain the source.')).toBeTruthy();
+  expect(within(c).queryByText('Lumang salin')).toBeNull();
+});
+
+test('pressing Edit while reading aloud clears the reading outline', () => {
+  type U = { text: string; onstart?: () => void };
+  const queue: U[] = [];
+  vi.stubGlobal('speechSynthesis', { speak: (u: U) => queue.push(u), cancel: vi.fn(), pause: vi.fn(), resume: vi.fn() });
+  vi.stubGlobal('SpeechSynthesisUtterance', class { text: string; constructor(t: string) { this.text = t; } });
+  view();
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  act(() => queue[0].onstart!());
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
   expect(screen.queryByText('Now reading:')).toBeNull();
 });

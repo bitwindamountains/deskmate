@@ -194,8 +194,10 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
       { role: 'coach', kind, text: body.reply, verdict: body.verdict ?? null }] }));
     if (kind === 'dispute') {
       // A withdrawn item leaves Top 3 at once, so it updates the server statuses that Top 3 ranks.
-      if (body.verdict === 'withdraw') setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, status: 'withdrawn' } : x)));
-      else {
+      if (body.verdict === 'withdraw') {
+        setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, status: 'withdrawn' } : x)));
+        setStatusOf((x) => ({ ...x, [it.id]: 'withdrawn' })); // overrides an earlier 'disputed' from a keep
+      } else {
         if (body.revisedSummary) setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, revised_summary: body.revisedSummary } : x)));
         setStatusOf((x) => ({ ...x, [it.id]: 'disputed' }));
       }
@@ -239,7 +241,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
       <section aria-label="Your essay" className="min-w-0">
         <div className="mb-6 flex flex-wrap gap-3">
           <a href="#feedback" className="btn md:hidden">Jump to feedback</a>
-          <button type="button" className="btn" aria-pressed={editing} onClick={() => setEditing((v) => !v)}>Edit</button>
+          <button type="button" className="btn" aria-pressed={editing} onClick={() => { setEditing((v) => !v); setReading(null); }}>Edit</button>
           {version > 1 && <Link href={`/write/${essayId}/compare?from=${version - 1}&to=${version}`} className="btn">Compare with draft {version - 1}</Link>}
           {!editing && <ReadAloud paragraphs={paragraphs} onSentence={setReading} />}
         </div>

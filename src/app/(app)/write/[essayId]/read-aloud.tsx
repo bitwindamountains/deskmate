@@ -15,10 +15,12 @@ export function ReadAloud({ paragraphs, onSentence }: { paragraphs: string[]; on
 
   useEffect(() => {
     setSupported(typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance !== 'undefined');
-    return () => { window.speechSynthesis?.cancel(); };
+    return () => { window.speechSynthesis?.resume(); window.speechSynthesis?.cancel(); };
   }, []);
 
+  // Chrome keeps its paused flag through cancel(), so later speech would queue silently; resume first.
   function stop() {
+    window.speechSynthesis.resume();
     window.speechSynthesis.cancel();
     setState('idle');
     onSentence(null);
@@ -28,6 +30,7 @@ export function ReadAloud({ paragraphs, onSentence }: { paragraphs: string[]; on
     const synth = window.speechSynthesis;
     if (state === 'paused') { synth.resume(); setState('playing'); return; }
     if (state === 'playing') { synth.pause(); setState('paused'); return; }
+    synth.resume();
     synth.cancel();
     const rate = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0.9 : 1;
     const parts = paragraphs.flatMap((text, para) => splitSentences(text).map((s) => ({ para, ...s, text: text.slice(s.start, s.end) })));
