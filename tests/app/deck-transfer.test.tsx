@@ -28,3 +28,15 @@ test('an import error is shown as an alert', async () => {
   fireEvent.change(screen.getByLabelText('Import cards from a CSV file'), { target: { files: [new File(['x'], 'x.csv')] } });
   expect((await screen.findByRole('alert')).textContent).toBe('The first row needs "front" and "back" columns.');
 });
+
+test('a Windows-1252 file from Excel keeps its accented letters', async () => {
+  importCsv.mockResolvedValue({ ok: true, added: 1, skipped: 0 });
+  render(<Transfer deckId={D} />);
+  const ascii = (s: string) => [...s].map((c) => c.charCodeAt(0));
+  // "front,back\nAcción,Mañana" as Windows-1252: ó is 0xF3 and ñ is 0xF1 (invalid as UTF-8)
+  const bytes = new Uint8Array([...ascii('front,back\nAcci'), 0xf3, ...ascii('n,Ma'), 0xf1, ...ascii('ana')]);
+  fireEvent.change(screen.getByLabelText('Import cards from a CSV file'), { target: { files: [new File([bytes], 'x.csv')] } });
+  await screen.findByText(/Added 1 card/);
+  expect(importCsv).toHaveBeenCalledWith(D, 'front,back\nAcción,Mañana');
+});
+

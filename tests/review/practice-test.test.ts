@@ -24,3 +24,12 @@ test('buildTest makes choice questions with 3 distinct distractors, falls back t
 test('buildTest needs at least 2 cards', () => {
   expect(buildTest([card(1)], 1)).toEqual([]);
 });
+
+test('distractors leave out answers equivalent to the right one, ignoring case, spaces and leading words', () => {
+  const cards = [card(1, { back: 'Mitochondria' }), card(2, { back: 'In the mitochondria' }), card(3, { back: 'mitochondria ' }),
+    card(4, { back: 'Nucleus' }), card(5, { back: 'Ribosome' }), card(6, { back: 'Golgi body' })];
+  for (const q of buildTest(cards, 3).filter((x) => x.cardId === 'c1' && x.kind === 'choice')) {
+    expect(q.choices!.filter((c) => /mitochondria/i.test(c))).toEqual(['Mitochondria']);
+  }
+  expect(buildTest(cards, 3).find((x) => x.cardId === 'c1')!.kind).toBe('choice');
+});

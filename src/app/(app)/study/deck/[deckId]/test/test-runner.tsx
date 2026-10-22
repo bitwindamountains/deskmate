@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { Rating } from 'ts-fsrs';
+import { useEffect, useRef, useState } from 'react';
 import { writeHref } from '@/growth/prompts';
 import { gradeLocally } from '@/review/grade';
 import type { TestQuestion } from '@/review/practice-test';
@@ -17,6 +16,11 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
   const [unsure, setUnsure] = useState(false); // the cascade couldn't settle a typed answer
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Outcome[]>([]);
+  const heading = useRef<HTMLElement>(null);
+  const gotIt = useRef<HTMLButtonElement>(null);
+  // Keyboard and screen-reader users land on each new question, and on the result, instead of losing focus to the page.
+  useEffect(() => { if (i > 0) heading.current?.focus(); }, [i]);
+  useEffect(() => { if (unsure) gotIt.current?.focus(); }, [unsure]);
 
   if (questions.length === 0) {
     return (
@@ -40,8 +44,9 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
     // No embedder and no LLM in a practice test: whatever exact and fuzzy matching can't settle, the student marks.
     const g = await gradeLocally({ type: q.type, reference: q.answer, keyPoints: q.keyPoints, answer: text, responseMs: 10_000 }, null);
     setBusy(false);
-    if (g.needsLlm) setUnsure(true);
-    else record(g.suggested >= Rating.Good);
+    // Only a sure match counts by itself; a paraphrase can score low and still be right, so everything else is self-marked.
+    if (g.source === 'exact' || g.score >= 0.85) record(true);
+    else setUnsure(true);
   }
 
   if (i >= questions.length) {
@@ -49,7 +54,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
     const missed = done.filter((o) => !o.right);
     return (
       <section aria-labelledby="result-h" className="max-w-prose space-y-4">
-        <h2 id="result-h" className="sr-only">Your result</h2>
+        <h2 id="result-h" ref={heading as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="sr-only">Your result</h2>
         <p className="text-xl font-bold">{`${right} of ${done.length} right`}</p>
         {missed.length > 0 && (
           <>
@@ -75,7 +80,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
   const q = questions[i];
   return (
     <section aria-label="Practice test" className="max-w-xl space-y-5">
-      <p className="text-sm font-bold text-ink-muted">{`Question ${i + 1} of ${questions.length}`}</p>
+      <p ref={heading as React.RefObject<HTMLParagraphElement>} tabIndex={-1} className="text-sm font-bold text-ink-muted outline-none">{`Question ${i + 1} of ${questions.length}`}</p>
       <form className="space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]" onSubmit={(e) => { e.preventDefault(); void next(); }}>
         {q.kind === 'choice' ? (
           <fieldset className="space-y-2">
@@ -99,7 +104,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
             <p className="font-bold">Check this one yourself</p>
             <p>{q.answer}</p>
             <div className="flex flex-wrap gap-3">
-              <button type="button" className="btn" onClick={() => record(true)}>I got it right</button>
+              <button ref={gotIt} type="button" className="btn" onClick={() => record(true)}>I got it right</button>
               <button type="button" className="btn" onClick={() => record(false)}>I missed it</button>
             </div>
           </div>

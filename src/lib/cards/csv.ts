@@ -4,8 +4,8 @@ const MAX_ROWS = 2000;
 const MAX_FIELD = 500; // the deck editor's limit for front and back
 const TYPES = new Set(['basic', 'cloze', 'why']);
 
-/** RFC 4180 rows: quoted fields, "" escapes, commas and newlines inside quotes, CRLF or LF. */
-function rows(text: string): string[][] {
+/** RFC 4180 rows: quoted fields, "" escapes, commas and newlines inside quotes, CRLF or LF. null when a quoted field never closes. */
+function rows(text: string): string[][] | null {
   const out: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -16,20 +16,22 @@ function rows(text: string): string[][] {
       if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
       else if (c === '"') quoted = false;
       else field += c;
-    } else if (c === '"') quoted = true;
+    } else if (c === '"' && field === '') quoted = true; // only a field's first character opens quotes: 32" screen stays text
     else if (c === ',') { row.push(field); field = ''; }
     else if (c === '\n' || c === '\r') {
       if (c === '\r' && text[i + 1] === '\n') i++;
       row.push(field); out.push(row); row = []; field = '';
     } else field += c;
   }
+  if (quoted) return null; // an open quote would otherwise swallow the rest of the file into one card
   if (field || row.length) { row.push(field); out.push(row); }
   return out.filter((r) => r.some((f) => f.trim()));
 }
 
 /** Cards from a CSV with a header row naming front and back (concept and type optional). Bad rows are skipped and counted. */
 export function parseCards(text: string): { cards: CsvCard[]; skipped: number; error?: string } {
-  const all = rows(text.replace(/^﻿/, ''));
+  const all = rows(text.replace(/^\uFEFF/, ''));
+  if (!all) return { cards: [], skipped: 0, error: "A quote mark in the file isn't closed." };
   if (!all.length) return { cards: [], skipped: 0, error: 'The file is empty.' };
   const head = all[0].map((h) => h.trim().toLowerCase());
   const col = (name: string) => head.indexOf(name);

@@ -3,6 +3,10 @@ export type TestQuestion = { cardId: string; kind: 'choice' | 'short'; prompt: s
 type TestCard = { id: string; front: string; back: string; type: string; keyPoints: string[] };
 
 const MAX_QUESTIONS = 20;
+const FILLER = new Set(['a', 'an', 'the', 'in', 'on', 'at', 'of', 'to', 'it', 'is', 'its']);
+/** "In the mitochondria" and "Mitochondria " are the same answer: lowercase, drop punctuation and filler words. */
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter((w) => w && !FILLER.has(w)).join(' ');
+const same = (a: string, b: string) => { const x = norm(a), y = norm(b); return !x || !y || x === y || x.includes(y) || y.includes(x); };
 
 /** A small seeded PRNG (mulberry32), so one test is stable across re-renders and a new seed reshuffles it. */
 function random(seed: number) {
@@ -28,7 +32,9 @@ export function buildTest(cards: TestCard[], seed: number): TestQuestion[] {
   return shuffle(cards, rnd).slice(0, MAX_QUESTIONS).map((c) => {
     const type = (['basic', 'cloze', 'why'].includes(c.type) ? c.type : 'basic') as TestQuestion['type'];
     const base = { cardId: c.id, prompt: c.front, answer: c.back, keyPoints: c.keyPoints, type };
-    const others = [...new Set(cards.filter((o) => o.id !== c.id && o.back.trim() !== c.back.trim()).map((o) => o.back))];
+    // A distractor that means the right answer would mark a correct pick wrong, so equivalents are left out.
+    const others: string[] = [];
+    for (const o of cards) if (o.id !== c.id && !same(o.back, c.back) && !others.some((x) => same(x, o.back))) others.push(o.back.trim());
     if (type === 'why' || others.length < 3) return { ...base, kind: 'short' as const };
     return { ...base, kind: 'choice' as const, choices: shuffle([c.back, ...shuffle(others, rnd).slice(0, 3)], rnd) };
   });

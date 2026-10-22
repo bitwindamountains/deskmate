@@ -36,3 +36,11 @@ test('toCsv quotes fields and prefixes formula characters with an apostrophe', (
 test('toAnkiText writes the header and flattens tabs and newlines', () => {
   expect(toAnkiText([{ front: 'Q\tone', back: 'A\nline' }])).toBe('#separator:tab\n#html:false\nQ one\tA line\n');
 });
+
+test('a quote mark inside an unquoted field is plain text; an unclosed quoted field is an error', () => {
+  expect(parseCards('front,back\nTV size,32" screen\nQ2,A2\n').cards).toEqual([
+    { front: 'TV size', back: '32" screen', concept: '', type: 'basic' },
+    { front: 'Q2', back: 'A2', concept: '', type: 'basic' },
+  ]);
+  expect(parseCards('front,back\n"Unclosed,A\nQ2,A2\n').error).toBe("A quote mark in the file isn't closed.");
+});
