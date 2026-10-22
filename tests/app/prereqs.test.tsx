@@ -16,7 +16,7 @@ const concepts = [{ key: 'cell respiration', label: 'Cell respiration' }, { key:
 test('adding an edge sends the two concept keys and refreshes', async () => {
   addPrereq.mockResolvedValue({ ok: true });
   render(<Prereqs deckId={D} concepts={concepts} edges={[]} />);
-  fireEvent.change(screen.getByLabelText('Concept'), { target: { value: 'cell respiration' } });
+  fireEvent.change(screen.getByLabelText('This concept'), { target: { value: 'cell respiration' } });
   fireEvent.change(screen.getByLabelText('Builds on'), { target: { value: 'glycolysis' } });
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
@@ -34,7 +34,7 @@ test('an edge can be removed, even when its concept no longer has cards', async 
 test('a refused edge is an alert', async () => {
   addPrereq.mockResolvedValue({ ok: false, message: 'That would make a loop: glycolysis already builds on cell respiration.' });
   render(<Prereqs deckId={D} concepts={concepts} edges={[]} />);
-  fireEvent.change(screen.getByLabelText('Concept'), { target: { value: 'cell respiration' } });
+  fireEvent.change(screen.getByLabelText('This concept'), { target: { value: 'cell respiration' } });
   fireEvent.change(screen.getByLabelText('Builds on'), { target: { value: 'glycolysis' } });
   fireEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect((await screen.findByRole('alert')).textContent).toBe('That would make a loop: glycolysis already builds on cell respiration.');

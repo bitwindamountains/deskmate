@@ -49,7 +49,7 @@ export function Prereqs({ deckId, concepts, edges }: { deckId: string; concepts:
           if (concept && prereq) void run(() => addPrereq(deckId, concept, prereq));
         }}>
           <div>
-            <label htmlFor="prereq-concept" className="mb-1 block">Concept</label>
+            <label htmlFor="prereq-concept" className="mb-1 block">This concept</label>
             <select id="prereq-concept" className="field" value={concept} onChange={(e) => setConcept(e.target.value)}>
               <option value="">Choose…</option>
               {concepts.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
