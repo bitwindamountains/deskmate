@@ -9,7 +9,6 @@ const SAVE_FAILED = "We couldn't save that change.";
 function fail(): never { throw new Error(SAVE_FAILED); }
 
 const Id = z.uuid();
-const Reason = z.string().trim().min(1).max(1000);
 
 async function session() {
   const db = await createClient();
@@ -21,7 +20,7 @@ async function session() {
 }
 
 // Every write is scoped to userId on top of RLS. Never surfaces DB error text.
-async function write(itemId: string, patch: Record<string, unknown>, event: { action: 'viewed_level' | 'got_it' | 'disagree'; level?: number },
+async function write(itemId: string, patch: Record<string, unknown>, event: { action: 'viewed_level' | 'got_it'; level?: number },
   onlyBelow?: number) {
   if (!Id.safeParse(itemId).success) fail();
   const { db, userId } = await session();
@@ -35,12 +34,6 @@ async function write(itemId: string, patch: Record<string, unknown>, event: { ac
 
 export async function markGotIt(itemId: string): Promise<void> {
   await write(itemId, { status: 'got_it' }, { action: 'got_it' });
-}
-
-export async function disputeItem(itemId: string, reason: string): Promise<void> {
-  const r = Reason.safeParse(reason);
-  if (!r.success) fail();
-  await write(itemId, { status: 'disputed', dispute_reason: r.data }, { action: 'disagree' });
 }
 
 export async function logViewedLevel(itemId: string, level: 1 | 2): Promise<void> {

@@ -61,7 +61,7 @@ export const TEMPLATES: Partial<Record<PatternKey, TemplateCard[]>> = {
       back: 'The reader then reads every detail knowing what it is meant to show.',
       key_points: ['frames the details that follow'], example: 'Many students work after school.' },
     { type: 'basic', front: 'How can you check whether a topic sentence fits its paragraph?',
-      back: 'Read the paragraph without it. If every sentence supports the point it makes, it fits.',
+      back: "Read the paragraph without it. If every other sentence supports the topic sentence's point, it fits.",
       key_points: ['every sentence supports it'], example: 'Uniforms are also a thing schools have.' },
   ],
   unsupported_claim: [

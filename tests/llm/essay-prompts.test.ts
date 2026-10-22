@@ -103,3 +103,10 @@ test('EssayParagraphs defaults outline to [] and EssayGlobal accepts prompt_alig
     safety_concern: false, prompt_alignment: [{ part: 'Use two sources', status: 'missing', note: 'Only one source.' }] };
   expect(EssayGlobal.parse(g).prompt_alignment).toHaveLength(1);
 });
+
+test('global prompt adds the time-limit line only for timed essays, in the user message', () => {
+  const timed = essayGlobalPrompt({ ...base, timedMinutes: 30 });
+  expect(timed.user).toContain('Written under a 30-minute time limit; weigh structure and planning over polish.');
+  expect(timed.system).toBe(essayGlobalPrompt(base).system);
+  expect(essayGlobalPrompt(base).user).not.toContain('time limit');
+});

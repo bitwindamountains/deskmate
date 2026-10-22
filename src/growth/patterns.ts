@@ -3,10 +3,11 @@ export type PatternKey = 'vague_thesis' | 'weak_topic_sentence' | 'unsupported_c
 
 /** The growth profile's fixed pattern list (A3.5), in display order. */
 export const PATTERNS: Record<PatternKey, string> = {
-  vague_thesis: 'Thesis needs focus',
+  // Rubric fallbacks catch every comment on that criterion, so their labels name the area, not a narrower fault.
+  vague_thesis: 'Thesis',
   weak_topic_sentence: 'Weak topic sentences',
-  unsupported_claim: 'Claims without evidence',
-  missing_analysis: 'Evidence not explained',
+  unsupported_claim: 'Evidence',
+  missing_analysis: 'Analysis',
   weak_transitions: 'Missing transitions',
   over_quoting: 'Over-quoting',
   citation: 'Citations',
@@ -20,10 +21,11 @@ export const PATTERNS: Record<PatternKey, string> = {
 const LANGUAGE_TOOL: Record<string, PatternKey | null> = { TYPOS: 'spelling', GRAMMAR: 'grammar', CONFUSED_WORDS: 'grammar', PUNCTUATION: 'punctuation', REDUNDANCY: null };
 const TEXT_RULES: [RegExp, PatternKey][] = [
   [/comma splice/, 'comma_splice'],
-  [/run-on|run on|fused sentence/, 'run_on'],
+  [/\brun-ons?\b|\brun on sentence|fused sentence/, 'run_on'],
   [/topic sentence/, 'weak_topic_sentence'],
   [/over-?quot|too many quot|long quot/, 'over_quoting'],
-  [/citation|\bcite|source format/, 'citation'],
+  // "cite" alone also appears in evidence comments ("the statistic you cite"), so only naming a source or format counts.
+  [/citation|\bcite (?:your|the|a|each|this) source|source format|in-text/, 'citation'],
   [/transition/, 'weak_transitions'],
 ];
 const RUBRIC: Record<string, PatternKey> = { Thesis: 'vague_thesis', Evidence: 'unsupported_claim', Analysis: 'missing_analysis' };

@@ -4,7 +4,7 @@ import type { ItemRow } from '@/lib/essay/analyze';
 
 const carryOverCounts = vi.fn();
 vi.mock('@/app/(app)/write/[essayId]/item-actions', () => ({
-  markGotIt: vi.fn(), disputeItem: vi.fn(), logViewedLevel: vi.fn(),
+  markGotIt: vi.fn(), logViewedLevel: vi.fn(),
   carryOverCounts: (...a: unknown[]) => carryOverCounts(...a),
 }));
 const saveDraft = vi.fn();
@@ -120,7 +120,8 @@ test('compare marks added and removed words with text labels and lists score cha
     drafts: [{ id: 'a', version: 1, content: 'The cat sat.' }, { id: 'b', version: 2, content: 'The dog sat.' }],
     analyses: [{ draft_id: 'a', rubric_scores: scores(2) }, { draft_id: 'b', rubric_scores: scores(3) }],
     feedback_items: [{ id: 'i1', layer: 'global', summary: 'The thesis is vague.', status: 'addressed' },
-      { id: 'i2', layer: 'paragraph', summary: 'Evidence is thin.', status: 'open' }],
+      { id: 'i2', layer: 'paragraph', summary: 'Evidence is thin.', status: 'open' },
+      { id: 'i3', layer: 'paragraph', summary: 'Original wording.', revised_summary: 'Revised wording.', status: 'disputed' }],
   };
   const page = (from: string, to: string) => ComparePage({ params: Promise.resolve({ essayId: ESSAY }), searchParams: Promise.resolve({ from, to }) });
   render(await page('1', '2'));
@@ -136,6 +137,9 @@ test('compare marks added and removed words with text labels and lists score cha
   expect(within(table).getByRole('row', { name: /Thesis/ }).textContent).toMatch(/Thesis.*2 of 4.*3 of 4/);
   expect(screen.getByText('The thesis is vague.').closest('li')!.textContent).toContain('Addressed');
   expect(screen.getByText('Evidence is thin.').closest('li')!.textContent).toContain('Still open');
+  // a coach revision is the feedback now, here too
+  expect(screen.getByText('Revised wording.')).toBeTruthy();
+  expect(screen.queryByText('Original wording.')).toBeNull();
 
   await expect(page('x', '2')).rejects.toThrow('NOT_FOUND');
   await expect(page('1', '3')).rejects.toThrow('NOT_FOUND');

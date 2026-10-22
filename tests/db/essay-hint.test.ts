@@ -164,3 +164,14 @@ test('POST validates level and session', async () => {
   session.client = anonClient();
   expect((await post({ itemId: crypto.randomUUID(), level: 3 })).status).toBe(401);
 });
+
+test('a hint for a revised item is built from the revised summary', async () => {
+  const draft = await newDraft(A);
+  const item = await newItem(A, draft);
+  await adminClient().from('feedback_items').update({ revised_summary: 'Explain how the source supports the claim.' }).eq('id', item);
+  const fn = ladder();
+  await requestHint(A.client, A.userId, item, 3, {}, fn);
+  const user = (fn.mock.calls[0][1] as { user: string }).user;
+  expect(user).toContain('Explain how the source supports the claim.');
+  expect(user).not.toContain('Claim lacks evidence');
+});

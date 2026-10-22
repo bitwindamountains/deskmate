@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 
 let rows: unknown[] = [];
@@ -99,4 +99,30 @@ test('the new-essay form prefills title and prompt from the URL and opens assign
   expect((screen.getByLabelText('Assignment prompt') as HTMLTextAreaElement).value).toContain('Why does ice float?');
   expect(screen.getByText('Assignment details (optional)').closest('details')!.open).toBe(true);
   expect((screen.getByLabelText('Essay type') as HTMLSelectElement).value).toBe('expository');
+});
+
+test('the timer counts down, announces at 5 and 1 minutes, and at zero shows Time\'s up without submitting', async () => {
+  vi.useFakeTimers();
+  try {
+    createEssay.mockResolvedValue({ ok: false, error: 'x' });
+    render(<NewEssayForm />);
+    fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start the timer' }));
+    expect(screen.getByText('20 minutes left')).toBeTruthy();
+    act(() => { vi.advanceTimersByTime(15 * 60_000); });
+    expect(screen.getByRole('status', { name: 'Timer' }).textContent).toBe('5 minutes left');
+    act(() => { vi.advanceTimersByTime(4 * 60_000); });
+    expect(screen.getByRole('status', { name: 'Timer' }).textContent).toBe('1 minute left');
+    act(() => { vi.advanceTimersByTime(60_000); });
+    expect(screen.getByText("Time's up. Finish your sentence and get feedback.")).toBeTruthy();
+    expect(createEssay).not.toHaveBeenCalled();
+    const essay = screen.getByLabelText('Your essay', { exact: true }) as HTMLTextAreaElement;
+    expect(essay.disabled).toBe(false);
+    fireEvent.change(screen.getByLabelText('Title', { exact: true }), { target: { value: 'Timed' } });
+    fireEvent.change(essay, { target: { value: 'word '.repeat(60) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+    expect(createEssay.mock.calls[0][0]).toMatchObject({ timedMinutes: 20, minutesUsed: 20 });
+  } finally {
+    vi.useRealTimers();
+  }
 });

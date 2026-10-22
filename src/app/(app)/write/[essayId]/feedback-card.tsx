@@ -54,8 +54,9 @@ export function FeedbackCard({ item: it, api, heading = 'h3', children }:
         {it.convention && <span className="text-ink-muted">Academic convention</span>}
         {STATUS_LABEL[status] && <span className="rounded-md border border-line px-2 py-0.5">{STATUS_LABEL[status]}</span>}
       </p>
-      {it.revised_summary && <p className="font-bold">{`Updated: ${it.revised_summary}`}</p>}
-      <H id={`card-${it.id}-t`} className={it.revised_summary ? 'text-ink-muted' : 'font-bold'}>{it.summary}</H>
+      {/* A revision from a dispute is the feedback now, so it names the card; the original stays visible below. */}
+      <H id={`card-${it.id}-t`} className="font-bold">{it.revised_summary ?? it.summary}</H>
+      {it.revised_summary && <p className="text-sm text-ink-muted">{`Original: ${it.summary}`}</p>}
       {it.quote && <blockquote className="border-l-2 border-line pl-3 text-ink-muted">“{it.quote}”</blockquote>}
 
       {shown > 0 && (

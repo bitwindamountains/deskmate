@@ -14,8 +14,8 @@ type Props = {
   leech: number | null;
 };
 
-function Practice({ stat }: { stat: PatternStat }) {
-  const [busy, setBusy] = useState(false);
+// One shared busy flag: the first request creates the practice deck, so a second tap anywhere must wait for it.
+function Practice({ stat, busy, setBusy }: { stat: PatternStat; busy: boolean; setBusy: (b: boolean) => void }) {
   const [note, setNote] = useState('');
   async function add() {
     setBusy(true);
@@ -33,6 +33,7 @@ function Practice({ stat }: { stat: PatternStat }) {
 
 /** The learner profile (C2): writing patterns, one calibration score across both tools, and study habits. */
 export function ProgressView({ growth, calibration, counts, hint, leech }: Props) {
+  const [adding, setAdding] = useState(false);
   return (
     <div className="max-w-prose space-y-8">
       <section aria-labelledby="patterns-h" className="space-y-3">
@@ -44,7 +45,7 @@ export function ProgressView({ growth, calibration, counts, hint, leech }: Props
                 <li key={p.key} className="space-y-2 py-3">
                   <p className="font-bold">{p.label}</p>
                   <p className="text-sm text-ink-muted">{`In ${p.essays} of ${growth.essays} essays`}{trendCopy(p.trend) && ` · ${trendCopy(p.trend)}`}</p>
-                  {TEMPLATES[p.key] && <Practice stat={p} />}
+                  {TEMPLATES[p.key] && <Practice stat={p} busy={adding} setBusy={setAdding} />}
                 </li>
               ))}
             </ul>
@@ -58,7 +59,8 @@ export function ProgressView({ growth, calibration, counts, hint, leech }: Props
           <div><dt className="inline font-bold">Flashcards: </dt><dd className="inline">{calibration.recall !== null
             ? `${calibration.recall}% (from ${counts.answers} answers)` : 'answer with a confidence level 10 times to see this.'}</dd></div>
           <div><dt className="inline font-bold">Essays: </dt><dd className="inline">{calibration.writing !== null
-            ? `${calibration.writing}% (from ${counts.criteria} criteria)` : 'rate an essay yourself before feedback to see this.'}</dd></div>
+            ? `${calibration.writing}% (from ${counts.criteria} criteria)` : counts.criteria > 0 ? 'rate at least 3 criteria yourself to see this.'
+            : 'rate an essay yourself before feedback to see this.'}</dd></div>
           {calibration.combined !== null && <div><dt className="inline font-bold">Both tools: </dt><dd className="inline">{`${calibration.combined}%`}</dd></div>}
         </dl>
       </section>

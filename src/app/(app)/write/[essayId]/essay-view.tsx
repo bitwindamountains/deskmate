@@ -36,10 +36,12 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null, language = null }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null, language = null, timed = null }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
   rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
   threads?: Record<string, ThreadMessage[]>; selfAssessment?: SelfAssessment | null; language?: Lang | null;
+  /** A4.5: the time limit, and the minutes used (first draft only). */
+  timed?: { limit: number; used: number | null } | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [analysis, setAnalysis] = useState(initialAnalysis);
@@ -245,6 +247,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
           {version > 1 && <Link href={`/write/${essayId}/compare?from=${version - 1}&to=${version}`} className="btn">Compare with draft {version - 1}</Link>}
           {!editing && <ReadAloud paragraphs={paragraphs} onSentence={setReading} />}
         </div>
+        {timed && <p className="mb-4 text-sm text-ink-muted">{timed.used !== null ? `Timed practice: written in ${timed.used} of ${timed.limit} minutes` : `Timed practice: ${timed.limit} minutes`}</p>}
         {editing ? <Editor essayId={essayId} content={content} /> : (
           <div className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
             {paragraphs.map((text, i) => {
@@ -332,7 +335,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             {!offPrompt && alignment.length > 0 && <Alignment parts={alignment} />}
 
             {selfAssessment && analysis && (
-              <SelfCheck self={selfAssessment} ai={analysis.rubric_scores} topSummary={top3[0]?.summary ?? null} showScores={showScores} />
+              <SelfCheck self={selfAssessment} ai={analysis.rubric_scores} topSummary={top3[0] ? top3[0].revised_summary ?? top3[0].summary : null} showScores={showScores} />
             )}
 
             {rest.length > 0 && (
