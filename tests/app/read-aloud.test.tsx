@@ -68,3 +68,15 @@ test('Stop while paused resumes the engine before cancelling, so the next Play i
   expect(synth.resume).toHaveBeenCalled();
   expect(synth.resume.mock.invocationCallOrder[0]).toBeLessThan(synth.cancel.mock.invocationCallOrder.at(-1)!);
 });
+
+test('a speech error cancels the rest of the queue and clears the highlight', () => {
+  const onSentence = vi.fn();
+  render(<ReadAloud paragraphs={PARAS} onSentence={onSentence} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  act(() => queue[0].onstart!());
+  synth.cancel.mockClear();
+  act(() => queue[0].onerror!());
+  expect(synth.cancel).toHaveBeenCalled();
+  expect(onSentence).toHaveBeenLastCalledWith(null);
+  expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
+});

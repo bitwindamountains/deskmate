@@ -3,11 +3,9 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import type { ItemRow } from '@/lib/essay/analyze';
 
 const markGotIt = vi.fn();
-const disputeItem = vi.fn();
 const logViewedLevel = vi.fn();
 vi.mock('@/app/(app)/write/[essayId]/item-actions', () => ({
   markGotIt: (...a: unknown[]) => markGotIt(...a),
-  disputeItem: (...a: unknown[]) => disputeItem(...a),
   logViewedLevel: (...a: unknown[]) => logViewedLevel(...a),
 }));
 
@@ -56,7 +54,6 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   markGotIt.mockResolvedValue(undefined);
-  disputeItem.mockResolvedValue(undefined);
   logViewedLevel.mockResolvedValue(undefined);
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
