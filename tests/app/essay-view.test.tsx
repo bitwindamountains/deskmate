@@ -355,3 +355,19 @@ test('the Explain in Filipino toggle shows only for fil/es profiles and marks th
   view();
   expect(within(card('p1')).queryByRole('button', { name: /Explain in/ })).toBeNull();
 });
+
+test('read-aloud outlines the sentence being read with a text label, and Stop clears it', () => {
+  type U = { text: string; onstart?: () => void };
+  const queue: U[] = [];
+  vi.stubGlobal('speechSynthesis', { speak: (u: U) => queue.push(u), cancel: vi.fn(), pause: vi.fn(), resume: vi.fn() });
+  vi.stubGlobal('SpeechSynthesisUtterance', class { text: string; constructor(t: string) { this.text = t; } });
+  view();
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  act(() => queue[1].onstart!()); // paragraph 1, its only sentence
+  const label = screen.getByText('Now reading:');
+  expect(label.className).toContain('sr-only');
+  expect(label.parentElement!.textContent).toBe('Now reading:Here the evidence badly supports the claim here.');
+  expect(label.parentElement!.closest('[data-paragraph]')!.getAttribute('data-paragraph')).toBe('1');
+  fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  expect(screen.queryByText('Now reading:')).toBeNull();
+});
