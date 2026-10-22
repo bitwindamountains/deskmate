@@ -9,6 +9,8 @@ const empty = (): unknown => new Proxy({}, { get: (_, k) => (k === 'then' ? (r: 
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from: empty }) }));
 vi.mock('@/lib/review/load', () => ({ loadStudy: async () => ({ decks: [], cards: [], newIntroducedToday: 0 }), loadDeckSummaries: async () => [] }));
 
+vi.mock('next/navigation', async (orig) => ({ ...(await orig<object>()), useRouter: () => ({ refresh: vi.fn() }) }));
+
 import AppLayout from '@/app/(app)/layout';
 import TodayPage from '@/app/(app)/today/page';
 import StudyPage from '@/app/(app)/study/page';

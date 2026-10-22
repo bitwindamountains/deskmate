@@ -1,3 +1,5 @@
+import { userTimeZone } from '@/lib/time/user-zone';
+import { TimeZoneCookie } from '@/components/time-zone-cookie';
 import '@fontsource/opendyslexic/400.css';
 import '@fontsource/opendyslexic/700.css';
 import { requireOnboardedUser } from '@/lib/profile/require';
@@ -5,6 +7,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireOnboardedUser();
   const prefs = profile.preferences ?? {};
+  const zone = await userTimeZone();
   return (
     <div
       data-font={prefs.font === 'dyslexic' ? 'dyslexic' : 'default'}
@@ -14,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <a href="#main" className="sr-only z-20 rounded-lg bg-mark px-4 py-3 font-bold text-on-mark focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Skip to content
       </a>
+      <TimeZoneCookie serverZone={zone} />
       {children}
     </div>
   );

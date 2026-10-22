@@ -1,3 +1,4 @@
+import { startOfLocalDay } from '@/lib/time/zone';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { StateRow, StudyCard } from '@/review/schedule';
 
@@ -15,9 +16,9 @@ const LOAD_FAILED = "We couldn't load your cards.";
 const iso = (t: string) => new Date(t).toISOString(); // the client compares timestamps as strings against its own toISOString()
 
 /** The user's decks, kept cards with their FSRS state, and how many new cards they started today. RLS scopes every query. */
-export async function loadStudy(db: Db, deckId?: string): Promise<{ decks: Deck[]; cards: ReviewCard[]; newIntroducedToday: number }> {
-  // ponytail: "today" is the UTC day on the server; move to the user's time zone when profiles store one.
-  const today = new Date(new Date().toISOString().slice(0, 10)).toISOString();
+export async function loadStudy(db: Db, deckId?: string, zone = 'UTC'): Promise<{ decks: Deck[]; cards: ReviewCard[]; newIntroducedToday: number }> {
+  // "Today" starts at the student's local midnight (zone comes from their browser), not the server's UTC midnight.
+  const today = startOfLocalDay(new Date(), zone).toISOString();
   let cardQuery = db.from('cards').select('id,deck_id,type,importance,front,back,key_points,concept,source_quote,source_chunk_id,card_states(*)').eq('status', 'kept');
   let deckQuery = db.from('decks').select('id,title,exam_date').order('created_at');
   if (deckId) { cardQuery = cardQuery.eq('deck_id', deckId); deckQuery = deckQuery.eq('id', deckId); }
