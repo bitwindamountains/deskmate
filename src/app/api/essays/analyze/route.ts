@@ -26,5 +26,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'busy', message: 'Feedback is busy right now. Your essay is saved; try again in a minute.' }, { status: 503 });
   }
   if (!r.ok) return NextResponse.json({ error: r.error, message: r.message }, { status: r.status });
-  return NextResponse.json({ items: r.items, analysis: r.analysis ?? null, dropped: r.dropped, already: r.already });
+  return NextResponse.json({ items: r.items, analysis: r.analysis ?? null, outline: r.outline ?? null, dropped: r.dropped, already: r.already });
 }

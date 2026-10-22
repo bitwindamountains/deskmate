@@ -255,7 +255,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
                     // While read aloud, the paragraph drops its highlights so the sentence outline is the only mark in it.
                     <>
                       {text.slice(0, reading.start)}
-                      <span className="rounded-sm outline outline-2 outline-offset-2 outline-ink"><span className="sr-only">Now reading:</span>{text.slice(reading.start, reading.end)}</span>
+                      <span className="rounded-sm border-2 border-ink px-0.5 box-decoration-clone"><span className="sr-only">Now reading:</span>{text.slice(reading.start, reading.end)}</span>
                       {text.slice(reading.end)}
                     </>
                   ) : <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />}
