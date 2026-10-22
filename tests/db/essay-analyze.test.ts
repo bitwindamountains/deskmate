@@ -297,3 +297,15 @@ test('POST returns the saved outline with the items', async () => {
   expect(res.status).toBe(200);
   expect((await res.json()).outline).toEqual(outline);
 });
+
+test('re-check judging sends the revised summary for a revised item', async () => {
+  const U = await freshUser();
+  const d1 = await newDraft(U);
+  await analyzeLayer(U.client, U.userId, d1.draftId, 'global', {}, { completeFn: fakeComplete({ essay_global: GLOBAL }) });
+  const g = (await adminClient().from('feedback_items').select('id').eq('draft_id', d1.draftId).eq('layer', 'global').limit(1).single()).data!;
+  await adminClient().from('feedback_items').update({ revised_summary: 'Name one reason in the thesis.' }).eq('id', g.id);
+  const d2 = await newDraft(U, [P[0] + ' Now revised.', P[1], P[2]].join('\n\n'), d1.essayId, 2);
+  const glob = fakeComplete({ essay_global: GLOBAL });
+  await analyzeLayer(U.client, U.userId, d2.draftId, 'global', {}, { completeFn: glob });
+  expect((glob.mock.calls[0][1] as { user: string }).user).toContain('Name one reason in the thesis.');
+});
