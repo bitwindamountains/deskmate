@@ -1,4 +1,4 @@
-import type { PatternKey } from '@/growth/patterns';
+import { PATTERNS, type PatternKey } from '@/growth/patterns';
 import { TEMPLATES } from '@/growth/templates';
 import type { Db } from '@/lib/llm-calls';
 
@@ -11,6 +11,8 @@ const FAILED = { ok: false, message: "We couldn't add those cards. Try again." }
 export async function addPractice(db: Db, userId: string, pattern: PatternKey): Promise<PracticeResult> {
   const cards = TEMPLATES[pattern];
   if (!cards) return FAILED;
+  // The concept is what the mastery map and session summary show, so it is the label, not the key.
+  const concept = PATTERNS[pattern];
   const found = await db.from('decks').select('id').eq('subject', PRACTICE_SUBJECT).order('created_at').limit(1).maybeSingle();
   if (found.error) return FAILED;
   let deckId = found.data?.id as string | undefined;
@@ -20,11 +22,11 @@ export async function addPractice(db: Db, userId: string, pattern: PatternKey): 
     deckId = made.data.id as string;
   }
   // ponytail: two clicks racing can both pass this check; the cost is a duplicate set the student can delete in the deck editor.
-  const have = await db.from('cards').select('id', { count: 'exact', head: true }).eq('deck_id', deckId).eq('concept', pattern);
+  const have = await db.from('cards').select('id', { count: 'exact', head: true }).eq('deck_id', deckId).eq('concept', concept);
   if (have.error) return FAILED;
   if (have.count) return { ok: true, deckId, added: 0 };
   const { error } = await db.from('cards').insert(cards.map((c) => ({ user_id: userId, deck_id: deckId, source_chunk_id: null, type: c.type,
-    front: c.front, back: c.back, key_points: c.key_points, source_quote: c.example, concept: pattern, bloom_level: 'apply', importance: 2, status: 'kept' })));
+    front: c.front, back: c.back, key_points: c.key_points, source_quote: c.example, concept, bloom_level: 'apply', importance: 2, status: 'kept' })));
   if (error) return FAILED;
   return { ok: true, deckId, added: cards.length };
 }

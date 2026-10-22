@@ -2,6 +2,12 @@ import { expect, test } from 'vitest';
 import { PATTERNS } from '@/growth/patterns';
 import { TEMPLATES } from '@/growth/templates';
 
+test('the APA card teaches the page number for direct quotes and no example quotes a real author', () => {
+  const apa = TEMPLATES.citation!.find((c) => c.front.includes('APA'))!;
+  expect(apa.back).toMatch(/page number/);
+  expect(JSON.stringify(TEMPLATES)).not.toMatch(/Walker|Smith|Lee/);
+});
+
 test('every template pattern has 3–5 cards; fronts are unique; no pattern outside PATTERNS', () => {
   const keys = Object.keys(TEMPLATES);
   expect(keys.sort()).toEqual(Object.keys(PATTERNS).filter((k) => !['spelling', 'grammar', 'punctuation'].includes(k)).sort());

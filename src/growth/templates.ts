@@ -112,10 +112,10 @@ export const TEMPLATES: Partial<Record<PatternKey, TemplateCard[]>> = {
       key_points: ['exact wording matters'], example: 'The report said that "the river is polluted."' },
     { type: 'why', front: 'Why can too many quotations weaken an essay?',
       back: "The sources start doing the talking, and the reader loses your own argument and voice.",
-      key_points: ['your voice gets lost'], example: 'As Smith says, "..." As Lee says, "..."' },
+      key_points: ['your voice gets lost'], example: 'As one author says, "..." As another says, "..."' },
     { type: 'basic', front: 'What should follow every quotation?',
       back: 'Your own explanation of what it shows and how it supports your point.',
-      key_points: ['your explanation after it'], example: '"Sleep improves memory" (Walker, 2017).' },
+      key_points: ['your explanation after it'], example: '"Sleep improves memory" (Rivera, 2019, p. 12).' },
   ],
   citation: [
     { type: 'basic', front: 'What two things does a citation tell the reader?',
@@ -124,8 +124,9 @@ export const TEMPLATES: Partial<Record<PatternKey, TemplateCard[]>> = {
     { type: 'why', front: 'Why do you cite a paraphrase, not only a quotation?',
       back: "The idea still belongs to the source. Rewording it doesn't make it yours.",
       key_points: ['the idea belongs to the source'], example: 'Most teens need nine hours of sleep.' },
-    { type: 'basic', front: "In APA style, what goes in an in-text citation such as '(Walker, 2017)'?",
-      back: "The author's last name and the year of publication.",
-      key_points: ['author', 'year'], example: 'Sleep improves memory (Walker, 2017).' },
+    // Fictional authors only: an invented quotation must never be pinned on a real person.
+    { type: 'basic', front: "In APA style, what goes in an in-text citation such as '(Rivera, 2019)'?",
+      back: "The author's last name and the year of publication. A direct quotation also adds the page number, as in '(Rivera, 2019, p. 12)'.",
+      key_points: ['author', 'year', 'page number for a direct quotation'], example: 'Sleep improves memory (Rivera, 2019).' },
   ],
 };
