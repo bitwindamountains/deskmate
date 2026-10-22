@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
+import { promptForWhy, writeHref } from '@/growth/prompts';
 import type { ReviewCard } from '@/lib/review/load';
 import type { Confidence } from '@/review/calibration';
 import { recordReview, requestGrade, runSync } from '@/review/client-sync';
@@ -29,6 +30,16 @@ const CONFIDENCE: [Confidence, string, string][] = [[1, 'Guessing', 'G'], [2, 'U
 const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
 
 type Slip = { cardId: string; deckId: string; front: string; open: boolean };
+
+/** Shown above the next card after a missed "why" card: explaining it in a paragraph is the next step (C1). */
+function ExplainNote({ front }: { front: string }) {
+  return (
+    <p className="rounded-xl border border-line bg-surface p-4">
+      {`Still unsure about “${front}”? `}
+      <Link href={writeHref(front, promptForWhy(front))} className="font-bold underline">Explain it in writing</Link>
+    </p>
+  );
+}
 
 function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
   return (
@@ -66,6 +77,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const [showSource, setShowSource] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // "Make a mnemonic" on the current card
   const [slipping, setSlipping] = useState<Slip | null>(null); // last card is a leech (B3.3)
+  const [explain, setExplain] = useState<string | null>(null); // a missed why card can become a writing task (C1)
   const shownAt = useRef(Date.now());
   const embedFn = useRef<EmbedFn | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -166,6 +178,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     // Shown above the next card, so it names the card it is about.
     setSureNote(confidence === 3 && g === Rating.Again ? { front: current.front, quote: current.sourceQuote ?? '' } : null);
     setSlipping(g === Rating.Again && state.lapses >= LEECH_LAPSES ? { cardId: current.id, deckId: current.deckId, front: current.front, open: false } : null);
+    setExplain(current.type === 'why' && g <= Rating.Hard ? current.front : null);
     setConfidence(null);
     setShowSource(false);
     setHelpOpen(false);
@@ -240,6 +253,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
       <>
         {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} />}
         {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
+        {explain && <ExplainNote front={explain} />}
         <Summary ratings={done.map((d) => d.rating)} concepts={conceptSummary(done.map((d) => ({ concept: d.concept, rating: d.rating })))} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
           ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />
       </>
@@ -265,6 +279,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
 
       {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} />}
       {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
+      {explain && <ExplainNote front={explain} />}
 
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
         <h2 className="text-[1.44rem] leading-snug font-bold text-balance">{current.front}</h2>

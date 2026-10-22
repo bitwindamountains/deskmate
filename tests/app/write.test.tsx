@@ -92,3 +92,11 @@ test('rating it yourself first sends the scores and weakness; untouched criteria
     scores: [{ criterion: 'Thesis', score: 3 }, { criterion: 'Evidence', score: 2 }], weakness: 'Thin evidence.',
   });
 });
+
+test('the new-essay form prefills title and prompt from the URL and opens assignment details', () => {
+  render(<NewEssayForm initialTitle="Why does ice float?" initialPrompt="Explain in one paragraph (at least 50 words): Why does ice float?" />);
+  expect((screen.getByLabelText('Title', { exact: true }) as HTMLInputElement).value).toBe('Why does ice float?');
+  expect((screen.getByLabelText('Assignment prompt') as HTMLTextAreaElement).value).toContain('Why does ice float?');
+  expect(screen.getByText('Assignment details (optional)').closest('details')!.open).toBe(true);
+  expect((screen.getByLabelText('Essay type') as HTMLSelectElement).value).toBe('expository');
+});
