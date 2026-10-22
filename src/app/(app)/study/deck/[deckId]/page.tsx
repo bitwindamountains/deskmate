@@ -6,6 +6,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import { CardList, type EditorCard } from './card-list';
 import { DeckPrompts } from './deck-prompts';
+import { Goals } from './goals';
 import { Transfer } from './transfer';
 
 type Row = Omit<EditorCard, 'lapses' | 'sourceId'> & { card_states: { lapses: number } | { lapses: number }[] | null;
@@ -18,7 +19,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
   const db = await createClient();
   // ponytail: loads the whole deck for client-side search; page it if decks grow past a few thousand cards.
   const [deck, cards] = await Promise.all([
-    db.from('decks').select('id,title,exam_date').eq('id', deckId).maybeSingle(),
+    db.from('decks').select('id,title,exam_date,goals').eq('id', deckId).maybeSingle(),
     db.from('cards').select('id,type,front,back,concept,status,card_states(lapses),source_chunks(source_id)')
       .eq('deck_id', deckId).in('status', ['pending', 'kept', 'suspended']).order('created_at'),
   ]);
@@ -37,6 +38,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
       </p>
       <DeckPrompts deckTitle={deck.data.title} cards={rows.filter((c) => c.status === 'kept')} />
       <CardList cards={rows} />
+      <Goals deckId={deckId} goals={deck.data.goals} cards={rows.map(({ id, front, back }) => ({ id, front, back }))} />
       <Transfer deckId={deckId} />
     </AppPage>
   );

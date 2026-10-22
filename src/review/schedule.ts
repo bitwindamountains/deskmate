@@ -4,7 +4,12 @@ import { createEmptyCard, fsrs, generatorParameters, Rating, type Card as FsrsCa
 export type Grade = Rating.Again | Rating.Hard | Rating.Good | Rating.Easy;
 export interface StateRow { card_id: string; due: string; stability: number; difficulty: number; scheduled_days: number;
   learning_steps: number; reps: number; lapses: number; state: number; last_review: string | null }
-export interface StudyCard { id: string; deckId: string; type: 'basic' | 'cloze' | 'why'; importance: 1 | 2 | 3; state: StateRow | null }
+export interface StudyCard { id: string; deckId: string; type: 'basic' | 'cloze' | 'why'; importance: 1 | 2 | 3; state: StateRow | null;
+  /** Matched to the deck's course goals (B4.3). */
+  goalMatch?: boolean }
+
+/** Scheduling weight: importance, plus one when the card matches the deck's course goals. */
+export const weight = (c: StudyCard) => c.importance + (c.goalMatch ? 1 : 0);
 export interface SessionOptions { now: Date; minutes: number; newIntroducedToday: number; examDate: Date | null; doMore?: boolean;
   /** The student's zone when this runs on the server (Today plan); omitted on the device. */
   zone?: string }
@@ -66,7 +71,7 @@ export function buildSession(cards: StudyCard[], o: SessionOptions): { queue: St
   const t = o.now.getTime();
   const days = o.examDate ? daysUntil(o.examDate, o.now, o.zone) : 0;
   const exam = days > 0;
-  const priority = (c: StudyCard) => c.importance * (1 - retrievability(c.state, o.now));
+  const priority = (c: StudyCard) => weight(c) * (1 - retrievability(c.state, o.now));
 
   const byPriority = (a: StudyCard, b: StudyCard) => priority(b) - priority(a);
 
@@ -82,7 +87,7 @@ export function buildSession(cards: StudyCard[], o: SessionOptions): { queue: St
   if (overloaded) weak.sort(byPriority);
 
   const fresh = cards.filter((c) => !c.state)
-    .sort((a, b) => b.importance - a.importance) // stable sort keeps input order on ties
+    .sort((a, b) => weight(b) - weight(a)) // stable sort keeps input order on ties
     .slice(0, Math.max(0, NEW_CARD_LIMIT - o.newIntroducedToday));
 
   let queue = [...due, ...weak, ...fresh];
