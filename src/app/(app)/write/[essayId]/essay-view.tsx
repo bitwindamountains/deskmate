@@ -9,7 +9,8 @@ import { FeedbackCard, isOpen, LAYER_BG, LAYER_LABEL, REWRITE_CAP, type CardApi 
 import { Editor, storedDraft } from './editor';
 import { FocusMode } from './focus';
 import { Outline, type OutlineLine } from './outline';
-import { carryOverCounts, disputeItem, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
+import { carryOverCounts, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
+import type { DialogueKind, ThreadMessage } from './item-dialogue';
 
 export type Score = { criterion: string; score: number; justification: string; confidence: 'high' | 'medium' | 'low' };
 export type Strength = { paragraph_index: number; quote: string; why: string; start: number; end: number };
@@ -31,13 +32,15 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {} }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
   rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
+  threads?: Record<string, ThreadMessage[]>;
 }) {
   const [items, setItems] = useState(initialItems);
   const [analysis, setAnalysis] = useState(initialAnalysis);
   const [outline, setOutline] = useState(initialOutline);
+  const [threads, setThreads] = useState(initialThreads);
   const [layerState, setLayerState] = useState(() =>
     Object.fromEntries(LAYERS.map((l) => [l, { state: layers[l] === 'done' ? 'done' : 'waiting' }])) as Record<Layer, LayerState>);
   const [statusOf, setStatusOf] = useState<Record<string, string>>({});
@@ -177,6 +180,24 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
     }
   };
 
+  async function send(it: ItemRow, kind: DialogueKind, message: string): Promise<string | null> {
+    let res: Response;
+    try { res = await post('/api/essays/dialogue', { itemId: it.id, kind, message }); } catch { return OFFLINE; }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || typeof body.reply !== 'string') return body.message ?? OFFLINE;
+    setThreads((t) => ({ ...t, [it.id]: [...(t[it.id] ?? []), { role: 'student', kind, text: message, verdict: null },
+      { role: 'coach', kind, text: body.reply, verdict: body.verdict ?? null }] }));
+    if (kind === 'dispute') {
+      // A withdrawn item leaves Top 3 at once, so it updates the server statuses that Top 3 ranks.
+      if (body.verdict === 'withdraw') setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, status: 'withdrawn' } : x)));
+      else {
+        if (body.revisedSummary) setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, revised_summary: body.revisedSummary } : x)));
+        setStatusOf((x) => ({ ...x, [it.id]: 'disputed' }));
+      }
+    }
+    return null;
+  }
+
   const api: CardApi = {
     status, rewritesLeft: Math.max(0, REWRITE_CAP - used),
     shown: (it) => shownOf[it.id] ?? it.highest_level,
@@ -185,7 +206,8 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
     markId: (it) => markOf[it.id] ?? null,
     nextHint: (it) => void nextHint(it),
     gotIt: (it) => save(it, 'got_it', () => markGotIt(it.id)),
-    dispute: (it, reason) => save(it, 'disputed', () => disputeItem(it.id, reason)),
+    thread: (it) => threads[it.id] ?? [],
+    send,
     showInEssay: (it) => document.getElementById(markOf[it.id])?.focus(),
   };
 

@@ -98,7 +98,7 @@ test('Re-check while offline is disabled with the offline message', async () => 
 test('after re-check the carry-over summary counts addressed, partial, open', async () => {
   const carried = { id: 'c1', layer: 'global', category: 'thesis', rubric_criterion: 'Thesis', paragraph_index: null, quote: null, anchor_start: null,
     anchor_end: null, severity: 'high', summary: 'Carried summary', hints: [], rewrite: null, replacements: [], convention: false, source: 'llm',
-    status: 'partial', highest_level: 0, carried_from_id: 'old1' } as ItemRow;
+    status: 'partial', highest_level: 0, carried_from_id: 'old1', revised_summary: null } as ItemRow;
   fetchMock.mockImplementation(async () => json({ items: [carried], analysis: null, dropped: 0, already: false }));
   carryOverCounts.mockResolvedValue({ addressed: 3, partial: 1, open: 2 });
   view({ draftId: 'd2', version: 2, layers: {} });

@@ -25,7 +25,7 @@ const item = (id: string, p: Partial<ItemRow> & { quote: string | null; paragrap
     id, layer: 'paragraph', category: `cat-${id}`, rubric_criterion: 'Evidence', anchor_start: start,
     anchor_end: start === null ? null : start + p.quote!.length, severity: 'medium', summary: `Summary ${id}`,
     hints: [`Hint one ${id}`, `Hint two ${id}`], rewrite: null, replacements: [], convention: false, source: 'llm', status: 'open',
-    highest_level: 0, carried_from_id: null, ...p,
+    highest_level: 0, carried_from_id: null, revised_summary: null, ...p,
   };
 };
 // Scores: g1 global high 9, p1 paragraph medium 4, g2 global low 3, p2 paragraph low 2, s1 sentence low 1.
@@ -173,20 +173,63 @@ test('level 5 at the cap shows the rewrite-limit message', async () => {
   expect(within(card('p1')).getByText('1 of 3 suggested rewrites left for this draft.')).toBeTruthy();
 });
 
-test('I disagree requires a reason and marks the card Disputed', async () => {
+const reply = (body: Record<string, unknown>) => json({ verdict: null, revisedSummary: null, ...body });
+const sent = () => JSON.parse(fetchMock.mock.calls.at(-1)![1].body as string);
+
+test('Ask a question needs a message, posts it, and announces the reply without changing the card', async () => {
+  view();
+  const c = card('p1');
+  fireEvent.click(within(c).getByRole('button', { name: 'Ask a question' }));
+  const field = within(c).getByLabelText('Ask about this');
+  expect(document.activeElement).toBe(field);
+  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
+  expect(within(c).getByRole('alert').textContent).toContain('Add a short message first.');
+  expect(fetchMock).not.toHaveBeenCalled();
+  fetchMock.mockResolvedValueOnce(reply({ reply: 'Evidence is a fact, statistic or source.' }));
+  fireEvent.change(field, { target: { value: 'What counts as evidence?' } });
+  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
+  expect(await within(c).findByText('Evidence is a fact, statistic or source.')).toBeTruthy();
+  expect(sent()).toEqual({ itemId: 'p1', kind: 'question', message: 'What counts as evidence?' });
+  expect(within(c).getByText('What counts as evidence?')).toBeTruthy();
+  expect(within(c).getByRole('button', { name: 'Got it' })).toBeTruthy();
+});
+
+test('a withdraw verdict marks the card withdrawn and it leaves Top 3', async () => {
+  view();
+  const top = screen.getByRole('heading', { name: 'Top 3 priorities' }).closest('section')!;
+  expect(within(top).getByText('Summary g1')).toBeTruthy();
+  const c = card('g1');
+  fireEvent.click(within(c).getByRole('button', { name: 'I disagree' }));
+  fetchMock.mockResolvedValueOnce(reply({ reply: 'You are right, your thesis is specific.', verdict: 'withdraw' }));
+  fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'My thesis names three reasons.' } });
+  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
+  await waitFor(() => expect(within(top).queryByText('Summary g1')).toBeNull());
+  expect(sent()).toMatchObject({ itemId: 'g1', kind: 'dispute' });
+  fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+  expect(within(card('g1')).getByText('Withdrawn after your explanation')).toBeTruthy();
+});
+
+test('a modify verdict shows Updated: above the original summary and marks the card Disputed', async () => {
   view();
   const c = card('p1');
   fireEvent.click(within(c).getByRole('button', { name: 'I disagree' }));
-  const field = within(c).getByLabelText("Why doesn't this fit?");
-  expect(document.activeElement).toBe(field);
+  fetchMock.mockResolvedValueOnce(reply({ reply: 'Partly.', verdict: 'modify', revisedSummary: 'Explain how the source backs the claim.' }));
+  fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'I cite a source.' } });
   fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
-  expect(within(c).getByRole('alert').textContent).toContain('Add a short reason first.');
-  expect(disputeItem).not.toHaveBeenCalled();
-  fireEvent.change(field, { target: { value: 'My teacher asked for this style.' } });
+  expect(await within(c).findByText('Updated: Explain how the source backs the claim.')).toBeTruthy();
+  expect(within(c).getByText('Summary p1')).toBeTruthy();
+  expect(within(c).getByText('Disputed')).toBeTruthy();
+});
+
+test('the thread limit shows its message; a saved thread shows on load', async () => {
+  view({ threads: { p1: [{ role: 'student', kind: 'question', text: 'Earlier question?', verdict: null }, { role: 'coach', kind: 'question', text: 'Earlier answer.', verdict: null }] } });
+  const c = card('p1');
+  expect(within(c).getByText('Earlier answer.')).toBeTruthy();
+  fireEvent.click(within(c).getByRole('button', { name: 'Ask a question' }));
+  fetchMock.mockResolvedValueOnce(json({ error: 'thread_limit', message: "That's as far as I can take this one. Try the hint ladder, or mark it Got it." }, 409));
+  fireEvent.change(within(c).getByLabelText('Ask about this'), { target: { value: 'More?' } });
   fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
-  expect(await within(c).findByText('Disputed')).toBeTruthy();
-  expect(disputeItem).toHaveBeenCalledWith('p1', 'My teacher asked for this style.');
-  expect(within(c).queryByRole('button', { name: 'Got it' })).toBeNull();
+  expect((await within(c).findByRole('alert')).textContent).toContain("That's as far as I can take this one.");
 });
 
 test('low-confidence score reads Estimate; show_scores false hides scores', () => {

@@ -7,10 +7,11 @@ import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import { EssayView, type Analysis } from './essay-view';
+import type { ThreadMessage } from './item-dialogue';
 import type { OutlineLine } from './outline';
 
 // Same columns the analyze route returns, so the client can swap in its responses wholesale.
-const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id';
+const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id,revised_summary';
 const LOAD_FAILED = "We couldn't load your essay.";
 const rubricMax = Object.fromEntries(DEFAULT_RUBRIC.map((c) => [c.name, c.maxScore]));
 
@@ -34,6 +35,13 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
       .eq('action', 'rewrite').eq('feedback_items.draft_id', draftId),
   ]);
   if (items.error || analysis.error || rewrites.error) throw new Error(LOAD_FAILED);
+  const ids = items.data.map((i) => i.id as string);
+  const messages = ids.length
+    ? await db.from('feedback_messages').select('item_id,role,kind,text,verdict').in('item_id', ids).order('created_at')
+    : { data: [], error: null };
+  if (messages.error) throw new Error(LOAD_FAILED);
+  const threads: Record<string, ThreadMessage[]> = {};
+  for (const { item_id, ...m } of messages.data as (ThreadMessage & { item_id: string })[]) (threads[item_id] ??= []).push(m);
 
   return (
     <AppPage current="write" title={essay.data.title} wide>
@@ -42,7 +50,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
         paragraphs={paragraphs(draft.data.content)} layers={(draft.data.layers ?? {}) as Record<string, string>}
         items={items.data as unknown as ItemRow[]} analysis={analysis.data as Analysis | null} rewritesUsed={rewrites.count ?? 0}
         showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax}
-        outline={draft.data.outline as OutlineLine[] | null} />
+        outline={draft.data.outline as OutlineLine[] | null} threads={threads} />
     </AppPage>
   );
 }

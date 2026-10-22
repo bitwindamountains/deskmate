@@ -20,7 +20,8 @@ export function FocusMode({ items, current, api, onPick, onExit }:
   };
   const advanceAfter = <A extends unknown[]>(fn: (it: ItemRow, ...a: A) => Promise<boolean>) =>
     async (x: ItemRow, ...a: A) => { const ok = await fn(x, ...a); if (ok) onPick(next(x.id)); return ok; };
-  const focusApi: CardApi = { ...api, gotIt: advanceAfter(api.gotIt), dispute: advanceAfter(api.dispute) };
+  // A disagreement stays on its card so the student can read the coach's reply.
+  const focusApi: CardApi = { ...api, gotIt: advanceAfter(api.gotIt) };
   const skipTo = it ? next(it.id) : null;
 
   useEffect(() => { document.getElementById(current ? `card-${current}` : 'focus-done')?.focus(); }, [current]);
