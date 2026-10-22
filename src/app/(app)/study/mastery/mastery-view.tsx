@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { EmptyStudy } from '@/components/empty-study';
 import type { Deck } from '@/lib/review/load';
 import type { ConceptMastery, CurvePoint, Strength } from '@/review/mastery';
+import type { Remedy } from '@/review/prereqs';
 
-export type MasterySection = { deck: Deck; concepts: ConceptMastery[]; curve: CurvePoint[] };
+export type MasterySection = { deck: Deck; concepts: ConceptMastery[]; curve: CurvePoint[]; remedies?: Remedy[] };
 
 const IDLE = 'If you stop now';
 const REVIEW = "If you review today's cards";
@@ -18,19 +19,36 @@ const STRENGTH: Record<Strength, { text: string; bar: string }> = {
 };
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const reviewHref = (deckId: string, key: string) => `/study/review?deck=${encodeURIComponent(deckId)}&concept=${encodeURIComponent(key)}`;
+const list = (xs: string[]) => (xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 const dayLabel = (d: number) => (d === 0 ? 'Today' : d % 7 === 0 ? `${d / 7} wk` : `Day ${d}`);
 
 export function MasteryView({ sections }: { sections: MasterySection[] }) {
   if (!sections.length) return <EmptyStudy />;
   return (
     <div className="space-y-10">
-      {sections.map(({ deck, concepts, curve }) => (
+      {sections.map(({ deck, concepts, curve, remedies = [] }) => (
         <section key={deck.id} aria-labelledby={`deck-${deck.id}`} className="space-y-4 [overflow-wrap:anywhere]">
           <h2 id={`deck-${deck.id}`} className="text-[1.44rem] font-bold text-balance">{deck.title}</h2>
+          {remedies.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold">Start with the basics</h3>
+              <ul className="space-y-3">
+                {remedies.map((r) => (
+                  <li key={r.concept}>
+                    <p>{r.concept} has been tricky. It builds on {list(r.prereqs.map((p) => `${p.label} (${STRENGTH[p.strength].text.toLowerCase()})`))}.</p>
+                    <p className="flex flex-wrap gap-3">
+                      {r.prereqs.map((p) => <Link key={p.key} href={reviewHref(r.deckId, p.key)} className="underline">Review {p.label}</Link>)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {concepts.map((c) => (
               <li key={c.key}>
-                <Link href={`/study/review?deck=${encodeURIComponent(c.deckId)}&concept=${encodeURIComponent(c.key)}`}
+                <Link href={reviewHref(c.deckId, c.key)}
                   className="flex min-h-11 flex-col gap-1 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-ink">
                   <span className="font-bold">{c.label}</span>
                   <span className="text-ink-muted">{plural(c.cards, 'card')}</span>

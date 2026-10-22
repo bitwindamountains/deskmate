@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { Rating } from 'ts-fsrs';
 import {
   applyRating, buildSession, daysUntil, makeScheduler, NEW_CARD_LIMIT, newCardCapacity, nextReview, parseDay, readiness, retrievability,
-  type StateRow, type StudyCard,
+  type StateRow, type StudyCard, weight,
 } from '@/review/schedule';
 
 const now = new Date('2026-11-02T09:00:00');
@@ -135,4 +135,12 @@ test('with a zone, exam days and the next review are counted on the student cale
 test('an exam date is read as that zone midnight, even at the far ends (UTC+14, UTC-11)', () => {
   expect(parseDay('2026-10-25', 'Pacific/Kiritimati').toISOString()).toBe('2026-10-24T10:00:00.000Z');
   expect(parseDay('2026-10-25', 'Pacific/Pago_Pago').toISOString()).toBe('2026-10-25T11:00:00.000Z');
+});
+
+test('a goal match outranks a card of the same importance among new cards', () => {
+  const card = (id: string, goalMatch: boolean): StudyCard => ({ id, deckId: 'd', type: 'basic', importance: 2, state: null, goalMatch });
+  const s = buildSession([card('plain', false), card('goal', true)], { now, minutes: 20, newIntroducedToday: 0, examDate: null });
+  expect(s.queue.map((c) => c.id)).toEqual(['goal', 'plain']);
+  expect(weight(card('goal', true))).toBe(3);
+  expect(weight(card('plain', false))).toBe(2);
 });
