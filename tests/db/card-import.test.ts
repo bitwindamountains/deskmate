@@ -22,7 +22,7 @@ afterAll(async () => { await deleteTestUsers(created); });
 
 test('importCards adds kept cards to the deck and refuses another user deck', async () => {
   const r = await importCards(A.client, A.userId, deck, 'front,back,concept\nWhere is ATP made?,Mitochondria,Cells\n,skip me,\n');
-  expect(r).toEqual({ ok: true, added: 1, skippedRows: [3], duplicates: 0 });
+  expect(r).toEqual({ ok: true, added: 1, skippedRows: [3], inDeck: 0, inFile: 0 });
   const cards = (await adminClient().from('cards').select('front,status,source_chunk_id,concept').eq('deck_id', deck)).data!;
   expect(cards).toEqual([{ front: 'Where is ATP made?', status: 'kept', source_chunk_id: null, concept: 'Cells' }]);
   expect(await importCards(B.client, B.userId, deck, 'front,back\nQ,A')).toEqual({ ok: false, message: "We couldn't find that deck." });
@@ -64,9 +64,16 @@ test("a title with ' ( ) * is fully percent-encoded in filename*", async () => {
 test('importing the same file twice adds nothing the second time, and repeats inside a file count once', async () => {
   const d = (await A.client.from('decks').insert({ user_id: A.userId, title: 'Dup' }).select('id').single()).data!.id;
   const file = 'front,back\nQ1,A1\nq1 , a1\nQ2,A2\n';
-  expect(await importCards(A.client, A.userId, d, file)).toEqual({ ok: true, added: 2, skippedRows: [], duplicates: 1 });
-  expect(await importCards(A.client, A.userId, d, file)).toEqual({ ok: true, added: 0, skippedRows: [], duplicates: 3 });
+  expect(await importCards(A.client, A.userId, d, file)).toEqual({ ok: true, added: 2, skippedRows: [], inDeck: 0, inFile: 1 });
+  expect(await importCards(A.client, A.userId, d, file)).toEqual({ ok: true, added: 0, skippedRows: [], inDeck: 3, inFile: 0 });
   expect((await adminClient().from('cards').select('id').eq('deck_id', d)).data).toHaveLength(2);
+});
+
+test('a card discarded in triage does not block importing it again', async () => {
+  const d = (await A.client.from('decks').insert({ user_id: A.userId, title: 'Triaged' }).select('id').single()).data!.id;
+  await adminClient().from('cards').insert({ user_id: A.userId, deck_id: d, type: 'basic', front: 'Q', back: 'A', source_quote: '', concept: '',
+    bloom_level: 'remember', importance: 2, status: 'discarded', discard_reason: 'trivial' });
+  expect(await importCards(A.client, A.userId, d, 'front,back\nQ,A\n')).toEqual({ ok: true, added: 1, skippedRows: [], inDeck: 0, inFile: 0 });
 });
 
 test('a deck over 1,000 cards: duplicates are found past the first 1,000, and export includes every card', async () => {
@@ -75,7 +82,7 @@ test('a deck over 1,000 cards: duplicates are found past the first 1,000, and ex
     source_quote: '', concept: '', bloom_level: 'remember', importance: 2, status: 'kept' }));
   const { error } = await adminClient().from('cards').insert(rows);
   if (error) throw error;
-  expect(await importCards(A.client, A.userId, d, 'front,back\nQ1004,A1004\nQ0,A0\n')).toEqual({ ok: true, added: 0, skippedRows: [], duplicates: 2 });
+  expect(await importCards(A.client, A.userId, d, 'front,back\nQ1004,A1004\nQ0,A0\n')).toEqual({ ok: true, added: 0, skippedRows: [], inDeck: 2, inFile: 0 });
   session.client = A.client;
   const res = await GET(new NextRequest(`http://localhost/api/decks/${d}/export?format=csv`), { params: Promise.resolve({ deckId: d }) });
   expect((await res.text()).trim().split('\r\n')).toHaveLength(1006); // header + 1,005 cards
