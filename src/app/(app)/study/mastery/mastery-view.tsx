@@ -56,6 +56,7 @@ const W = 400, H = 200, L = 46, R = 52, T = 14, B = 30; // room for labels at th
 
 function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
   const [hover, setHover] = useState<number | null>(null);
+  const [announce, setAnnounce] = useState(false); // the readout is spoken only for keyboard use
   const days = curve.length - 1;
   const x = (d: number) => L + (d / days) * (W - L - R);
   const y = (v: number) => T + (1 - v) * (H - T - B);
@@ -68,11 +69,13 @@ function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
   const h = hover === null ? null : curve[hover];
 
   const fromPointer = (e: React.PointerEvent<SVGSVGElement>) => {
+    setAnnounce(false); // touch exploration would otherwise announce every day it crosses
     const box = e.currentTarget.getBoundingClientRect();
     const vx = ((e.clientX - box.left) / box.width) * W;
     setHover(Math.max(0, Math.min(days, Math.round(((vx - L) / (W - L - R)) * days))));
   };
   const onKey = (e: React.KeyboardEvent) => {
+    setAnnounce(true);
     const step = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
     if (e.key === 'Home') setHover(0);
     else if (e.key === 'End') setHover(days);
@@ -89,7 +92,7 @@ function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
       </ul>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full touch-pan-y" role="img" aria-label="Forgetting curve, next 30 days"
         aria-describedby={summaryId} tabIndex={0} onPointerMove={fromPointer} onPointerLeave={() => setHover(null)}
-        onFocus={() => setHover((d) => d ?? 0)} onBlur={() => setHover(null)} onKeyDown={onKey}>
+        onFocus={() => { setAnnounce(true); setHover((d) => d ?? 0); }} onBlur={() => setHover(null)} onKeyDown={onKey}>
         {[0, 0.5, 1].map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--line)" strokeOpacity={v ? 0.3 : 0.8} strokeWidth={1} />
@@ -122,7 +125,7 @@ function Curve({ deckId, curve }: { deckId: string; curve: CurvePoint[] }) {
         )}
       </svg>
       {/* The SVG is one image to assistive tech, so the hovered or arrowed day is read out here. */}
-      <p role="status" className="sr-only">{h ? `${dayLabel(h.day)}: ${pct(h.ifReviewedToday)} reviewed, ${pct(h.ifIdle)} stopped` : ''}</p>
+      <p role="status" className="sr-only">{h && announce ? `${dayLabel(h.day)}: ${pct(h.ifReviewedToday)} reviewed, ${pct(h.ifIdle)} stopped` : ''}</p>
       <figcaption id={summaryId}>
         In 2 weeks you&apos;d remember about {pct(at14.ifIdle)}; reviewing today keeps it near {pct(at14.ifReviewedToday)}.
       </figcaption>

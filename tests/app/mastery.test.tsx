@@ -62,3 +62,10 @@ test('arrowing through the forgetting curve announces each day', () => {
   fireEvent.blur(chart);
   expect(status.textContent).toBe('');
 });
+
+test('pointer moves over the curve do not announce; only focus and keys do', () => {
+  render(<MasteryView sections={[section()]} />);
+  const chart = screen.getByRole('img', { name: 'Forgetting curve, next 30 days' });
+  fireEvent.pointerMove(chart, { clientX: 200, clientY: 50 });
+  expect(screen.getByRole('status').textContent).toBe('');
+});

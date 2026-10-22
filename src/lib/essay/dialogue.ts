@@ -9,7 +9,7 @@ type Verdict = 'keep' | 'modify' | 'withdraw';
 export type DialogueResult = { ok: true; reply: string; verdict: Verdict | null; revisedSummary: string | null }
   | { ok: false; status: 404 | 409 | 429 | 503; message: string };
 
-type ItemWithDraft = { id: string; category: string; summary: string; quote: string | null; paragraph_index: number | null;
+type ItemWithDraft = { id: string; category: string; summary: string; revised_summary: string | null; quote: string | null; paragraph_index: number | null;
   drafts: { content: string; essays: { grade_level: string } } };
 
 export const MAX_COACH_REPLIES = 4;
@@ -37,7 +37,7 @@ export function capReply(reply: string): string {
 export async function sendDialogue(db: Db, userId: string, itemId: string, kind: Kind, message: string,
   env: Record<string, string | undefined>, completeFn: typeof complete = complete): Promise<DialogueResult> {
   const [found, thread] = await Promise.all([
-    db.from('feedback_items').select('id,category,summary,quote,paragraph_index,drafts(content,essays(grade_level))').eq('id', itemId).maybeSingle(),
+    db.from('feedback_items').select('id,category,summary,revised_summary,quote,paragraph_index,drafts(content,essays(grade_level))').eq('id', itemId).maybeSingle(),
     db.from('feedback_messages').select('role,text').eq('item_id', itemId).order('created_at'),
   ]);
   if (found.error || thread.error) return BUSY;
@@ -54,7 +54,7 @@ export async function sendDialogue(db: Db, userId: string, itemId: string, kind:
   let r: ItemDialogue;
   try {
     const res = await completeFn('item_dialogue', itemDialoguePrompt({ gradeLevel: item.drafts.essays.grade_level,
-      item: { summary: item.summary, quote: item.quote, category: item.category },
+      item: { summary: item.revised_summary ?? item.summary, quote: item.quote, category: item.category },
       paragraph: item.paragraph_index !== null ? paras[item.paragraph_index] ?? item.drafts.content : item.drafts.content,
       history, kind, message }), ItemDialogue, { env });
     await logCalls(db, userId, res.log);

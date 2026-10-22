@@ -114,3 +114,13 @@ test('POST validates the body and is 401 without a session', async () => {
   session.client = (await import('./helpers')).anonClient();
   expect((await POST(req({ itemId: crypto.randomUUID(), kind: 'question', message: 'Hi' }))).status).toBe(401);
 });
+
+test('a follow-up on a revised item sends the revised summary to the model', async () => {
+  const id = await newItem(A);
+  await adminClient().from('feedback_items').update({ revised_summary: 'Explain how your source supports the claim.' }).eq('id', id);
+  const fn = fake({ reply: 'Sure.' });
+  await sendDialogue(A.client, A.userId, id, 'question', 'How?', {}, fn);
+  const user = (fn.mock.calls[0][1] as { user: string }).user;
+  expect(user).toContain('Explain how your source supports the claim.');
+  expect(user).not.toContain('Claim lacks evidence');
+});
