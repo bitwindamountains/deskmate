@@ -58,3 +58,13 @@ test('reduced motion slows the rate to 0.9', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Play' }));
   expect(queue.every((u) => u.rate === 0.9)).toBe(true);
 });
+
+test('Stop while paused resumes the engine before cancelling, so the next Play is heard', () => {
+  render(<ReadAloud paragraphs={PARAS} onSentence={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+  synth.resume.mockClear();
+  fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  expect(synth.resume).toHaveBeenCalled();
+  expect(synth.resume.mock.invocationCallOrder[0]).toBeLessThan(synth.cancel.mock.invocationCallOrder.at(-1)!);
+});

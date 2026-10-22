@@ -73,7 +73,8 @@ export function FeedbackCard({ item: it, api, heading = 'h3', children }:
         <p><span className="font-bold">Suggestion: </span>{it.replacements.map((r, i) => <span key={i}>{i > 0 && ', '}<q>{r}</q></span>)}</p>
       )}
 
-      {api.language && <Translation lang={api.language} shown={shown} translate={() => api.translate(it)} />}
+      {/* Keyed on the revision: a translation of the old summary must not stay on screen. */}
+      {api.language && <Translation key={it.revised_summary ?? ''} lang={api.language} shown={shown} translate={() => api.translate(it)} />}
 
       <div role="status" className="empty:hidden">
         {api.busy(it) && <p className="text-ink-muted">Getting the next hint…</p>}

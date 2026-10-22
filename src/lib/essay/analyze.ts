@@ -184,12 +184,13 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
       const { error } = await db.rpc('set_outline', { p_draft_id: draft.id, p_outline: lines });
       if (error) throw new Failed();
     };
-    if (plan && !plan.changed.length) { await insert(kept); await saveOutline([]); return 0; }
+    // Outline first: set_outline writes only once, so a retry after a failed items insert is harmless (and not the reverse).
+    if (plan && !plan.changed.length) { await saveOutline([]); await insert(kept); return 0; }
     const r = await completeFn('essay_paragraphs', essayParagraphsPrompt({ ...input, onlyParagraphs: plan?.changed }), EssayParagraphs, { env });
     await logCalls(db, userId, r.log);
     const { rows, dropped } = anchorItems(paras, r.data.items, 'paragraph');
-    await insert([...kept, ...rows]);
     await saveOutline(r.data.outline);
+    await insert([...kept, ...rows]);
     return dropped;
   }
 
