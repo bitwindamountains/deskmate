@@ -65,9 +65,9 @@ test('Profile shows preferences, an edit link, and a POST sign-out form', async 
   expect(form?.getAttribute('action')).toBe('/auth/signout');
 });
 
-test('Profile shows Self-check accuracy or the 10-answer hint', async () => {
+test('Profile links to Progress, where self-check accuracy now lives', async () => {
   profile = base;
-  render(await ProfilePage()); // the mocked database has no reviews with a confidence level
-  expect(screen.getByText('Self-check accuracy')).toBeTruthy();
-  expect(screen.getByText('Answer with a confidence level 10 times to see this.')).toBeTruthy();
+  render(await ProfilePage());
+  expect(screen.queryByText('Self-check accuracy')).toBeNull();
+  expect(screen.getByRole('link', { name: 'See your progress' }).getAttribute('href')).toBe('/progress');
 });
