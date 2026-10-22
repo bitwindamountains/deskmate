@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
-import { importCards } from '@/lib/cards/transfer';
+import { importAnkiCards, importCards } from '@/lib/cards/transfer';
 import { adminClient, anonClient, createTestUser, deleteTestUsers, type Client } from './helpers';
 
 const session = vi.hoisted(() => ({ client: null as unknown }));
@@ -27,6 +27,19 @@ test('importCards adds kept cards to the deck and refuses another user deck', as
   expect(cards).toEqual([{ front: 'Where is ATP made?', status: 'kept', source_chunk_id: null, concept: 'Cells' }]);
   expect(await importCards(B.client, B.userId, deck, 'front,back\nQ,A')).toEqual({ ok: false, message: "We couldn't find that deck." });
   expect(await importCards(A.client, A.userId, deck, 'nope')).toEqual({ ok: false, message: 'The first row needs "front" and "back" columns.' });
+});
+
+test('importAnkiCards adds new cards, counts ones already in the deck, and rejects malformed input', async () => {
+  const r = await importAnkiCards(A.client, A.userId, deck, [
+    { front: 'where is ATP made?', back: 'Mitochondria', concept: '', type: 'basic' },
+    { front: '{{c1::Ribosomes}} make proteins', back: 'Ribosomes', concept: 'Cells', type: 'cloze' },
+  ]);
+  expect(r).toEqual({ ok: true, added: 1, skippedRows: [], inDeck: 1, inFile: 0 });
+  const bad = { ok: false, message: "We couldn't import that file." };
+  expect(await importAnkiCards(A.client, A.userId, deck, [{ front: '', back: 'x', concept: '', type: 'basic' }])).toEqual(bad);
+  expect(await importAnkiCards(A.client, A.userId, deck, [{ front: 'q', back: 'x', concept: '', type: 'essay' }])).toEqual(bad);
+  expect(await importAnkiCards(A.client, A.userId, deck, 'nope')).toEqual(bad);
+  expect(await importAnkiCards(B.client, B.userId, deck, [{ front: 'q', back: 'x', concept: '', type: 'basic' }])).toEqual({ ok: false, message: "We couldn't find that deck." });
 });
 
 test('export returns the deck as CSV or Anki text, and 404 for another user', async () => {
