@@ -1,10 +1,13 @@
+import { localMidnight, startOfLocalDay } from '@/lib/time/zone';
 import { createEmptyCard, fsrs, generatorParameters, Rating, type Card as FsrsCard, type FSRS, type ReviewLog } from 'ts-fsrs';
 
 export type Grade = Rating.Again | Rating.Hard | Rating.Good | Rating.Easy;
 export interface StateRow { card_id: string; due: string; stability: number; difficulty: number; scheduled_days: number;
   learning_steps: number; reps: number; lapses: number; state: number; last_review: string | null }
 export interface StudyCard { id: string; deckId: string; type: 'basic' | 'cloze' | 'why'; importance: 1 | 2 | 3; state: StateRow | null }
-export interface SessionOptions { now: Date; minutes: number; newIntroducedToday: number; examDate: Date | null; doMore?: boolean }
+export interface SessionOptions { now: Date; minutes: number; newIntroducedToday: number; examDate: Date | null; doMore?: boolean;
+  /** The student's zone when this runs on the server (Today plan); omitted on the device. */
+  zone?: string }
 
 export const SECONDS_PER_CARD = 25;
 export const NEW_CARD_LIMIT = 20;
@@ -13,11 +16,17 @@ const DAY_MS = 86400000;
 export const makeScheduler = (fuzz: boolean): FSRS => fsrs(generatorParameters({ request_retention: 0.9, enable_fuzz: fuzz }));
 const scheduler = makeScheduler(true);
 
-const startOfDay = (d: Date, offsetDays = 0) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + offsetDays);
+// zone: the student's IANA zone when this runs on the server; omitted on the device, where local time is already theirs.
+const startOfDay = (d: Date, offsetDays = 0, zone?: string) =>
+  (zone ? startOfLocalDay(d, zone, offsetDays) : new Date(d.getFullYear(), d.getMonth(), d.getDate() + offsetDays));
 // Whole local calendar days from now's day to the exam's day (Math.round absorbs DST hour shifts).
 /** A YYYY-MM-DD day (an exam_date column) as local midnight. */
-export const parseDay = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
-export const daysUntil = (exam: Date, now: Date) => Math.round((startOfDay(exam).getTime() - startOfDay(now).getTime()) / DAY_MS);
+export const parseDay = (d: string, zone?: string) => {
+  const [y, m, day] = d.split('-').map(Number);
+  return zone ? localMidnight(y, m, day, zone) : new Date(y, m - 1, day);
+};
+export const daysUntil = (exam: Date, now: Date, zone?: string) =>
+  Math.round((startOfDay(exam, 0, zone).getTime() - startOfDay(now, 0, zone).getTime()) / DAY_MS);
 
 export function toFsrs(s: StateRow | null, now: Date): FsrsCard {
   if (!s) return createEmptyCard(now);
@@ -55,7 +64,7 @@ export function retrievability(s: StateRow | null, at: Date): number {
 
 export function buildSession(cards: StudyCard[], o: SessionOptions): { queue: StudyCard[]; dueCount: number; estMinutes: number } {
   const t = o.now.getTime();
-  const days = o.examDate ? daysUntil(o.examDate, o.now) : 0;
+  const days = o.examDate ? daysUntil(o.examDate, o.now, o.zone) : 0;
   const exam = days > 0;
   const priority = (c: StudyCard) => c.importance * (1 - retrievability(c.state, o.now));
 
@@ -92,14 +101,14 @@ export function newCardCapacity(newCount: number, daysLeft: number, minutes: num
 }
 
 /** The earliest upcoming review day and how many cards fall due by the end of it. */
-export function nextReview(cards: StudyCard[], now: Date): { label: string; count: number } | null {
+export function nextReview(cards: StudyCard[], now: Date, zone?: string): { label: string; count: number } | null {
   const dues = cards.flatMap((c) => (c.state ? [new Date(c.state.due)] : []));
   if (!dues.length) return null;
   const first = new Date(Math.min(...dues.map((d) => d.getTime())));
-  const day = first < now ? startOfDay(now) : startOfDay(first);
+  const day = first < now ? startOfDay(now, 0, zone) : startOfDay(first, 0, zone);
   const end = day.getTime() + DAY_MS;
-  const days = Math.round((day.getTime() - startOfDay(now).getTime()) / DAY_MS);
+  const days = Math.round((day.getTime() - startOfDay(now, 0, zone).getTime()) / DAY_MS);
   const label = days === 0 ? 'today' : days === 1 ? 'tomorrow'
-    : days < 7 ? day.toLocaleDateString('en', { weekday: 'long' }) : day.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    : days < 7 ? day.toLocaleDateString('en', { weekday: 'long', timeZone: zone }) : day.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: zone });
   return { label, count: dues.filter((d) => d.getTime() < end).length };
 }

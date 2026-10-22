@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { Rating } from 'ts-fsrs';
 import {
-  applyRating, buildSession, makeScheduler, NEW_CARD_LIMIT, newCardCapacity, readiness, retrievability,
+  applyRating, buildSession, daysUntil, makeScheduler, NEW_CARD_LIMIT, newCardCapacity, nextReview, parseDay, readiness, retrievability,
   type StateRow, type StudyCard,
 } from '@/review/schedule';
 
@@ -117,4 +117,22 @@ test('final-days mode starts exactly 3 days before the exam', () => {
   const weakKept = card('k', { ...mature('k', 1), due: day(10).toISOString(), last_review: day(-5).toISOString() });
   expect(buildSession([weakKept], { ...opts, examDate: new Date('2026-11-05T00:00:00') }).queue.map((c) => c.id)).toEqual(['k']);
   expect(buildSession([weakKept], { ...opts, examDate: new Date('2026-11-06T00:00:00') }).queue).toEqual([]);
+});
+
+test('with a zone, exam days and the next review are counted on the student calendar, not the server one', () => {
+  // 23:00 UTC on Oct 22 is 07:00 on Oct 23 in Manila.
+  const now = new Date('2026-10-22T23:00:00Z');
+  const exam = parseDay('2026-10-25', 'Asia/Manila');
+  expect(exam.toISOString()).toBe('2026-10-24T16:00:00.000Z'); // Manila midnight of the exam day
+  expect(daysUntil(exam, now, 'Asia/Manila')).toBe(2);
+  // A card due at 09:00 Manila on Oct 23 (01:00 UTC) is due "today" for that student.
+  const card = { id: 'c', deckId: 'd', type: 'basic' as const, importance: 2 as const, state: { card_id: 'c', due: '2026-10-23T01:00:00.000Z', stability: 3, difficulty: 5,
+    scheduled_days: 3, learning_steps: 0, reps: 2, lapses: 0, state: 2, last_review: '2026-10-20T01:00:00.000Z' } };
+  expect(nextReview([card], now, 'Asia/Manila')).toEqual({ label: 'today', count: 1 });
+  expect(nextReview([card], now, 'UTC')?.label).toBe('tomorrow');
+});
+
+test('an exam date is read as that zone midnight, even at the far ends (UTC+14, UTC-11)', () => {
+  expect(parseDay('2026-10-25', 'Pacific/Kiritimati').toISOString()).toBe('2026-10-24T10:00:00.000Z');
+  expect(parseDay('2026-10-25', 'Pacific/Pago_Pago').toISOString()).toBe('2026-10-25T11:00:00.000Z');
 });
