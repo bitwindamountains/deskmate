@@ -16,3 +16,9 @@ test('translate prompt keeps quotes in English and is static', () => {
   expect(translateFeedbackPrompt({ lang: 'es', summary: 'x', hints: [] }).system).toContain('Spanish');
   expect(TASK_ROUTES.translate_feedback[0]).toBe('groq');
 });
+
+test('translate prompt asks to keep every listed item and not shorten', () => {
+  const p = translateFeedbackPrompt({ lang: 'fil', summary: 'x', hints: [] });
+  expect(p.system).toContain('Keep every point and every item in a list');
+  expect(p.system).toContain('do not shorten or summarize');
+});

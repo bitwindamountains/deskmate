@@ -228,7 +228,9 @@ export function translateFeedbackPrompt(i: { lang: 'fil' | 'es'; summary: string
     system: [
       `Translate the writing feedback below into ${LANGUAGE_NAME[i.lang]} for a student who reads it more easily than English.`,
       'Keep anything in quotation marks exactly as written in English: those are words from the essay. Keep rubric criterion names (Thesis, Evidence, Analysis, Organization, Conventions) in English.',
-      'Translate the meaning plainly and naturally. Add nothing, and never write a sentence the student could copy into the essay.',
+      'Translate the meaning plainly and naturally. Keep every point and every item in a list; do not shorten or summarize.',
+      `Write every output string in ${LANGUAGE_NAME[i.lang]}, never in English, apart from the quoted words and criterion names above.`,
+      'Add nothing, and never write a sentence the student could copy into the essay.',
       'Never suggest that writing in another language, or mixing languages, is a weakness.',
       'Return the summary and one translated hint for each numbered hint, in the same order.',
       DATA_RULE,
