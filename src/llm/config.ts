@@ -49,4 +49,6 @@ export const TASK_ROUTES: Record<TaskName, string[]> = {
   card_generate: ['gemini', 'groq', 'openrouter', 'ollama'],
   grade_answer: ['groq', 'gemini', 'openrouter', 'ollama'],
   card_help: ['groq', 'gemini', 'openrouter', 'ollama'],
+  item_dialogue: ['groq', 'gemini', 'openrouter', 'ollama'],
+  translate_feedback: ['groq', 'gemini', 'openrouter', 'ollama'],
 };

@@ -1,9 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { parseSelfAssessment, type SelfAssessment } from './self-check';
 import { ESSAY_TYPES, paragraphHash, paragraphs, validateEssay, type EssayType } from './text';
 
 export type EssayInput = { title: string; essayType: EssayType; gradeLevel: string; assignmentPrompt: string | null;
-  citationStyle: string | null; content: string };
+  citationStyle: string | null; content: string; selfAssessment?: SelfAssessment };
 export type CreateEssayResult = { ok: true; essayId: string } | { ok: false; error: string };
 export const SAVE_FAILED = "We couldn't save your essay. Please try again.";
 
@@ -26,7 +27,8 @@ export async function insertEssay(db: SupabaseClient<any, any, any>, userId: str
   const v = validateEssay(typeof input?.content === 'string' ? input.content : '');
   if (!v.ok) return v;
   const parsed = Schema.safeParse(input);
-  if (!parsed.success) return fail;
+  const self = parseSelfAssessment(input?.selfAssessment);
+  if (!parsed.success || !self.ok) return fail;
   const i = parsed.data;
   let essayId: string | undefined;
   try {
@@ -37,9 +39,13 @@ export async function insertEssay(db: SupabaseClient<any, any, any>, userId: str
     if (error || !data) return fail;
     essayId = data.id as string;
     const paragraph_hashes = await Promise.all(paragraphs(i.content).map(paragraphHash));
-    const { error: draftErr } = await db.from('drafts')
-      .insert({ user_id: userId, essay_id: essayId, version: 1, content: i.content, word_count: v.words, paragraph_hashes });
+    const { data: draft, error: draftErr } = await db.from('drafts')
+      .insert({ user_id: userId, essay_id: essayId, version: 1, content: i.content, word_count: v.words, paragraph_hashes }).select('id').single();
     if (draftErr) throw draftErr;
+    if (self.value) {
+      const { error: selfErr } = await db.from('self_assessments').insert({ draft_id: draft.id, user_id: userId, ...self.value });
+      if (selfErr) throw selfErr;
+    }
     return { ok: true, essayId };
   } catch {
     // best effort; deleting the essay cascades to its drafts

@@ -4,7 +4,7 @@ export type PrevItem = {
   paragraph_index: number | null;
   quote: string | null;
   summary: string;
-  status: 'open' | 'partial' | 'addressed' | 'got_it' | 'disputed';
+  status: 'open' | 'partial' | 'addressed' | 'got_it' | 'disputed' | 'withdrawn';
 };
 export type CarryPlan = { keep: { id: string; paragraph_index: number }[]; judge: PrevItem[]; changed: number[] };
 type Judged = { id: string; status: 'addressed' | 'partial' | 'open' };
@@ -13,7 +13,7 @@ type Judged = { id: string; status: 'addressed' | 'partial' | 'open' };
 export function planCarryOver(oldHashes: string[], newHashes: string[], prev: PrevItem[]): CarryPlan {
   const plan: CarryPlan = { keep: [], judge: [], changed: [] };
   for (const item of prev) {
-    if (item.status === 'addressed') continue;
+    if (item.status === 'addressed' || item.status === 'withdrawn') continue; // withdrawn: the coach took it back after a dispute
     const at = item.layer !== 'global' && item.paragraph_index !== null ? newHashes.indexOf(oldHashes[item.paragraph_index]) : -1;
     if (at >= 0) plan.keep.push({ id: item.id, paragraph_index: at });
     else plan.judge.push(item);

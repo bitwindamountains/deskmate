@@ -48,3 +48,9 @@ test('an item the model omits from carried comes back open', () => {
     { id: 'i2', status: 'open' },
   ]);
 });
+
+test('withdrawn items are not carried to the next draft', () => {
+  const plan = planCarryOver(['a'], ['a2'], [item('w', { status: 'withdrawn' }), item('w2', { status: 'withdrawn', layer: 'global', paragraph_index: null })]);
+  expect(plan.keep).toEqual([]);
+  expect(plan.judge).toEqual([]);
+});

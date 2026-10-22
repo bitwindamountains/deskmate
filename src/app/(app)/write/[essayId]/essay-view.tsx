@@ -3,15 +3,22 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { ItemRow, Layer } from '@/lib/essay/analyze';
+import type { SelfAssessment } from '@/lib/essay/self-check';
 import { rankFeedback } from '@/rank';
+import { Alignment, type AlignmentPart } from './alignment';
 import { FeedbackCard, isOpen, LAYER_BG, LAYER_LABEL, REWRITE_CAP, type CardApi } from './feedback-card';
 import { Editor, storedDraft } from './editor';
 import { FocusMode } from './focus';
-import { carryOverCounts, disputeItem, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
+import { Outline, type OutlineLine } from './outline';
+import { ReadAloud, type Reading } from './read-aloud';
+import { SelfCheck } from './self-check';
+import { carryOverCounts, logViewedLevel, markGotIt, type CarryOver } from './item-actions';
+import type { DialogueKind, ThreadMessage } from './item-dialogue';
+import type { Lang, Translated } from './translation';
 
 export type Score = { criterion: string; score: number; justification: string; confidence: 'high' | 'medium' | 'low' };
 export type Strength = { paragraph_index: number; quote: string; why: string; start: number; end: number };
-export type Analysis = { rubric_scores: Score[]; strengths: Strength[]; safety_concern: boolean };
+export type Analysis = { rubric_scores: Score[]; strengths: Strength[]; safety_concern: boolean; prompt_alignment?: AlignmentPart[] | null };
 type LayerState = { state: 'waiting' | 'running' | 'done' | 'failed'; message?: string };
 type Span = { id: string; para: number; start: number; end: number; layer: keyof typeof LAYER_LABEL };
 
@@ -29,12 +36,16 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null, language = null }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
-  rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>;
+  rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
+  threads?: Record<string, ThreadMessage[]>; selfAssessment?: SelfAssessment | null; language?: Lang | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [analysis, setAnalysis] = useState(initialAnalysis);
+  const [outline, setOutline] = useState(initialOutline);
+  const [threads, setThreads] = useState(initialThreads);
+  const [reading, setReading] = useState<Reading | null>(null);
   const [layerState, setLayerState] = useState(() =>
     Object.fromEntries(LAYERS.map((l) => [l, { state: layers[l] === 'done' ? 'done' : 'waiting' }])) as Record<Layer, LayerState>);
   const [statusOf, setStatusOf] = useState<Record<string, string>>({});
@@ -61,6 +72,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
       if (res.ok) {
         setItems(body.items);
         if (body.analysis) setAnalysis(body.analysis);
+        if (body.outline) setOutline(body.outline);
         setLayer(l, { state: 'done' });
         // The global layer is what judges the previous draft's items, so their statuses are final now.
         if (l === 'global' && version > 1) carryOverCounts(essayId, version - 1).then(setCarry, () => {});
@@ -173,6 +185,26 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
     }
   };
 
+  async function send(it: ItemRow, kind: DialogueKind, message: string): Promise<string | null> {
+    let res: Response;
+    try { res = await post('/api/essays/dialogue', { itemId: it.id, kind, message }); } catch { return OFFLINE; }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || typeof body.reply !== 'string') return body.message ?? OFFLINE;
+    setThreads((t) => ({ ...t, [it.id]: [...(t[it.id] ?? []), { role: 'student', kind, text: message, verdict: null },
+      { role: 'coach', kind, text: body.reply, verdict: body.verdict ?? null }] }));
+    if (kind === 'dispute') {
+      // A withdrawn item leaves Top 3 at once, so it updates the server statuses that Top 3 ranks.
+      if (body.verdict === 'withdraw') {
+        setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, status: 'withdrawn' } : x)));
+        setStatusOf((x) => ({ ...x, [it.id]: 'withdrawn' })); // overrides an earlier 'disputed' from a keep
+      } else {
+        if (body.revisedSummary) setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, revised_summary: body.revisedSummary } : x)));
+        setStatusOf((x) => ({ ...x, [it.id]: 'disputed' }));
+      }
+    }
+    return null;
+  }
+
   const api: CardApi = {
     status, rewritesLeft: Math.max(0, REWRITE_CAP - used),
     shown: (it) => shownOf[it.id] ?? it.highest_level,
@@ -181,13 +213,27 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
     markId: (it) => markOf[it.id] ?? null,
     nextHint: (it) => void nextHint(it),
     gotIt: (it) => save(it, 'got_it', () => markGotIt(it.id)),
-    dispute: (it, reason) => save(it, 'disputed', () => disputeItem(it.id, reason)),
+    thread: (it) => threads[it.id] ?? [],
+    language,
+    translate: async (it) => {
+      try {
+        const res = await post('/api/essays/translate', { itemId: it.id, lang: language });
+        const body = await res.json().catch(() => ({}));
+        return res.ok && typeof body.summary === 'string' ? { summary: body.summary, hints: body.hints ?? [] } : body.message ?? OFFLINE;
+      } catch {
+        return OFFLINE;
+      }
+    },
+    send,
     showInEssay: (it) => document.getElementById(markOf[it.id])?.focus(),
   };
 
   const running = LAYERS.find((l) => layerState[l].state === 'running');
   const failed = LAYERS.filter((l) => layerState[l].state === 'failed');
   const strengths = analysis?.strengths ?? [];
+  const alignment = analysis?.prompt_alignment ?? [];
+  // An essay that misses part of the assignment leads with that (brief A7).
+  const offPrompt = alignment.some((p) => p.status === 'missing');
   const focusPara = focusItem?.paragraph_index ?? null;
 
   return (
@@ -195,21 +241,30 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
       <section aria-label="Your essay" className="min-w-0">
         <div className="mb-6 flex flex-wrap gap-3">
           <a href="#feedback" className="btn md:hidden">Jump to feedback</a>
-          <button type="button" className="btn" aria-pressed={editing} onClick={() => setEditing((v) => !v)}>Edit</button>
+          <button type="button" className="btn" aria-pressed={editing} onClick={() => { setEditing((v) => !v); setReading(null); }}>Edit</button>
           {version > 1 && <Link href={`/write/${essayId}/compare?from=${version - 1}&to=${version}`} className="btn">Compare with draft {version - 1}</Link>}
+          {!editing && <ReadAloud paragraphs={paragraphs} onSentence={setReading} />}
         </div>
         {editing ? <Editor essayId={essayId} content={content} /> : (
           <div className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
             {paragraphs.map((text, i) => {
               const dimmed = !!focus && focusPara !== null && i !== focusPara;
               return (
-                <p key={i} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
-                  <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />
+                <p key={i} id={`para-${i}`} tabIndex={-1} data-paragraph={i} data-dimmed={String(dimmed)} className={dimmed ? 'text-ink-muted' : undefined}>
+                  {reading?.para === i ? (
+                    // While read aloud, the paragraph drops its highlights so the sentence outline is the only mark in it.
+                    <>
+                      {text.slice(0, reading.start)}
+                      <span className="rounded-sm border-2 border-ink px-0.5 box-decoration-clone"><span className="sr-only">Now reading:</span>{text.slice(reading.start, reading.end)}</span>
+                      {text.slice(reading.end)}
+                    </>
+                  ) : <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />}
                 </p>
               );
             })}
           </div>
         )}
+        {!editing && outline && outline.length > 0 && <Outline lines={outline} />}
       </section>
 
       <section id="feedback" tabIndex={-1} aria-label="Feedback" className="min-w-0 space-y-8 outline-none">
@@ -242,6 +297,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             onExit={() => { setFocus(null); setFocusTarget('start-focus'); }} />
         ) : (
           <>
+            {offPrompt && <Alignment parts={alignment} />}
             {strengths.length > 0 && (
               <section aria-labelledby="strengths-h" className="space-y-3">
                 <h2 id="strengths-h" className="text-xl font-bold">Strengths</h2>
@@ -271,6 +327,12 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
                 ) : <p className="text-ink-muted">Nothing open right now. Revise and check again when you&apos;re ready.</p>}
                 {top3.map((it) => <FeedbackCard key={it.id} item={it} api={api} />)}
               </section>
+            )}
+
+            {!offPrompt && alignment.length > 0 && <Alignment parts={alignment} />}
+
+            {selfAssessment && analysis && (
+              <SelfCheck self={selfAssessment} ai={analysis.rubric_scores} topSummary={top3[0]?.summary ?? null} showScores={showScores} />
             )}
 
             {rest.length > 0 && (

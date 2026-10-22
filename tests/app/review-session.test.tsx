@@ -1,3 +1,4 @@
+import { writeHref } from '@/growth/prompts';
 import 'fake-indexeddb/auto';
 import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -249,4 +250,16 @@ test('switching Mix topics mid-card keeps the card on screen (its answer is rate
   expect(screen.getByRole('heading', { name: 'Front c' })).toBeTruthy();
   fireEvent.click(rating('Hard'));
   await waitFor(async () => expect((await outbox()).map((r) => r.review.card_id).sort()).toEqual(['a', 'c']));
+});
+
+test('a why card rated Again shows Explain it in writing with the prefilled link; a basic card does not', async () => {
+  await start([why, card('b'), card('c')]);
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Again'));
+  const link = await screen.findByRole('link', { name: 'Explain it in writing' });
+  expect(link.getAttribute('href')).toBe(writeHref('Why does ATP synthase spin?', 'Explain in one paragraph (at least 50 words): Why does ATP synthase spin?'));
+  fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+  fireEvent.click(rating('Again'));
+  await waitFor(() => expect(screen.getByText('Card 3 of 3')).toBeTruthy());
+  expect(screen.queryByRole('link', { name: 'Explain it in writing' })).toBeNull();
 });

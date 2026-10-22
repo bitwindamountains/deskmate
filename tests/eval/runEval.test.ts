@@ -42,7 +42,9 @@ const helpData = { explanation: 'e', mnemonic: 'm', analogy: 'a', split: [
   { type: 'basic', front: 'f1', back: 'b', key_points: [], source_quote: 'produce ATP', concept: 'c', bloom_level: 'remember' },
   { type: 'basic', front: 'f2', back: 'b', key_points: [], source_quote: 'not in the doc', concept: 'c', bloom_level: 'remember' },
 ] };
-const byTask: Record<string, unknown> = { essay_global: globalData, essay_paragraphs: paragraphData, card_generate: cardData, grade_answer: gradeData, card_help: helpData };
+const byTask: Record<string, unknown> = { essay_global: globalData, essay_paragraphs: paragraphData, card_generate: cardData, grade_answer: gradeData, card_help: helpData,
+  item_dialogue: { reply: 'Your thesis names a reason, so this stands.', verdict: 'keep', revised_summary: null },
+  translate_feedback: { summary: 'Isalin', hints: ['Tanong', 'Pahiwatig'] } };
 
 let dir: string;
 let fake: ReturnType<typeof vi.fn>;
@@ -103,6 +105,21 @@ test('card help runs on the first generated card and its split cards are checked
   expect(fake.mock.calls.filter((c) => c[0] === 'card_help')).toHaveLength(1);
 });
 
+test('item dialogue runs once, as a dispute on the first essay top item', async () => {
+  await writeFile(join(dir, 'samples/essays/e1.txt'), ESSAY);
+  await writeFile(join(dir, 'samples/essays/e2.txt'), ESSAY);
+  const rows = await runEval(opts());
+  expect(rows.filter((r) => r.task === 'item_dialogue')).toEqual([expect.objectContaining({ sample: 'e1.txt', status: 'ok' })]);
+  const [, prompt] = fake.mock.calls.find(([t]) => t === 'item_dialogue')!;
+  expect(prompt.system).toContain('disagrees');
+  expect(prompt.user).toContain('Schools should ban phones');
+  const out = JSON.parse(await readFile(join(dir, 'out/item_dialogue/e1.txt.json'), 'utf8'));
+  expect(out.result.verdict).toBe('keep');
+  const [, tp] = fake.mock.calls.find(([t]) => t === 'translate_feedback')!;
+  expect(tp.system).toContain('Filipino');
+  expect(rows.filter((r) => r.task === 'translate_feedback')).toEqual([expect.objectContaining({ sample: 'e1.txt', status: 'ok' })]);
+});
+
 test('answers.json entries are graded, blank answers skipped', async () => {
   await writeFile(
     join(dir, 'samples/answers.json'),
@@ -136,7 +153,7 @@ test('writes summary.csv with header and one line per row, and calls.jsonl', asy
   expect(csv[0]).toBe('task,sample,status,provider,model,latency_ms,items,anchors_dropped,cards,cards_grounded');
   expect(csv).toHaveLength(rows.length + 1);
   const calls = (await readFile(join(dir, 'out/calls.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
-  expect(calls).toHaveLength(2);
+  expect(calls).toHaveLength(4); // global, paragraphs, and the one item_dialogue and translate_feedback cases;
   expect(calls[0]).toMatchObject({ sample: 'e1.txt', status: 'ok' });
 });
 

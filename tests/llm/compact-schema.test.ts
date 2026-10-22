@@ -35,7 +35,8 @@ test('every prompt states its output as the compact shape, never the raw JSON Sc
   const essay = { essay: 'A.\n\nB.', gradeLevel: 'college', essayType: 'argumentative' };
   const hint = { gradeLevel: 'college', item: { summary: 's', quote: 'q', category: 'c' }, paragraph: 'p' };
   const cases: [string, z.ZodType][] = [
-    [essayGlobalPrompt(essay).system, EssayGlobal], [essayParagraphsPrompt(essay).system, EssayParagraphs],
+    [essayGlobalPrompt({ ...essay, assignmentPrompt: 'Argue.' }).system, EssayGlobal],
+    [essayGlobalPrompt(essay).system, EssayGlobal.omit({ prompt_alignment: true })], [essayParagraphsPrompt(essay).system, EssayParagraphs],
     [hintLadderPrompt(hint).system, HintLadder], [hintRewritePrompt(hint).system, HintRewrite],
     [cardGeneratePrompt({ chunk: 'c', subject: 's', level: 'l' }).system, CardGenerate],
     [gradeAnswerPrompt({ question: 'q', reference: 'r', keyPoints: [], answer: 'a' }).system, GradeAnswer],

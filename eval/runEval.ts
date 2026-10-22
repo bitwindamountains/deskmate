@@ -8,6 +8,8 @@ import {
   DEFAULT_RUBRIC,
   cardGeneratePrompt,
   cardHelpPrompt,
+  itemDialoguePrompt,
+  translateFeedbackPrompt,
   essayGlobalPrompt,
   essayParagraphsPrompt,
   gradeAnswerPrompt,
@@ -15,7 +17,7 @@ import {
   type EssayInput,
 } from '../src/llm/prompts.js';
 import { AllProvidersFailedError, complete, type CompleteResult } from '../src/llm/router.js';
-import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, type FeedbackItem } from '../src/llm/schemas.js';
+import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, ItemDialogue, TranslatedFeedback, type FeedbackItem } from '../src/llm/schemas.js';
 import type { CallLog, ProviderConfig, TaskName } from '../src/llm/types.js';
 import { rankFeedback } from '../src/rank.js';
 
@@ -101,6 +103,7 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
 
   // Essays: global + paragraph passes, anchored and ranked.
   const weights = Object.fromEntries(DEFAULT_RUBRIC.map((c) => [c.name, c.weight]));
+  let dialogueDone = false;
   for (const name of await listTxt(join(o.samplesDir, 'essays'))) {
     const raw = await readFile(join(o.samplesDir, 'essays', name), 'utf8');
     if (!raw.trim()) {
@@ -136,6 +139,28 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
     if (p) row('essay_paragraphs', name, { ...meta(p), items: pa.kept.length, anchors_dropped: pa.dropped.length });
 
     const ranked = rankFeedback([...ga.kept, ...pa.kept], weights);
+
+    // Item dialogue (A3.10) once, as a dispute on the first essay's top item, so the token budget covers it.
+    const top = ranked[0];
+    if (top && !dialogueDone) {
+      dialogueDone = true;
+      const message = 'I think this part is fine, because my next paragraph explains it.';
+      const d = await call('item_dialogue', name, itemDialoguePrompt({ gradeLevel: input.gradeLevel,
+        item: { summary: top.summary, quote: top.quote, category: top.category }, paragraph: paragraphs[top.paragraph_index] ?? input.essay,
+        history: [], kind: 'dispute', message }), ItemDialogue);
+      if (d) {
+        row('item_dialogue', name, meta(d));
+        await mkdir(join(o.outDir, 'item_dialogue'), { recursive: true });
+        await writeFile(join(o.outDir, 'item_dialogue', `${name}.json`), JSON.stringify({ item: top, message, result: d.data }, null, 2));
+      }
+      // First-language explanation (A3.9) of the same item, with both analysis hints revealed.
+      const t = await call('translate_feedback', name, translateFeedbackPrompt({ lang: 'fil', summary: top.summary, hints: top.hints }), TranslatedFeedback);
+      if (t) {
+        row('translate_feedback', name, meta(t));
+        await mkdir(join(o.outDir, 'translate_feedback'), { recursive: true });
+        await writeFile(join(o.outDir, 'translate_feedback', `${name}.json`), JSON.stringify({ item: top, result: t.data }, null, 2));
+      }
+    }
     await mkdir(join(o.outDir, 'essay'), { recursive: true });
     await writeFile(
       join(o.outDir, 'essay', `${name}.json`),
@@ -143,6 +168,8 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
         {
           strengths: g?.data.strengths ?? [],
           rubric_scores: g?.data.rubric_scores ?? [],
+          prompt_alignment: g?.data.prompt_alignment ?? null,
+          outline: p?.data.outline ?? [],
           top3: ranked.slice(0, 3),
           items: ranked,
           dropped: [...ga.dropped, ...pa.dropped],

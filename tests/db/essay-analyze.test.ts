@@ -29,7 +29,7 @@ const GLOBAL = {
   items: [item('global', 0, 'distract students from learning', 'Thesis needs a reason'), item('global', 1, 'robots are coming')],
   safety_concern: false, carried: [],
 };
-const PARAS = { items: [item('paragraph', 1, 'check social media'), item('paragraph', 0, 'earn much higher grades')] }; // wrong index on purpose
+const PARAS = { items: [item('paragraph', 1, 'check social media'), item('paragraph', 0, 'earn much higher grades')], outline: [] }; // wrong index on purpose
 
 type Fake = typeof complete & ReturnType<typeof vi.fn>;
 const fakeComplete = (outputs: Record<string, unknown>) =>
@@ -162,7 +162,7 @@ test('draft 2: unchanged paragraph items are copied, changed paragraphs alone ar
   expect(oldP2.paragraph_index).toBe(2); // anchoring corrected the model's wrong index
 
   const d2 = await newDraft(U, [P[0], P[1], 'In conclusion, a ban helps everyone focus.'].join('\n\n'), d1.essayId, 2);
-  const para = fakeComplete({ essay_paragraphs: { items: [] } });
+  const para = fakeComplete({ essay_paragraphs: { items: [], outline: [] } });
   const p = await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: para });
   expect(p.ok).toBe(true);
   expect((para.mock.calls[0][1] as { system: string }).system).toContain('Report only on paragraphs [P2]');
@@ -189,7 +189,7 @@ test('draft 2: a failed paragraphs layer then a retry saves each carried item on
   await analyzeLayer(U.client, U.userId, d1.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: PARAS }) });
   const d2 = await newDraft(U, [P[0], P[1], 'In conclusion, a ban helps everyone focus.'].join('\n\n'), d1.essayId, 2);
   expect(await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: failComplete() })).toMatchObject({ ok: false, status: 503 });
-  expect((await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { items: [] } }) })).ok).toBe(true);
+  expect((await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { items: [], outline: [] } }) })).ok).toBe(true);
   const carried = (await adminClient().from('feedback_items').select('carried_from_id').eq('draft_id', d2.draftId).not('carried_from_id', 'is', null)).data!;
   expect(carried).toHaveLength(1); // the P1 item; the P2 item belongs to the global judgement
 });
@@ -230,4 +230,70 @@ test('POST for another user draft is 404 with the error shape', async () => {
   const res = await post({ draftId, layer: 'global' });
   expect(res.status).toBe(404);
   expect(Object.keys(await res.json()).sort()).toEqual(['error', 'message']);
+});
+
+async function freshUser() {
+  const U = await createTestUser(); created.push(U.userId);
+  const now = new Date().toISOString();
+  await adminClient().from('profiles').upsert({ user_id: U.userId, adult_attested_at: now, onboarded_at: now }, { onConflict: 'user_id' });
+  return U;
+}
+const outlineOf = async (draftId: string) => (await adminClient().from('drafts').select('outline').eq('id', draftId).single()).data!.outline;
+
+test('global layer stores prompt_alignment; paragraphs layer stores the outline via set_outline', async () => {
+  const U = await freshUser();
+  const { draftId, essayId } = await newDraft(U);
+  await adminClient().from('essays').update({ assignment_prompt: 'Argue for or against phone bans.' }).eq('id', essayId);
+  const alignment = [{ part: 'Take a position', status: 'addressed', note: 'Clear stance.' }];
+  await analyzeLayer(U.client, U.userId, draftId, 'global', {}, { completeFn: fakeComplete({ essay_global: { ...GLOBAL, prompt_alignment: alignment } }) });
+  expect((await adminClient().from('analyses').select('prompt_alignment').eq('draft_id', draftId).single()).data!.prompt_alignment).toEqual(alignment);
+  const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
+  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  expect(await outlineOf(draftId)).toEqual(outline);
+});
+
+test('re-check carries outline lines of unchanged paragraphs and fills changed ones', async () => {
+  const U = await freshUser();
+  const d1 = await newDraft(U);
+  const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
+  await analyzeLayer(U.client, U.userId, d1.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  // P1 moves to index 2; a new paragraph is inserted at index 1
+  const d2 = await newDraft(U, [P[0], 'A brand new paragraph about teachers and their rules for phones in class.', P[1], P[2]].join('\n\n'), d1.essayId, 2);
+  const fresh = [{ paragraph_index: 1, summary: 'Teachers set rules', flag: 'order' }];
+  await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { items: [], outline: fresh } }) });
+  expect(await outlineOf(d2.draftId)).toEqual([
+    { paragraph_index: 0, summary: 'Point 0', flag: null },
+    { paragraph_index: 1, summary: 'Teachers set rules', flag: 'order' },
+    { paragraph_index: 2, summary: 'Point 1', flag: null },
+    { paragraph_index: 3, summary: 'Point 2', flag: null },
+  ]);
+});
+
+test('a failed outline save then a retry saves each paragraph item once', async () => {
+  const U = await freshUser();
+  const { draftId } = await newDraft(U);
+  const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
+  // The same client, except that set_outline fails the first time.
+  let failOnce = true;
+  const flaky = new Proxy(U.client, { get: (t, k) => (k === 'rpc'
+    ? (name: string, args: unknown) => (name === 'set_outline' && failOnce ? (failOnce = false, Promise.resolve({ data: null, error: { message: 'boom' } })) : t.rpc(name, args as never))
+    : Reflect.get(t, k)) }) as typeof U.client;
+  const first = await analyzeLayer(flaky, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  expect(first.ok).toBe(false);
+  const retry = await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  expect(retry.ok).toBe(true);
+  expect((await adminClient().from('feedback_items').select('id').eq('draft_id', draftId).eq('layer', 'paragraph')).data).toHaveLength(2);
+  expect(await outlineOf(draftId)).toEqual(outline);
+});
+
+test('POST returns the saved outline with the items', async () => {
+  const U = await freshUser();
+  const { draftId } = await newDraft(U);
+  const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
+  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  session.client = U.client;
+  // The layer is done, so this answers from the database without an LLM call.
+  const res = await POST(new NextRequest('http://localhost/api/essays/analyze', { method: 'POST', body: JSON.stringify({ draftId, layer: 'paragraphs' }) }));
+  expect(res.status).toBe(200);
+  expect((await res.json()).outline).toEqual(outline);
 });

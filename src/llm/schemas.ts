@@ -32,6 +32,8 @@ export const EssayGlobal = z.object({
   safety_concern: z.boolean(),
   /** Re-check only: the model's judgement of each earlier item it was shown. */
   carried: z.array(z.object({ id: z.string(), status: z.enum(['addressed', 'partial', 'open']) })).default([]),
+  /** Only asked for when the essay has an assignment prompt (A3.3): each required part and whether the essay covers it. */
+  prompt_alignment: z.array(z.object({ part: z.string().min(1), status: z.enum(['addressed', 'partial', 'missing']), note: z.string() })).optional(),
 });
 export type EssayGlobal = z.infer<typeof EssayGlobal>;
 
@@ -43,7 +45,12 @@ export type HintLadder = z.infer<typeof HintLadder>;
 export const HintRewrite = z.object({ rewrite: z.string().min(1) });
 export type HintRewrite = z.infer<typeof HintRewrite>;
 
-export const EssayParagraphs = z.object({ items: z.array(FeedbackItem) });
+export const EssayParagraphs = z.object({
+  items: z.array(FeedbackItem),
+  /** Reverse outline (A3.2): one line per reported paragraph. */
+  outline: z.array(z.object({ paragraph_index: z.number().int().min(0), summary: z.string().min(1),
+    flag: z.enum(['repeats', 'off_topic', 'order']).optional() })).default([]), // omitted when none applies: fewer output tokens
+});
 export type EssayParagraphs = z.infer<typeof EssayParagraphs>;
 
 export const Card = z.object({
@@ -80,3 +87,15 @@ export const CardHelp = z.object({
   split: z.array(Card.omit({ importance: true })).max(3),
 });
 export type CardHelp = z.infer<typeof CardHelp>;
+
+/** A coach reply on one feedback item (A2.9 questions, A3.10 disputes). verdict and revised_summary are for disputes only. */
+export const ItemDialogue = z.object({
+  reply: z.string().min(1),
+  verdict: z.enum(['keep', 'modify', 'withdraw']).nullable().default(null),
+  revised_summary: z.string().nullable().default(null),
+});
+export type ItemDialogue = z.infer<typeof ItemDialogue>;
+
+/** A3.9: one feedback item in the student's first language; hints in the same order as sent. */
+export const TranslatedFeedback = z.object({ summary: z.string().min(1), hints: z.array(z.string()) });
+export type TranslatedFeedback = z.infer<typeof TranslatedFeedback>;

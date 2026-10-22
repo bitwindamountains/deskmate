@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { extractEssayFile } from '@/lib/essay/extract';
 import { validateEssay, type EssayType } from '@/lib/essay/text';
+import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { createEssay } from '../actions';
 
 const TYPES: [EssayType, string][] = [
@@ -14,19 +15,22 @@ const GRADES = [['high school', 'High school'], ['college', 'College'], ['gradua
 const CITATIONS = ['APA', 'MLA', 'Chicago', 'Harvard'];
 const SAVE_FAILED = "We couldn't save your essay. Please try again.";
 
-export function NewEssayForm() {
+/** initialTitle and initialPrompt come from a card or deck (C1): the form opens as an expository writing task. */
+export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initialTitle?: string; initialPrompt?: string } = {}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setErrorMsg] = useState('');
   const [errField, setErrField] = useState('');
   const setError = (msg: string, field = '') => { setErrorMsg(msg); setErrField(msg ? field : ''); };
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState('');
   const [reading, setReading] = useState(false);
-  const [prompt, setPrompt] = useState('');
-  const [essayType, setEssayType] = useState<EssayType>('argumentative');
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [essayType, setEssayType] = useState<EssayType>(initialPrompt ? 'expository' : 'argumentative');
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
+  const [selfScores, setSelfScores] = useState<Record<string, string>>({});
+  const [weakness, setWeakness] = useState('');
 
   async function pick(file?: File) {
     setError('');
@@ -46,8 +50,11 @@ export function NewEssayForm() {
     setError('');
     start(async () => {
       try {
+        // A3.7: optional; only the criteria the student rated are sent, and nothing at all when the section is untouched.
+        const scores = DEFAULT_RUBRIC.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
+        const self = scores.length || weakness.trim() ? { selfAssessment: { scores, weakness: weakness.trim() || null } } : {};
         const r = await createEssay({
-          title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content,
+          title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content, ...self,
         });
         if (r.ok) router.push(`/write/${r.essayId}`);
         else setError(r.error);
@@ -80,7 +87,7 @@ export function NewEssayForm() {
         {reading && <p className="mt-1" role="status">Reading your file…</p>}
       </div>
 
-      <details className="rounded-xl border border-line bg-surface p-4">
+      <details className="rounded-xl border border-line bg-surface p-4" open={!!initialPrompt}>
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Assignment details (optional)</summary>
         <div className="mt-4 space-y-5">
           <div>
@@ -105,6 +112,28 @@ export function NewEssayForm() {
               <option value="">None</option>
               {CITATIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+          </div>
+        </div>
+      </details>
+
+      <details className="rounded-xl border border-line bg-surface p-4">
+        <summary className="flex min-h-11 cursor-pointer items-center font-bold">Rate it yourself first (optional)</summary>
+        <div className="mt-4 space-y-5">
+          <p className="text-ink-muted">After feedback, you&apos;ll see how your rating compares with the coach&apos;s.</p>
+          {DEFAULT_RUBRIC.map((c) => (
+            <div key={c.name}>
+              <label htmlFor={`self-${c.name}`} className="mb-1 block">{c.name}</label>
+              <select id={`self-${c.name}`} value={selfScores[c.name] ?? ''} className="field" aria-describedby={`self-${c.name}-d`}
+                onChange={(e) => setSelfScores((s) => ({ ...s, [c.name]: e.target.value }))}>
+                <option value="">Not rated</option>
+                {Array.from({ length: c.maxScore }, (_, k) => <option key={k} value={k + 1}>{`${k + 1} of ${c.maxScore}`}</option>)}
+              </select>
+              <p id={`self-${c.name}-d`} className="mt-1 text-sm text-ink-muted">{c.description}</p>
+            </div>
+          ))}
+          <div>
+            <label htmlFor="weakness" className="mb-1 block">What&apos;s your essay&apos;s biggest weakness?</label>
+            <textarea id="weakness" rows={2} maxLength={300} value={weakness} onChange={(e) => setWeakness(e.target.value)} className="field" />
           </div>
         </div>
       </details>
