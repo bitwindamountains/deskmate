@@ -129,8 +129,12 @@ export function essayGlobalPrompt(i: EssayInput): Prompt {
       ...(i.previousItems?.length
         ? ['Earlier feedback items are listed below. For each, judge against this draft whether it is addressed, partial, or still open, and return it in carried with its id.']
         : []),
+      ...(i.assignmentPrompt
+        ? ['Split the assignment prompt into its required parts and judge each in prompt_alignment: addressed, partial, or missing, with a one-sentence note.']
+        : []),
       DATA_RULE,
-      `Return only JSON with this shape: ${compactSchema(EssayGlobal)}`,
+      // Without an assignment the field is left out of the shape, so the model spends no tokens on it.
+      `Return only JSON with this shape: ${compactSchema(i.assignmentPrompt ? EssayGlobal : EssayGlobal.omit({ prompt_alignment: true }))}`,
     ].join('\n'),
     user: i.previousItems?.length
       ? `${essayContext(i)}\n\nEarlier feedback:\n${wrapData('previous_feedback', JSON.stringify(i.previousItems))}`
@@ -145,6 +149,7 @@ export function essayParagraphsPrompt(i: EssayInput): Prompt {
       'For each paragraph, check the topic sentence, evidence, analysis of that evidence, and transitions.',
       'Report only paragraph-level issues: every item has layer "paragraph". At most 2 items per paragraph; skip paragraphs with no real issue.',
       ...(i.onlyParagraphs ? [`Report only on paragraphs ${i.onlyParagraphs.map((n) => `[P${n}]`).join(', ')}; the rest are shown for context.`] : []),
+      'Also return outline: one entry for EVERY paragraph you were asked about, including the introduction, the conclusion and paragraphs with no issue, giving its point in at most 12 words. Add flag only if it applies: repeats (repeats an earlier point), off_topic (drifts from the thesis), order (fits better elsewhere).',
       ITEM_RULES,
       DATA_RULE,
       `Return only JSON with this shape: ${compactSchema(EssayParagraphs)}`,

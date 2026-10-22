@@ -235,3 +235,36 @@ test('focus mode steps through Top 3 with keyboard only', async () => {
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Start focus mode' })));
   expect(screen.getByRole('region', { name: 'Top 3 priorities' })).toBeTruthy();
 });
+
+test('a missing part puts the alignment checklist before Top 3; labels are text', () => {
+  view({ analysis: analysis({ prompt_alignment: [
+    { part: 'Take a position', status: 'addressed', note: 'Clear stance.' },
+    { part: 'Use two sources', status: 'missing', note: 'No sources yet.' },
+    { part: 'Address a counterargument', status: 'partial', note: 'Brief mention.' },
+  ] }) });
+  const checklist = screen.getByRole('region', { name: 'What the assignment asks' });
+  expect(within(checklist).getByText('Not yet')).toBeTruthy();
+  expect(within(checklist).getByText('Covered')).toBeTruthy();
+  expect(within(checklist).getByText('Partly covered')).toBeTruthy();
+  const top = screen.getByRole('heading', { name: 'Top 3 priorities' });
+  expect(checklist.compareDocumentPosition(top) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('all parts covered puts the checklist after Top 3; no alignment means no checklist', () => {
+  view({ analysis: analysis({ prompt_alignment: [{ part: 'Take a position', status: 'addressed', note: '' }] }) });
+  const checklist = screen.getByRole('region', { name: 'What the assignment asks' });
+  const top = screen.getByRole('heading', { name: 'Top 3 priorities' });
+  expect(checklist.compareDocumentPosition(top) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  cleanup();
+  view();
+  expect(screen.queryByRole('region', { name: 'What the assignment asks' })).toBeNull();
+});
+
+test('the paragraph outline lists each line with its flag label and links to the paragraph', () => {
+  view({ outline: [{ paragraph_index: 0, summary: 'States the thesis', flag: null }, { paragraph_index: 1, summary: 'Gives evidence', flag: 'repeats' }] });
+  const outline = screen.getByRole('region', { name: 'Paragraph outline' });
+  const link = within(outline).getByRole('link', { name: /P2: Gives evidence/ });
+  expect(link.getAttribute('href')).toBe('#para-1');
+  expect(within(outline).getByText('Repeats an earlier point')).toBeTruthy();
+  expect(document.getElementById('para-1')?.textContent).toContain('evidence badly');
+});
