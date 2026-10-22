@@ -4,8 +4,10 @@ const MAX_ROWS = 2000;
 const MAX_FIELD = 500; // the deck editor's limit for front and back
 const TYPES = new Set(['basic', 'cloze', 'why']);
 
+type Row = { fields: string[]; n: number }; // n: the row number a spreadsheet shows, blank rows included
+
 /** RFC 4180 rows: quoted fields, "" escapes, separators and newlines inside quotes, CRLF or LF. null when a quoted field never closes. */
-function rows(text: string, sep: string): string[][] | null {
+function rows(text: string, sep: string): Row[] | null {
   const out: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -25,7 +27,7 @@ function rows(text: string, sep: string): string[][] | null {
   }
   if (quoted) return null; // an open quote would otherwise swallow the rest of the file into one card
   if (field || row.length) { row.push(field); out.push(row); }
-  return out.filter((r) => r.some((f) => f.trim()));
+  return out.map((fields, i) => ({ fields, n: i + 1 })).filter((r) => r.fields.some((f) => f.trim()));
 }
 
 /** Excel in many European locales saves "CSV" with semicolons; the header row (first non-blank line) says which one this file uses. */
@@ -37,23 +39,23 @@ function separator(text: string): string {
 // Undo the export's formula guard: one apostrophe before = + - @ came from toCsv, not from the student.
 const unguard = (s: string) => (/^'[=+\-@]/.test(s) ? s.slice(1) : s);
 
-/** Cards from a CSV with a header row naming front and back (concept and type optional). skippedRows is 1-based, header = row 1. */
+/** Cards from a CSV with a header row naming front and back (concept and type optional). skippedRows are spreadsheet row numbers. */
 export function parseCards(text: string): { cards: CsvCard[]; skippedRows: number[]; error?: string } {
   const clean = text.replace(/^﻿/, '');
   const all = rows(clean, separator(clean));
   if (!all) return { cards: [], skippedRows: [], error: "A quote mark in the file isn't closed." };
   if (!all.length) return { cards: [], skippedRows: [], error: 'The file is empty.' };
-  const head = all[0].map((h) => h.trim().toLowerCase());
+  const head = all[0].fields.map((h) => h.trim().toLowerCase());
   const col = (name: string) => head.indexOf(name);
   if (col('front') < 0 || col('back') < 0) return { cards: [], skippedRows: [], error: 'The first row needs "front" and "back" columns.' };
   const body = all.slice(1);
   if (body.length > MAX_ROWS) return { cards: [], skippedRows: [], error: 'Import at most 2,000 cards at a time.' };
   const cards: CsvCard[] = [];
   const skippedRows: number[] = [];
-  for (const [k, r] of body.entries()) {
+  for (const { fields: r, n } of body) {
     const get = (name: string) => (col(name) >= 0 ? unguard((r[col(name)] ?? '').trim()) : '');
     const front = get('front'), back = get('back'), type = get('type').toLowerCase();
-    if (!front || !back || front.length > MAX_FIELD || back.length > MAX_FIELD) { skippedRows.push(k + 2); continue; }
+    if (!front || !back || front.length > MAX_FIELD || back.length > MAX_FIELD) { skippedRows.push(n); continue; }
     cards.push({ front, back, concept: get('concept').slice(0, 120), type: (TYPES.has(type) ? type : 'basic') as CsvCard['type'] });
   }
   return { cards, skippedRows };

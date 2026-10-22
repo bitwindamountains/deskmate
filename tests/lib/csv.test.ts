@@ -59,3 +59,7 @@ test('one apostrophe before a formula character is removed on import, undoing th
   expect(parseCards(toCsv(cards)).cards).toEqual(cards);
   expect(parseCards("front,back\n'plain,ok").cards[0].front).toBe("'plain");
 });
+
+test('skipped rows are numbered as a spreadsheet shows them, counting blank lines and multi-line cells as one row each', () => {
+  expect(parseCards('front,back\n\nQ,A\n\n,no front\n"two\nlines",ok\n,again\n').skippedRows).toEqual([5, 7]);
+});
