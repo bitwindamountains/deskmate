@@ -4,12 +4,19 @@ AI study app: Draft Coach (essay feedback) and Recall (cards + FSRS review). The
 Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 
 ## Where things are
+- **Start here:** `PROGRESS.md` has the current state, open PRs, owner decisions and next steps. Update it at the end of each session.
 - Brief: `ai-learning-platform-brief.md`. Spec: `docs/superpowers/specs/2026-10-20-scholar-design.md`.
 - Plans, one per phase: `docs/superpowers/plans/`. Work task by task, tests first, one commit per task (the message is given in the plan). Each plan's Global Constraints and Review Focus apply.
 - UI follows `DESIGN.md` (tokens in `src/app/globals.css`). Product context is in `PRODUCT.md` (Impeccable).
-- `graphify-out/` is a code map, and it can be stale.
+- `graphify-out/` is a code map (local only, gitignored). Keep it current: a post-commit hook rebuilds code changes on its own; after changing docs, plans, or other non-code files, run `/graphify --update` before ending the session.
+
+## Scope (owner decisions)
+- Students only: no teacher, class or school features.
+- English only: no translation and no other essay or card languages. The brief's first-language explanations (A3.9) are out.
+- The owner deploys (`docs/deploy.md`) and merges PRs.
 
 ## Commands
+- `npx tsc --noEmit`: typecheck. There is no lint script.
 - `npm test`: unit and component tests (jsdom).
 - `npm run test:db`: tests in `tests/db/` against the real Supabase project (reads `.env.local`, runs serially).
 - `npm run eval`: LLM router eval. `npm run build`: production build.
