@@ -1,4 +1,4 @@
-export type TaskName = 'essay_global' | 'essay_paragraphs' | 'hint_ladder' | 'hint_rewrite' | 'card_generate' | 'grade_answer' | 'card_help' | 'item_dialogue' | 'translate_feedback';
+export type TaskName = 'essay_global' | 'essay_paragraphs' | 'hint_ladder' | 'hint_rewrite' | 'card_generate' | 'grade_answer' | 'card_help' | 'item_dialogue';
 
 export interface ProviderConfig {
   id: string;

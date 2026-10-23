@@ -334,27 +334,6 @@ test('no comparison before the global layer or without a self-rating; hidden sco
   expect(within(region).getByText('Rushed ending.')).toBeTruthy();
 });
 
-test('the Explain in Filipino toggle shows only for fil/es profiles and marks the block lang="fil"', async () => {
-  view({ language: 'fil' });
-  const c = card('p1');
-  fetchMock.mockResolvedValueOnce(json({ summary: 'Kulang sa ebidensya ang pahayag.', hints: [] }));
-  const toggle = within(c).getByRole('button', { name: 'Explain in Filipino' });
-  fireEvent.click(toggle);
-  const block = await within(c).findByText('Kulang sa ebidensya ang pahayag.');
-  expect(block.closest('[lang]')?.getAttribute('lang')).toBe('fil');
-  expect(sent()).toEqual({ itemId: 'p1', lang: 'fil' });
-  expect(toggle.getAttribute('aria-expanded')).toBe('true');
-  expect(within(c).getByText('Summary p1')).toBeTruthy(); // the English stays
-  fireEvent.click(toggle);
-  expect(within(c).queryByText('Kulang sa ebidensya ang pahayag.')).toBeNull();
-  cleanup();
-  view({ language: 'es' });
-  expect(within(card('p1')).getByRole('button', { name: 'Explain in Spanish' })).toBeTruthy();
-  cleanup();
-  view();
-  expect(within(card('p1')).queryByRole('button', { name: /Explain in/ })).toBeNull();
-});
-
 test('read-aloud outlines the sentence being read with a text label, and Stop clears it', () => {
   type U = { text: string; onstart?: () => void };
   const queue: U[] = [];
@@ -386,20 +365,6 @@ test('a withdraw after an earlier keep shows the card Withdrawn, not Disputed', 
   fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
   expect(within(card('p1')).getByText('Withdrawn after your explanation')).toBeTruthy();
   expect(within(card('p1')).queryByText('Disputed')).toBeNull();
-});
-
-test('a revised summary drops the earlier translation and asks again', async () => {
-  view({ language: 'fil' });
-  const c = card('p1');
-  fetchMock.mockResolvedValueOnce(json({ summary: 'Lumang salin', hints: [] }));
-  fireEvent.click(within(c).getByRole('button', { name: 'Explain in Filipino' }));
-  expect(await within(c).findByText('Lumang salin')).toBeTruthy();
-  fireEvent.click(within(c).getByRole('button', { name: 'I disagree' }));
-  fetchMock.mockResolvedValueOnce(reply({ reply: 'Partly.', verdict: 'modify', revisedSummary: 'Explain the source.' }));
-  fireEvent.change(within(c).getByLabelText("Why doesn't this fit?"), { target: { value: 'I cite one.' } });
-  fireEvent.click(within(c).getByRole('button', { name: 'Send' }));
-  expect(await within(c).findByText('Original: Summary p1')).toBeTruthy();
-  expect(within(c).queryByText('Lumang salin')).toBeNull();
 });
 
 test('pressing Edit while reading aloud clears the reading outline', () => {

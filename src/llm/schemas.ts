@@ -96,6 +96,3 @@ export const ItemDialogue = z.object({
 });
 export type ItemDialogue = z.infer<typeof ItemDialogue>;
 
-/** A3.9: one feedback item in the student's first language; hints in the same order as sent. */
-export const TranslatedFeedback = z.object({ summary: z.string().min(1), hints: z.array(z.string()) });
-export type TranslatedFeedback = z.infer<typeof TranslatedFeedback>;

@@ -1,7 +1,6 @@
 'use client';
 
 import { useActionState } from 'react';
-import { LANGUAGES } from '@/lib/profile/onboarding';
 import type { Profile } from '@/lib/profile/require';
 import { completeOnboarding, type OnboardingState } from './actions';
 
@@ -14,8 +13,6 @@ function Err({ id, msg }: { id: string; msg?: string }) {
 export function OnboardingForm({ defaults }: { defaults?: Profile }) {
   const [state, action, pending] = useActionState<OnboardingState, FormData>(completeOnboarding, {});
   const e = state.errors ?? {};
-  const known = LANGUAGES.some(([c]) => c === defaults?.first_language);
-  const lang = defaults?.first_language ? (known ? defaults.first_language : 'other') : '';
   const font = defaults?.preferences?.font ?? 'default';
   const bad = (k: string) => (e[k] ? { 'aria-invalid': true, 'aria-describedby': `${k}-err` } : {});
 
@@ -32,18 +29,6 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
             <Err id="adult-err" msg={e.adult} />
           </div>
         )}
-
-        <div>
-          <label htmlFor="first_language" className="mb-1 block">Your first language</label>
-          <select id="first_language" name="first_language" required defaultValue={lang} className={input} {...bad('first_language')}>
-            <option value="" disabled>Choose a language</option>
-            {LANGUAGES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
-          </select>
-          <Err id="first_language-err" msg={e.first_language} />
-          <label htmlFor="first_language_other" className="mb-1 mt-2 block">If Other, which language?</label>
-          <input id="first_language_other" name="first_language_other" defaultValue={lang === 'other' ? defaults?.first_language ?? '' : ''} className={input} {...bad('first_language_other')} />
-          <Err id="first_language_other-err" msg={e.first_language_other} />
-        </div>
 
         <div>
           <label htmlFor="study_minutes_per_day" className="mb-1 block">How many minutes a day can you study?</label>

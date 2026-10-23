@@ -51,4 +51,4 @@ Only the product brief. No users, testimonials, metrics, sample essays, pricing,
 5. Humans stay in control: students can dispute feedback and override grades.
 
 ## Accessibility & Inclusion
-Accessible by default: readable fonts with a dyslexia-friendly option, text-to-speech, high contrast, meaning never conveyed by color alone. Light and dark mode. Respect varieties of English; explain academic conventions as conventions, not errors. First-language explanations for ESL learners (Phase 2).
+Accessible by default: readable fonts with a dyslexia-friendly option, text-to-speech, high contrast, meaning never conveyed by color alone. Light and dark mode. Respect varieties of English; explain academic conventions as conventions, not errors. English only for now: feedback and the interface are in English.

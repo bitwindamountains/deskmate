@@ -50,5 +50,4 @@ export const TASK_ROUTES: Record<TaskName, string[]> = {
   grade_answer: ['groq', 'gemini', 'openrouter', 'ollama'],
   card_help: ['groq', 'gemini', 'openrouter', 'ollama'],
   item_dialogue: ['groq', 'gemini', 'openrouter', 'ollama'],
-  translate_feedback: ['groq', 'gemini', 'openrouter', 'ollama'],
 };
