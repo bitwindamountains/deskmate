@@ -7,10 +7,11 @@ import { TZ_COOKIE } from '@/lib/time/zone';
 /**
  * Tells the server the student's time zone, so "today" (new cards started, cards due) is their day, not the server's UTC day.
  * When the server rendered with a different zone (first visit, or travel), one refresh re-renders the page with the right one.
+ * Without `serverZone` (the root layout, so login and onboarding set it before any day-based page renders) it never refreshes.
  */
-export function TimeZoneCookie({ serverZone }: { serverZone: string }) {
+export function TimeZoneCookie({ serverZone }: { serverZone?: string }) {
   const router = useRouter();
-  const handled = useRef<string | null>(null); // once per server zone, however often this re-renders
+  const handled = useRef<string | undefined | null>(null); // once per server zone, however often this re-renders
   useEffect(() => {
     if (handled.current === serverZone) return;
     handled.current = serverZone;
@@ -18,7 +19,7 @@ export function TimeZoneCookie({ serverZone }: { serverZone: string }) {
     if (!zone) return;
     const secure = location.protocol === 'https:' ? '; secure' : '';
     document.cookie = `${TZ_COOKIE}=${encodeURIComponent(zone)}; path=/; max-age=31536000; samesite=lax${secure}`;
-    if (zone !== serverZone) router.refresh();
+    if (serverZone !== undefined && zone !== serverZone) router.refresh();
   }, [serverZone, router]);
   return null;
 }
