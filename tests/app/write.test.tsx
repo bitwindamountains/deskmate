@@ -174,3 +174,21 @@ test('stopping the timer is announced and keeps keyboard focus', () => {
     vi.useRealTimers();
   }
 });
+
+test('a stop can be undone: Resume keeps counting from the original start and returns focus to Stop', () => {
+  vi.useFakeTimers();
+  try {
+    render(<NewEssayForm />);
+    fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start the timer' }));
+    act(() => { vi.advanceTimersByTime(3 * 60_000); });
+    fireEvent.click(screen.getByRole('button', { name: 'Stop the timer' }));
+    act(() => { vi.advanceTimersByTime(2 * 60_000); });
+    fireEvent.click(screen.getByRole('button', { name: 'Resume the timer' }));
+    expect(screen.queryByText(/Stopped at/)).toBeNull();
+    expect(screen.getAllByText('25 minutes left')).toHaveLength(2);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Stop the timer' }));
+  } finally {
+    vi.useRealTimers();
+  }
+});
