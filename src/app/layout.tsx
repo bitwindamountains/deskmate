@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Atkinson_Hyperlegible } from 'next/font/google';
 import { RegisterSW } from '@/components/register-sw';
+import { TimeZoneCookie } from '@/components/time-zone-cookie';
 import './globals.css';
 
 const atkinson = Atkinson_Hyperlegible({ weight: ['400', '700'], subsets: ['latin'], variable: '--font-atkinson' });
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <RegisterSW />
+        <TimeZoneCookie />
       </body>
     </html>
   );
