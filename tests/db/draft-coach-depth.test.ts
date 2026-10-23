@@ -73,13 +73,7 @@ test('feedback_messages: owner inserts for own item only; no update or delete', 
   expect((await adminClient().from('feedback_messages').select('text').eq('id', data!.id).single()).data?.text).toBe(msg.text);
 });
 
-test('item_translations and self_assessments: owner-only insert and select', async () => {
-  const tr = { item_id: aItem, user_id: A.userId, lang: 'fil', level: 0, result: { summary: 's', hints: [] } };
-  expect((await A.client.from('item_translations').insert(tr)).error).toBeNull();
-  expect((await A.client.from('item_translations').insert({ ...tr, item_id: bItem })).error).not.toBeNull();
-  expect((await A.client.from('item_translations').insert({ ...tr, level: 1, lang: 'de' })).error).not.toBeNull();
-  expect((await B.client.from('item_translations').select('item_id').eq('item_id', aItem)).data).toEqual([]);
-
+test('self_assessments: owner-only insert and select', async () => {
   const sa = { draft_id: aDraft, user_id: A.userId, scores: [{ criterion: 'Thesis', score: 3 }], weakness: 'Evidence' };
   expect((await B.client.from('self_assessments').insert({ ...sa, user_id: B.userId })).error).not.toBeNull();
   expect((await A.client.from('self_assessments').insert(sa)).error).toBeNull();
@@ -87,9 +81,3 @@ test('item_translations and self_assessments: owner-only insert and select', asy
   expect((await B.client.from('self_assessments').select('draft_id').eq('draft_id', aDraft)).data).toEqual([]);
 });
 
-test('revise_item clears that item\'s cached translations so they are not shown for the old summary', async () => {
-  const id = await newItem(A, aDraft);
-  await A.client.from('item_translations').insert({ item_id: id, user_id: A.userId, lang: 'fil', level: 0, result: { summary: 'luma', hints: [] } });
-  expect((await A.client.rpc('revise_item', { p_item_id: id, p_summary: 'Explain the source.' })).error).toBeNull();
-  expect((await adminClient().from('item_translations').select('item_id').eq('item_id', id)).data).toEqual([]);
-});

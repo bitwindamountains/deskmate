@@ -71,11 +71,6 @@ test('onboarding without the 18+ attestation is rejected', async () => {
   expect(error?.code).toBe('23514');
 });
 
-test('first_language longer than 60 chars is rejected', async () => {
-  const { error } = await A.client.from('profiles').update({ first_language: 'x'.repeat(61) }).eq('user_id', A.userId);
-  expect(error?.code).toBe('23514');
-});
-
 test('anon cannot read profiles', async () => {
   const { data, error } = await anonClient().from('profiles').select('*');
   expect(error?.code).toBe('42501');

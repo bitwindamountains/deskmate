@@ -17,7 +17,7 @@ import StudyPage from '@/app/(app)/study/page';
 import ProfilePage from '@/app/(app)/profile/page';
 
 const base: Profile = {
-  user_id: 'u1', display_name: null, adult_attested_at: '2026-01-01', first_language: 'en',
+  user_id: 'u1', display_name: null, adult_attested_at: '2026-01-01',
   study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false }, onboarded_at: '2026-01-01',
 };
 afterEach(cleanup);
