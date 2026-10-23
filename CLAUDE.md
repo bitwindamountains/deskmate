@@ -8,7 +8,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 - Brief: `ai-learning-platform-brief.md`. Spec: `docs/superpowers/specs/2026-10-20-scholar-design.md`.
 - Plans, one per phase: `docs/superpowers/plans/`. Work task by task, tests first, one commit per task (the message is given in the plan). Each plan's Global Constraints and Review Focus apply.
 - UI follows `DESIGN.md` (tokens in `src/app/globals.css`). Product context is in `PRODUCT.md` (Impeccable).
-- `graphify-out/` is a code map, and it can be stale.
+- `graphify-out/` is a code map (local only, gitignored). Keep it current: a post-commit hook rebuilds code changes on its own; after changing docs, plans, or other non-code files, run `/graphify --update` before ending the session.
 
 ## Scope (owner decisions)
 - Students only: no teacher, class or school features.
