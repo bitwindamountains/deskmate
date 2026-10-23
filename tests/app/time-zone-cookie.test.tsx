@@ -20,6 +20,12 @@ test('does nothing when the server already used this zone', () => {
   expect(refresh).not.toHaveBeenCalled();
 });
 
+test('without a server zone (public pages) it stores the cookie but never refreshes', () => {
+  render(<TimeZoneCookie />);
+  expect(document.cookie).toContain(`scholar_tz=${encodeURIComponent(zone)}`);
+  expect(refresh).not.toHaveBeenCalled();
+});
+
 test('uses the scholar_tz cookie name and refreshes only once across re-renders', () => {
   const { rerender } = render(<TimeZoneCookie serverZone="UTC-not-set" />);
   rerender(<TimeZoneCookie serverZone="UTC-not-set" />);

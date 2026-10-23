@@ -3,8 +3,9 @@
 Handoff for the next session. Update it at the end of each session. Last updated 2026-10-23.
 
 ## State
-- `main` has everything through PR #17 (Phase 3b). On merged `main`: 471/471 unit tests and the production build pass.
-- **Open PR #18 `english-only`**: removes the "Explain in Filipino/Spanish" feedback translation and the first-language question in onboarding. With it: 464/464 tests and the build pass. It waits for the owner to merge.
+- `main` has everything through PR #18 (English only: feedback translation and the first-language question are gone). On `main`: 464/464 unit tests and the production build pass.
+- **Open PR `first-visit-zone`**: the root layout writes the time zone cookie on every page (login, onboarding), so the first day-based page no longer renders in UTC and then refreshes. 465/465 tests and the build pass. It waits for the owner to merge.
+- `graphify-out/` (local, gitignored) was rebuilt on 2026-10-23, and git hooks now rebuild it after each commit (code only).
 - All migrations through `20261022170000_scholar_goals_prereqs.sql` are applied and the advisors were checked.
 
 ## What's built
@@ -28,8 +29,8 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - The owner merges PRs. After a merge, delete the branch locally and on GitHub.
 
 ## Next steps
-1. **The owner merges PR #18.** Optional follow-up: a migration that drops the unused `scholar.item_translations` table and the `profiles.first_language` column (the owner reviews it first).
-2. **First-visit time zone.** A student's first page renders with UTC "today" until `TimeZoneCookie` sets the cookie and refreshes. Investigation started in `src/components/time-zone-cookie.tsx` and `src/lib/time/user-zone.ts`; nothing has changed yet.
+1. **Optional cleanup after PR #18:** a migration that drops the unused `scholar.item_translations` table and the `profiles.first_language` column (the owner reviews it first).
+2. **First-visit time zone:** fixed in the open `first-visit-zone` PR. One case is left: a magic link opened in a different browser than the one used to sign in still lands on `/today` without the cookie, so the `(app)` layout's one refresh still covers it.
 3. **Small gaps:**
    - stopping a timer can't be undone;
    - the goal-match threshold `GOAL_MATCH = 0.5` in `src/review/goals.ts` hasn't been tuned on real courses.
