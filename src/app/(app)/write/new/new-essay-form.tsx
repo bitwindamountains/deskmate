@@ -87,7 +87,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
           </select>
         </div>
         {timed && startedAt === null && <button type="button" className="btn" onClick={() => setStartedAt(Date.now())}>Start the timer</button>}
-        {timed && startedAt !== null && <Timer minutes={Number(timed)} startedAt={startedAt} stoppedAt={stoppedAt} onStop={() => setStoppedAt(Date.now())} />}
+        {timed && startedAt !== null && <Timer minutes={Number(timed)} startedAt={startedAt} stoppedAt={stoppedAt} onStop={() => setStoppedAt(Date.now())} onResume={() => setStoppedAt(null)} />}
       </div>
 
       <div>
