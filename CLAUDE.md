@@ -13,7 +13,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 ## Scope (owner decisions)
 - Students only: no teacher, class or school features.
 - English only: no translation and no other essay or card languages. The brief's first-language explanations (A3.9) are out.
-- The owner deploys (`docs/deploy.md`) and merges PRs.
+- The owner deploys (`docs/deploy.md`). Claude may merge its own PRs after typecheck, `npm test`, `npm run test:db` and the build pass, then deletes the branch locally and on GitHub (owner grant, brief Part K #14).
 
 ## Commands
 - `npx tsc --noEmit`: typecheck. There is no lint script.

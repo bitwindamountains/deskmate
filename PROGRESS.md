@@ -47,7 +47,7 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
 - Hosting is prep only: `docs/deploy.md` is the Vercel Hobby checklist, and the owner deploys.
 - English only: no translation and no other essay or card languages.
 - Deleting data never deletes the shared `auth.users` row; `quota_usage` and `llm_calls` survive a delete so it can't reset the day's limits (2026-10-24).
-- Merging: the owner granted Claude full permission for this project (2026-10-24, Part K #14): Claude merges its own PRs after the checks pass, then deletes the branch locally and on GitHub. CLAUDE.md still says the owner merges PRs; the owner decides whether to update it.
+- Merging: the owner granted Claude full permission for this project (2026-10-24, Part K #14): Claude merges its own PRs after the checks pass, then deletes the branch locally and on GitHub.
 
 ## Next steps
 1. **Brief gaps:** closed or ruled on in `docs/superpowers/plans/2026-10-24-brief-gaps.md`. **Small gaps:** none open. Ruled on in `docs/superpowers/plans/2026-10-24-small-gaps.md`: daily limits stay on the UTC day (a local day could be gamed by changing time zone), failed AI calls are not queued (nothing is lost; a queue needs a worker that Hobby can't run often enough), and a magic link opened in another browser keeps the layout's one refresh.
