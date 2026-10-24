@@ -51,5 +51,6 @@ export const TASK_ROUTES: Record<TaskName, string[]> = {
   card_help: ['groq', 'gemini', 'openrouter', 'ollama'],
   card_improve: ['groq', 'gemini', 'openrouter', 'ollama'],
   card_rephrase: ['groq', 'gemini', 'openrouter', 'ollama'],
+  feynman: ['groq', 'gemini', 'openrouter', 'ollama'],
   item_dialogue: ['groq', 'gemini', 'openrouter', 'ollama'],
 };

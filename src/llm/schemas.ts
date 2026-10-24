@@ -97,6 +97,15 @@ export type CardImprove = z.infer<typeof CardImprove>;
 export const CardRephrase = z.object({ question: z.string() });
 export type CardRephrase = z.infer<typeof CardRephrase>;
 
+/** B3.7: what the student's explanation covered and missed, and up to 3 grounded cards for the missed points. */
+export const Feynman = z.object({
+  covered: z.array(z.string()).max(8),
+  missed: z.array(z.string()).max(8),
+  misconception: z.string().nullable().default(null),
+  cards: z.array(Card.omit({ importance: true })).max(3),
+});
+export type Feynman = z.infer<typeof Feynman>;
+
 /** A coach reply on one feedback item (A2.9 questions, A3.10 disputes). verdict and revised_summary are for disputes only. */
 export const ItemDialogue = z.object({
   reply: z.string().min(1),
