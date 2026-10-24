@@ -19,5 +19,20 @@
 
 Tasks 6 and 7 share `src/llm/prompts.ts` and were measured together, so they landed as one commit: `feat: fewer or more cards, discard signal, and improve a card in triage`.
 
+## Review (`/code-review high --fix`) and follow-ups
+- **Fixed by the review:**
+  - An "Improve" answer that arrives after the student has moved on, or started editing, is dropped. Before, it opened on the next card and Save overwrote that card (regression test added).
+  - The "Suggested rewrite" banner no longer shows over the student's own text.
+  - Missed answers in practice-test results render math.
+  - Once KaTeX has loaded, new cards render math straight away.
+  - The profile page uses the scheduler's defaults.
+- **Fixed after the review:**
+  - Study settings are checked when read (`studySettings`), since the user can write the preferences column directly; out-of-range values fall back to the defaults.
+  - The discard signal ignores "duplicate": triage's on-device dedupe records that reason automatically, so it isn't the student's choice.
+- **Not changed:**
+  - The discard query runs once per chunk. It's one small indexed read next to a multi-second LLM call.
+  - `/api/cards/improve` mirrors `/api/cards/help`. Merging them means refactoring the help route, which is outside this work.
+  - The onboarding form keeps 20 and 0.9 literally, because importing the scheduler would pull ts-fsrs into that page's bundle.
+
 ## Rulings
 - **Essays stay capped at 2,000 words (A7 asks for chunking up to 5,000).** A 5,000-word essay is roughly 7,000 input tokens for the big-picture pass alone, before the schema and the output. Groq's free tier allows 8,000 tokens a minute on `openai/gpt-oss-120b` (hit and measured on 2026-10-24 while probing card generation), so one long essay check would use nearly all of it and block other students. The paragraph pass would also need chunking, which this note's ledger shows costs quality when context is cut. Revisit with a paid or larger free tier.

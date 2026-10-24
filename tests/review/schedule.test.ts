@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { Rating } from 'ts-fsrs';
 import {
-  applyRating, buildSession, daysUntil, makeScheduler, NEW_CARD_LIMIT, schedulerFor, newCardCapacity, nextReview, parseDay, readiness, retrievability,
+  applyRating, buildSession, daysUntil, makeScheduler, NEW_CARD_LIMIT, schedulerFor, studySettings, newCardCapacity, nextReview, parseDay, readiness, retrievability,
   type StateRow, type StudyCard, weight,
 } from '@/review/schedule';
 
@@ -157,4 +157,12 @@ test('a goal match outranks a card of the same importance among new cards', () =
   expect(s.queue.map((c) => c.id)).toEqual(['goal', 'plain']);
   expect(weight(card('goal', true))).toBe(3);
   expect(weight(card('plain', false))).toBe(2);
+});
+
+test('study settings written straight to the preferences column are checked; bad values fall back to the defaults', () => {
+  expect(studySettings({ new_cards_per_day: 35, retention: 0.85 })).toEqual({ newLimit: 35, retention: 0.85 });
+  expect(studySettings(undefined)).toEqual({ newLimit: 20, retention: 0.9 });
+  for (const bad of [{ new_cards_per_day: -1, retention: 5 }, { new_cards_per_day: 2.5, retention: null }, { new_cards_per_day: '50', retention: '0.9' }]) {
+    expect(studySettings(bad)).toEqual({ newLimit: 20, retention: 0.9 });
+  }
 });

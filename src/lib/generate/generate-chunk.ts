@@ -22,7 +22,7 @@ type ChunkRow = { id: string; text: string; page_start: number | null; generated
 
 /** The reason the student gives for most of their recent discards, when there are enough to call it a pattern. */
 async function discardPattern(db: Db): Promise<DiscardReason | undefined> {
-  const { data } = await db.from('cards').select('discard_reason').eq('status', 'discarded').not('discard_reason', 'is', null)
+  const { data } = await db.from('cards').select('discard_reason').eq('status', 'discarded').in('discard_reason', ['trivial', 'wrong', 'unclear'])
     .order('created_at', { ascending: false }).limit(100);
   const reasons = ((data ?? []) as { discard_reason: DiscardReason | null }[]).flatMap((r) => (r.discard_reason ? [r.discard_reason] : []));
   if (reasons.length < 5) return undefined;
