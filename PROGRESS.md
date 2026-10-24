@@ -8,13 +8,15 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - PR #28 (second completeness review, against the brief; plan and rulings: `docs/superpowers/plans/2026-10-24-brief-gaps.md`): Today's empty state offers both tools; non-English essays are refused before any AI call; a public `/privacy` notice (**owner reviews the wording**); math renders in cards (KaTeX); new cards per day and target retention are settings; import offers Fewer/Standard/More cards, and generation learns from the student's discards; triage has "Improve this card". Essays stay capped at 2,000 words (ruling: Groq's free tier allows 8,000 tokens a minute). Reviewed with `/code-review high --fix`; findings fixed or ruled on in the plan. 
 - PR #30 (third completeness review: screens, states, pipelines, metrics; plan: `docs/superpowers/plans/2026-10-24-round3-gaps.md`): swipe in triage; Top 5 after three priorities addressed in a row (J5); growth snapshot on Write; hints start at 2 for a recurring weakness (J7); "Suggest a rewrite" in the deck editor; weekly activity on Today; `docs/metrics.sql` (Part F queries, all checked against the database); a poem submitted as an essay asks first; students can score essays against their own rubric; import can choose card types. Reviewed with `/code-review high --fix`; findings fixed or ruled on in the plan. 
 - PR #32 (fourth completeness review; plan and rulings: `docs/superpowers/plans/2026-10-24-round4-gaps.md`): AI-made cards are labelled; Today explains the daily new-card limit; the import page shows card generations left; the essay coach's big-picture pass knows the student's recurring patterns. Ruled: no separate tone pass (free-tier tokens), card help covered by the card's report, no "waking up" message (the keep-alive prevents pauses). No PRs are open.
-- All migrations through `20261024170000_scholar_card_types.sql` are applied (2026-10-24), and the advisors show nothing for `scholar`.
+- **Branch `phase2d-free`** (Phase 2d, free-tier subset, owner decision 2026-10-24; plan: `docs/superpowers/plans/2026-10-24-phase2d-free-subset.md`): apply, compare and order card types; "Ask it another way" in review (one cached call per card); Feynman mode from the mastery map; photos of notes and handwritten essays read on the device (Tesseract.js); spoken answers in review turned into text on the device (Whisper tiny). The privacy notice covers photos and voice. Still waiting on capacity: argument map, citation checker, reader personas, voice preservation.
+- All migrations through `20261024190000_scholar_card_variants.sql` are applied (2026-10-24), and the advisors show nothing for `scholar`.
 - `20261024130000_scholar_anon_ping.sql` grants anon `usage` on schema `scholar` so the keep-alive cron can call `ping()`. Anon has no table or column grants there and `ping` is its only executable function, so **every new scholar function must keep revoking execute from public**.
 - `graphify-out/` (local, gitignored) was rebuilt on 2026-10-24, and git hooks rebuild it after each commit (code only).
 
 ## What's built
 - **Draft Coach**:
   - feedback in three layers (global, paragraph, sentence via LanguageTool), English essays only (checked before any AI call);
+  - photos of handwritten essays read on the device;
   - the student's own rubric (or the default), Top 5 after three priorities addressed in a row, hints that start at 2 for a recurring weakness, and a check before analysing a poem as an essay;
   - a growth snapshot on the Write page, and a big-picture pass that knows the student's recurring patterns;
   - a hint ladder, "I disagree" and questions on a feedback item;
@@ -27,6 +29,7 @@ Handoff for the next session. Update it at the end of each session. Last updated
   - Word (.docx) import, CSV and Anki (.apkg) import, CSV export;
   - Fewer/Standard/More cards per import, generation that learns from discards, and "Improve this card" in triage;
   - math in cards (KaTeX, loaded only when a card has math);
+  - apply, compare and order card types; "Ask it another way"; Feynman mode; photos of notes read on the device; spoken answers;
   - settings for new cards per day and target retention;
   - swipe to keep or discard in triage, card types chosen on import, and "Suggest a rewrite" in the deck editor;
   - weekly activity on Today, with a note when new cards wait beyond the daily limit;
@@ -43,7 +46,7 @@ Handoff for the next session. Update it at the end of each session. Last updated
 The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these and the builder's rulings with reasons and alternatives; add new ones in both places.
 
 - Students only: no teacher, class or school features.
-- Free-tier AI only: no paid models, and no heavy AI features that need them (Phase 2d).
+- Free-tier AI only: no paid models. Phase 2d is built only where it runs on the device or costs one cached call per student action (2026-10-24); the per-essay features wait for a capacity decision.
 - Hosting is prep only: `docs/deploy.md` is the Vercel Hobby checklist, and the owner deploys.
 - English only: no translation and no other essay or card languages.
 - Deleting data never deletes the shared `auth.users` row; `quota_usage` and `llm_calls` survive a delete so it can't reset the day's limits (2026-10-24).
