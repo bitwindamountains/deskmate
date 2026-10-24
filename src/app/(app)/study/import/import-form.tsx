@@ -30,6 +30,7 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
   const [pdf, setPdf] = useState<{ name: string; pages: PageText[] } | null>(null);
   const [text, setText] = useState('');
   const [docName, setDocName] = useState(''); // a Word file's name, once its text is in the box
+  const [reading, setReading] = useState(false); // a photo can take a while: the model downloads once, then reads
   const [deck, setDeck] = useState(decks[0]?.id ?? NEW);
   const [newTitle, setNewTitle] = useState('');
   const [examDate, setExamDate] = useState('');
@@ -40,12 +41,15 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
 
   async function pick(file?: File) {
     setError('');
+    setReading(false);
     if (!file) return;
     const pick = ++picks.current;
     if (file.name.toLowerCase().endsWith('.docx') || isImage(file.name)) {
       // A Word file or a photo has no pages to pick from, so its text goes in the box like pasted notes, after anything already there.
+      setReading(true);
       const r = await extractEssayFile(file);
       if (pick !== picks.current) return;
+      setReading(false);
       if (!r.ok) return setError(r.error, 'pdf');
       setPdf(null);
       setText((t) => (t.trim() ? `${t.trimEnd()}\n\n${r.text}` : r.text));
@@ -118,6 +122,7 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
           onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files[0]); }} onDragOver={(e) => e.preventDefault()} />
         {/* Always rendered, so screen readers announce the file once it has been read (WCAG 4.1.3). */}
         <div role="status">
+          {reading && <p className="mt-1">Reading your file…</p>}
           {pdf && <p className="mt-1">{pdf.name}: {pdf.pages.length} pages</p>}
           {!pdf && docName && <p className="mt-1">{isImage(docName) ? `${docName}: read on this device. Check the text in the box below; photos often have a few mistakes.` : `${docName}: its text is in the box below, where you can edit it.`}</p>}
         </div>

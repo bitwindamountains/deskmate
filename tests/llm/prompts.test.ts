@@ -91,7 +91,10 @@ test("the student's recurring patterns are one user-message line, only when ther
 test('a Phase 2 card type is named and described only when picked (B2.3)', () => {
   const base = { chunk: 'Mitochondria make ATP.', subject: 'biology', level: 'college' };
   const p = cardGeneratePrompt({ ...base, types: ['basic', 'compare'] });
-  expect(p.system).toBe(cardGeneratePrompt(base).system);
+  // The default three keep the measured shape; the Phase 2 types appear in it only once one is picked.
+  expect(cardGeneratePrompt(base).system).toContain('"type": "basic" | "cloze" | "why", ');
+  expect(cardGeneratePrompt({ ...base, types: ['basic'] }).system).toBe(cardGeneratePrompt(base).system);
+  expect(p.system).toContain('"type": "basic" | "cloze" | "why" | "application" | "compare" | "sequence"');
   expect(p.user).toContain('Card types: make only basic and compare cards. compare: how two related ideas differ, or what they share.');
   expect(p.user).not.toContain('sequence:');
 });

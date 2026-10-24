@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
 import { requestRephrase } from '@/lib/cards/rephrase';
+import { updateCard } from '@/lib/triage/card-actions';
 import type { complete } from '@/llm/router';
 import { adminClient, createTestUser, deleteTestUsers, type Client } from './helpers';
 
@@ -35,6 +36,8 @@ test('a rewording is saved on the card and reused: one helper call, then free (B
   expect(await requestRephrase(A.client, A.userId, card, {}, again)).toMatchObject({ ok: true, cached: true });
   expect(again).not.toHaveBeenCalled();
   expect(await hints(A)).toBe(before + 1);
+  await updateCard(A.client, A.userId, card, { back: 'In the cytosol' }); // an edit drops the rewording of the old card
+  expect((await adminClient().from('cards').select('variants').eq('id', card).single()).data!.variants).toEqual([]);
 });
 
 test('the same question, a leaked short answer or cloze markup is not offered; another student card is not found', async () => {

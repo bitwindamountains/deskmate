@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, CardImprove, CardRephrase, EssayGlobal, Feynman, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
+import { Card, CardGenerate, CardHelp, CardImprove, CardRephrase, EssayGlobal, Feynman, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
 
 export interface RubricCriterion {
@@ -250,6 +250,7 @@ const NEW_TYPE_LINE: Partial<Record<CardType, string>> = {
   compare: 'compare: how two related ideas differ, or what they share.',
   sequence: 'sequence: put steps or stages in order; back lists them in order.',
 };
+const CardGenerateMvp = z.object({ cards: z.array(Card.extend({ type: z.enum(DEFAULT_CARD_TYPES) })) });
 
 /** density, avoid and types add one user-message line each, only when they apply (B2.2 density, B2.5 discards, B-S2 types). */
 export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string; density?: CardDensity; avoid?: DiscardReason;
@@ -257,6 +258,8 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
   // Only when the choice differs from the default three, so standard imports send the same prompt as before.
   const differs = i.types && (i.types.length !== DEFAULT_CARD_TYPES.length || DEFAULT_CARD_TYPES.some((t) => !i.types!.includes(t)));
   const types = differs ? CARD_TYPES.filter((t) => i.types!.includes(t)) : null;
+  // The shape names the Phase 2 types only when one is picked, so standard and B-S2 prompts stay as measured.
+  const shape = types?.some((t) => NEW_TYPE_LINE[t]) ? CardGenerate : CardGenerateMvp;
   return {
     system: [
       'You create flashcards from the source text, for the subject and level given with it.',
@@ -266,7 +269,7 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
       'Cloze cards put the hidden part as {{c1::text}} in front; back holds the hidden text.',
       'importance: 3 = core concept likely on an exam, 2 = supporting, 1 = detail.',
       DATA_RULE,
-      `Return only JSON with this shape: ${compactSchema(CardGenerate)}`,
+      `Return only JSON with this shape: ${compactSchema(shape)}`,
     ].join('\n'),
     // subject comes from the student's deck, so it rides in the user message, never the system prompt
     user: [`Subject: ${i.subject}`, `Level: ${i.level}`, DENSITY_LINE[i.density ?? 'standard'], i.avoid && AVOID_LINE[i.avoid],
