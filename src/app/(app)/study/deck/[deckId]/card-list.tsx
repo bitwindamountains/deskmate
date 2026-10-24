@@ -5,12 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { removeCards, saveCard, setStatus } from './actions';
 import { MathText } from '@/components/math-text';
 import type { CardType } from '@/lib/cards/types';
-import { CARD_TYPE_LABEL } from '@/lib/cards/types';
+import { CARD_TYPE_LABEL as TYPE_LABEL } from '@/lib/cards/types';
 
 export type EditorCard = { id: string; type: CardType; front: string; back: string; concept: string;
   status: 'pending' | 'kept' | 'suspended'; lapses: number; sourceId: string | null };
 
-const TYPE_LABEL = CARD_TYPE_LABEL;
 const STATUS_LABEL: Record<EditorCard['status'], string> = { kept: 'Kept', pending: 'Not sorted yet', suspended: 'Suspended' };
 const SAVE_FAILED = "We couldn't save that change. Try again.";
 const MAX_IDS = 200; // per server-action call

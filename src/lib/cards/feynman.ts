@@ -65,11 +65,10 @@ export async function requestFeynman(db: Db, userId: string, input: unknown, env
   // Grounding (B2.2): a new card is saved only if its quote is in one of the passages, and it keeps that passage as its source.
   const rows = r.cards.flatMap((card) => {
     const chunkId = [...chunks].find(([, text]) => isGrounded(text, card.source_quote))?.[0];
-    return chunkId ? [{ ...card, user_id: userId, deck_id: cards[0].deck_id, source_chunk_id: chunkId, importance: 2, status: 'pending' }] : [];
+    // The explained concept, so the new cards join it on the mastery map whatever label the model wrote.
+    return chunkId ? [{ ...card, concept: cards[0].concept, user_id: userId, deck_id: cards[0].deck_id, source_chunk_id: chunkId, importance: 2, status: 'pending' }] : [];
   });
-  if (rows.length) {
-    const { error: insErr } = await db.from('cards').insert(rows);
-    if (insErr) return BUSY;
-  }
-  return { ok: true, feedback: { covered: r.covered, missed: r.missed, misconception: r.misconception, added: rows.length, dropped: r.cards.length - rows.length } };
+  // The feedback is already paid for (a helper call), so a failed save drops only the cards, never the feedback.
+  const added = rows.length && !(await db.from('cards').insert(rows)).error ? rows.length : 0;
+  return { ok: true, feedback: { covered: r.covered, missed: r.missed, misconception: r.misconception, added, dropped: r.cards.length - added } };
 }

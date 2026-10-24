@@ -20,17 +20,28 @@ export function MicButton({ onText, transcribe }: { onText: (text: string) => vo
 
   // Checked after mount, so the server and the first browser render agree.
   useEffect(() => { setSupported(typeof window !== 'undefined' && typeof window.MediaRecorder === 'function' && !!navigator.mediaDevices?.getUserMedia); }, []);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); recorder.current?.stop(); }, []);
+  // alive: once unmounted (the card moved on), a recording still stopping must never reach onText.
+  const alive = useRef(true);
+  const starting = useRef(false); // a second click during the permission prompt must not open a second recorder
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; if (timer.current) clearTimeout(timer.current); recorder.current?.stop(); };
+  }, []);
 
   async function start() {
+    if (starting.current || recorder.current) return;
     setError('');
     setDone(false);
     let stream: MediaStream;
+    starting.current = true;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       return setError('Scholar needs permission to use your microphone. You can type your answer instead.');
+    } finally {
+      starting.current = false;
     }
+    if (!alive.current) return stream.getTracks().forEach((t) => t.stop());
     const chunks: Blob[] = [];
     const rec = new MediaRecorder(stream);
     recorder.current = rec;
@@ -39,6 +50,7 @@ export function MicButton({ onText, transcribe }: { onText: (text: string) => vo
       if (timer.current) clearTimeout(timer.current);
       stream.getTracks().forEach((t) => t.stop()); // release the microphone straight away
       recorder.current = null;
+      if (!alive.current) return;
       setState('working');
       try {
         const run = transcribe ?? (await import('@/lib/speech/transcribe')).transcribeOnDevice;

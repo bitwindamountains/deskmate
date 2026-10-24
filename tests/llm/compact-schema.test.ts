@@ -38,7 +38,7 @@ test('every prompt states its output as the compact shape, never the raw JSON Sc
     [essayGlobalPrompt({ ...essay, assignmentPrompt: 'Argue.' }).system, EssayGlobal],
     [essayGlobalPrompt(essay).system, EssayGlobal.omit({ prompt_alignment: true })], [essayParagraphsPrompt(essay).system, EssayParagraphs],
     [hintLadderPrompt(hint).system, HintLadder], [hintRewritePrompt(hint).system, HintRewrite],
-    [cardGeneratePrompt({ chunk: 'c', subject: 's', level: 'l' }).system, CardGenerate],
+    [cardGeneratePrompt({ chunk: 'c', subject: 's', level: 'l', types: ['basic', 'sequence'] }).system, CardGenerate],
     [cardImprovePrompt({ type: 'basic', front: 'f', back: 'b', chunk: 'c' }).system, CardImprove],
     [cardRephrasePrompt({ type: 'basic', front: 'f', back: 'b' }).system, CardRephrase],
     [feynmanPrompt({ concept: 'c', reference: [], passages: [], explanation: 'e' }).system, Feynman],

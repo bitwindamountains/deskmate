@@ -36,8 +36,8 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const rubricParse = parseRubric(rubricText);
   // A2.1: the self-rating follows the rubric the essay will be scored on.
   const criteria = rubricParse.ok && rubricParse.rubric ? rubricParse.rubric : DEFAULT_RUBRIC;
-  const [verseAsked, setVerseAsked] = useState(false);
-  const [ocrNote, setOcrNote] = useState(false); // B7: text read from a photo needs checking // A7: asked once about this text and type; submitting again goes ahead
+  const [verseAsked, setVerseAsked] = useState(false); // A7: asked once about this text and type; submitting again goes ahead
+  const [ocrNote, setOcrNote] = useState(false); // B7: text read from a photo needs checking
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
   const [selfScores, setSelfScores] = useState<Record<string, string>>({});

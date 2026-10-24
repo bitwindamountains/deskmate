@@ -39,6 +39,19 @@ test('a refused microphone or a model that cannot load says so; nothing is sent 
   expect((await screen.findByRole('alert')).textContent).toBe("Voice input isn't available on this device. You can type your answer instead.");
 });
 
+test('a recording cut short by the card moving on never reaches onText, and the microphone is released', async () => {
+  const onText = vi.fn();
+  const transcribe = vi.fn(async () => 'old answer');
+  const { unmount } = render(<MicButton onText={onText} transcribe={transcribe} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Speak your answer' }));
+  await screen.findByRole('button', { name: 'Stop recording' });
+  unmount();
+  await new Promise((r) => setTimeout(r, 0));
+  expect(stop).toHaveBeenCalled();
+  expect(transcribe).not.toHaveBeenCalled();
+  expect(onText).not.toHaveBeenCalled();
+});
+
 test('without recording support the button is not offered', () => {
   vi.stubGlobal('MediaRecorder', undefined);
   render(<MicButton onText={vi.fn()} transcribe={async () => ''} />);
