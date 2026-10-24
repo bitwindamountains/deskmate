@@ -64,7 +64,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
               {missed.map((o) => (
                 <li key={o.q.cardId} className="rounded-xl border border-line bg-surface p-4">
                   <p className="font-bold"><MathText text={o.q.prompt} /></p>
-                  <p>{`Answer: ${o.q.answer}`}</p>
+                  <p>Answer: <MathText text={o.q.answer} /></p>
                 </li>
               ))}
             </ul>

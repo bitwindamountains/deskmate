@@ -39,6 +39,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
 
   const cardsRef = useRef(cards);
   useEffect(() => { cardsRef.current = cards; }, [cards]);
+  const modeRef = useRef(mode);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
   const [known] = useState(() => existing.map((k) => ({ ...k })));
   const dedupeChain = useRef(Promise.resolve());
   const loop = useRef<AbortController | null>(null);
@@ -95,11 +97,14 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   // B2.5: the rewrite opens in the edit form, so the student checks and changes it before anything is saved.
   async function improve() {
     if (!current) return;
+    const id = current.id;
     setImproving(true);
     setImproveError('');
     try {
-      const res = await fetch('/api/cards/improve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId: current.id }) });
+      const res = await fetch('/api/cards/improve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId: id }) });
       const body = await res.json().catch(() => ({}));
+      // The student moved on (kept, discarded, dedupe) or started editing while this ran: Save would put the rewrite on the wrong card or drop their typing.
+      if (cardsRef.current.find((c) => c.status === 'pending')?.id !== id || modeRef.current === 'edit') return;
       if (!res.ok || !body.suggestion) return setImproveError(body.message ?? 'Help is busy right now. Try again in a minute.');
       setDraft({ front: body.suggestion.front, back: body.suggestion.back, error: '' });
       setSuggested(true);
@@ -115,6 +120,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   function openEdit() {
     if (!current) return;
     setDraft({ front: current.front, back: current.back, error: '' });
+    setSuggested(false);
     setMode('edit');
     focusNext.current = frontField;
   }
