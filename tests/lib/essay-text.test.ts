@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { anchorQuote, paragraphHash, paragraphs, validateEssay } from '@/lib/essay/text';
+import { anchorQuote, looksLikeVerse, paragraphHash, paragraphs, validateEssay } from '@/lib/essay/text';
 
 // Real English words, so the English-only check passes and only the length rule is under test.
 const WORDS = 'the student wrote that this essay is about how a school can help'.split(' ');
@@ -45,4 +45,15 @@ test('paragraphHash ignores whitespace and curly-quote differences', async () =>
   expect(a).toBe(b);
   expect(a).toMatch(/^[0-9a-f]{64}$/);
   expect(await paragraphHash('Something else.')).not.toBe(a);
+});
+
+const POEM = ['The phone glows blue at night', 'I scroll and scroll alone', 'the likes fall down like rain', 'on a screen that is not home',
+  'my friends are only pictures', 'their voices turned to text', 'I wonder who is out there', 'and who is coming next',
+  'the morning finds me tired', 'the light is in my eyes'].join('\n');
+
+test('looksLikeVerse: many short unpunctuated lines read as a poem; prose and a list of short paragraphs do not (A7)', () => {
+  expect(looksLikeVerse(POEM)).toBe(true);
+  expect(looksLikeVerse(Array.from({ length: 6 }, () => 'The student wrote that this essay is about how a school can help. '.repeat(3)).join('\n\n'))).toBe(false);
+  const shortParas = Array.from({ length: 10 }, (_, i) => `Point ${i + 1} is that the school should act now.`).join('\n');
+  expect(looksLikeVerse(shortParas)).toBe(false);
 });

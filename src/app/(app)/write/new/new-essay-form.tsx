@@ -3,10 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { extractEssayFile } from '@/lib/essay/extract';
-import { validateEssay, type EssayType } from '@/lib/essay/text';
+import { looksLikeVerse, validateEssay, type EssayType } from '@/lib/essay/text';
+import { parseRubric } from '@/lib/essay/rubric';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { createEssay } from '../actions';
 import { minutesUsed, TimeLeft, Timer } from './timer';
+
+// A7: types whose rubric expects prose arguments, where a poem would get misplaced feedback.
+const PROSE_TYPES: EssayType[] = ['argumentative', 'expository', 'compare-contrast', 'research'];
 
 const TYPES: [EssayType, string][] = [
   ['argumentative', 'Argumentative'], ['expository', 'Expository'], ['narrative', 'Narrative'],
@@ -28,6 +32,11 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const [reading, setReading] = useState(false);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [essayType, setEssayType] = useState<EssayType>(initialPrompt ? 'expository' : 'argumentative');
+  const [rubricText, setRubricText] = useState('');
+  const rubricParse = parseRubric(rubricText);
+  // A2.1: the self-rating follows the rubric the essay will be scored on.
+  const criteria = rubricParse.ok && rubricParse.rubric ? rubricParse.rubric : DEFAULT_RUBRIC;
+  const [verseAsked, setVerseAsked] = useState(false); // A7: asked once about this text and type; submitting again goes ahead
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
   const [selfScores, setSelfScores] = useState<Record<string, string>>({});
@@ -42,7 +51,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     setReading(true);
     const r = await extractEssayFile(file);
     setReading(false);
-    if (r.ok) setContent(r.text);
+    if (r.ok) { setContent(r.text); setVerseAsked(false); }
     else setError(r.error, 'file');
   }
 
@@ -51,16 +60,22 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     if (!title.trim()) return setError('Add a title for your essay.', 'title');
     const v = validateEssay(content);
     if (!v.ok) return setError(v.error, 'essay');
+    if (!rubricParse.ok) return setError(rubricParse.error, 'rubric');
+    if (!verseAsked && PROSE_TYPES.includes(essayType) && looksLikeVerse(content)) {
+      setVerseAsked(true);
+      return setError('This looks like a poem or song. Draft Coach is built for essays: for creative writing, choose Narrative or Personal statement as the essay type. To check it as it is, select Get feedback again.', 'essay');
+    }
     setError('');
     start(async () => {
       try {
         // A3.7: optional; only the criteria the student rated are sent, and nothing at all when the section is untouched.
-        const scores = DEFAULT_RUBRIC.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
+        const scores = criteria.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
         const self = scores.length || weakness.trim() ? { selfAssessment: { scores, weakness: weakness.trim() || null } } : {};
         // A4.5: only a started timer makes this a timed essay; minutes used are whole minutes, rounded up.
         const time = timed && startedAt !== null ? { timedMinutes: Number(timed) as 20 | 30 | 45, minutesUsed: minutesUsed(Number(timed), startedAt, stoppedAt) } : {};
         const r = await createEssay({
           title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content, ...self, ...time,
+          ...(rubricText.trim() ? { rubric: rubricText } : {}),
         });
         if (r.ok) router.push(`/write/${r.essayId}`);
         else setError(r.error);
@@ -97,7 +112,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
 
       <div>
         <label htmlFor="essay" className="mb-1 block">Your essay</label>
-        <textarea id="essay" rows={14} value={content} onChange={(e) => setContent(e.target.value)} className="field" {...bad('essay')} />
+        <textarea id="essay" rows={14} value={content} onChange={(e) => { setContent(e.target.value); setVerseAsked(false); }} className="field" {...bad('essay')} />
       </div>
 
       <div>
@@ -117,7 +132,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
           </div>
           <div>
             <label htmlFor="essay-type" className="mb-1 block">Essay type</label>
-            <select id="essay-type" value={essayType} onChange={(e) => setEssayType(e.target.value as EssayType)} className="field">
+            <select id="essay-type" value={essayType} onChange={(e) => { setEssayType(e.target.value as EssayType); setVerseAsked(false); }} className="field">
               {TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
@@ -134,6 +149,14 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
               {CITATIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          <div>
+            <label htmlFor="rubric" className="mb-1 block">Your rubric (optional)</label>
+            <textarea id="rubric" rows={5} maxLength={4000} value={rubricText} onChange={(e) => setRubricText(e.target.value)} className="field"
+              {...bad('rubric')} aria-describedby={error && errField === 'rubric' ? 'essay-err rubric-help' : 'rubric-help'} />
+            <p id="rubric-help" className="mt-1 text-sm text-ink-muted">
+              One criterion per line, like &quot;Evidence: uses specific sources&quot;. 2 to 8 lines, each scored 1 to 4. Leave it empty to use Scholar&apos;s rubric.
+            </p>
+          </div>
         </div>
       </details>
 
@@ -141,15 +164,16 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Rate it yourself first (optional)</summary>
         <div className="mt-4 space-y-5">
           <p className="text-ink-muted">After feedback, you&apos;ll see how your rating compares with the coach&apos;s.</p>
-          {DEFAULT_RUBRIC.map((c) => (
+          {/* ids by position: a student's criterion name can hold spaces, which would split aria-describedby */}
+          {criteria.map((c, i) => (
             <div key={c.name}>
-              <label htmlFor={`self-${c.name}`} className="mb-1 block">{c.name}</label>
-              <select id={`self-${c.name}`} value={selfScores[c.name] ?? ''} className="field" aria-describedby={`self-${c.name}-d`}
+              <label htmlFor={`self-${i}`} className="mb-1 block">{c.name}</label>
+              <select id={`self-${i}`} value={selfScores[c.name] ?? ''} className="field" aria-describedby={`self-${i}-d`}
                 onChange={(e) => setSelfScores((s) => ({ ...s, [c.name]: e.target.value }))}>
                 <option value="">Not rated</option>
                 {Array.from({ length: c.maxScore }, (_, k) => <option key={k} value={k + 1}>{`${k + 1} of ${c.maxScore}`}</option>)}
               </select>
-              <p id={`self-${c.name}-d`} className="mt-1 text-sm text-ink-muted">{c.description}</p>
+              <p id={`self-${i}-d`} className="mt-1 text-sm text-ink-muted">{c.description}</p>
             </div>
           ))}
           <div>

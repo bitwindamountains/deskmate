@@ -92,6 +92,23 @@ test("the source's density and the student's discard pattern reach the prompt (B
   expect(user.user).toContain('usually discards cards as too trivial');
 });
 
+test('only the chosen card types are kept, and the prompt asks for them (B-S2)', async () => {
+  const { db } = fakeDb(({ table, op, args }) => {
+    if (table === 'source_chunks' && op === 'select') return { data: { ...chunkRow(), sources: { ...chunkRow().sources, card_types: ['basic'] } } };
+    if (table === 'cards' && op === 'select') return { data: [] };
+    if (table === 'consume_generation_quota') return { data: true };
+    if (table === 'cards' && op === 'insert') {
+      const rows = (args[0] as unknown[])[1] as Record<string, unknown>[];
+      return { data: rows.map((r, i) => ({ id: `card-${i}`, status: 'pending', ...r })) };
+    }
+    return {};
+  });
+  const completeFn = okComplete([card('happens in the cytoplasm'), { ...card('happens in the cytoplasm'), type: 'why' }]);
+  const r = await generateChunk(db, 'user-1', 'src-1', 0, {}, completeFn);
+  expect(((completeFn.mock.calls[0] as unknown[])[1] as { user: string }).user).toContain('Card types: make only basic cards.');
+  expect(r.ok && r.cards.map((c) => c.type)).toEqual(['basic']);
+});
+
 test('a few scattered discards are not a pattern', async () => {
   const { db } = fakeDb(({ table, op, args }) => {
     if (table === 'source_chunks' && op === 'select') return { data: chunkRow() };

@@ -32,7 +32,7 @@ export async function insertSource(db: SupabaseClient<any, any, any>, userId: st
     const pageCount = input.kind === 'pdf' ? input.pages.length : Math.min(MAX_PAGES, Math.max(1, Math.ceil(words / 500)));
     const { data: src, error: srcErr } = await db.from('sources')
       .insert({ user_id: userId, deck_id: deckId, title: input.title.trim() || 'Pasted text', kind: input.kind, page_count: pageCount,
-        card_density: input.cardDensity ?? 'standard' }).select('id').single();
+        card_density: input.cardDensity ?? 'standard', ...(input.cardTypes ? { card_types: input.cardTypes } : {}) }).select('id').single();
     if (srcErr || !src) { await undo(); return fail; }
     sourceId = src.id as string;
     const rows = chunkPages(input.pages, CHUNK_WORDS).map((c) => ({

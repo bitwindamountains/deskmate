@@ -107,7 +107,8 @@ function essayContext(i: EssayInput): string {
     i.assignmentPrompt ? `Assignment prompt:\n${wrapData('assignment', i.assignmentPrompt)}` : 'Assignment prompt: none given',
     // It varies per essay, so it rides in the user message and the system prompt stays static.
     ...(i.timedMinutes ? [`Written under a ${i.timedMinutes}-minute time limit; weigh structure and planning over polish.`] : []),
-    `Rubric:\n${rubric}`,
+    // A student's own rubric (A2.1) is their text, so it is wrapped as data; the default rubric prompt is unchanged.
+    `Rubric:\n${i.rubric && i.rubric !== DEFAULT_RUBRIC ? wrapData('rubric', rubric) : rubric}`,
     `Essay (paragraphs numbered [P0], [P1], ...):\n${wrapData('essay', paragraphs)}`,
   ].join('\n\n');
 }
@@ -228,6 +229,8 @@ export type CardDensity = 'fewer' | 'standard' | 'more';
 /** Discard reasons that say something about how cards are written. 'duplicate' is left out: triage's on-device dedupe
  *  records it automatically, and duplicates usually span imports this prompt can't see. */
 export type DiscardReason = 'trivial' | 'wrong' | 'unclear';
+export type CardType = 'basic' | 'cloze' | 'why';
+const ALL_TYPES: CardType[] = ['basic', 'cloze', 'why'];
 const DENSITY_LINE: Record<CardDensity, string | null> = {
   fewer: 'Card count: fewer than usual, about half as many. Keep only the ideas most likely to be on an exam.',
   standard: null,
@@ -239,8 +242,10 @@ const AVOID_LINE: Record<DiscardReason, string> = {
   unclear: 'This student usually discards cards as unclear: make every question answerable without the source.',
 };
 
-/** density and avoid add one user-message line each, only when they apply (B2.2 density, B2.5 discards as a signal). */
-export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string; density?: CardDensity; avoid?: DiscardReason }): Prompt {
+/** density, avoid and types add one user-message line each, only when they apply (B2.2 density, B2.5 discards, B-S2 types). */
+export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string; density?: CardDensity; avoid?: DiscardReason;
+  types?: CardType[] }): Prompt {
+  const types = i.types && ALL_TYPES.some((t) => !i.types!.includes(t)) ? ALL_TYPES.filter((t) => i.types!.includes(t)) : null;
   return {
     system: [
       'You create flashcards from the source text, for the subject and level given with it.',
@@ -254,6 +259,7 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
     ].join('\n'),
     // subject comes from the student's deck, so it rides in the user message, never the system prompt
     user: [`Subject: ${i.subject}`, `Level: ${i.level}`, DENSITY_LINE[i.density ?? 'standard'], i.avoid && AVOID_LINE[i.avoid],
+      types && `Card types: make only ${types.join(' and ')} cards.`,
       wrapData('source', i.chunk)].filter(Boolean).join('\n\n'),
   };
 }

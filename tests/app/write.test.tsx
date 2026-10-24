@@ -192,3 +192,52 @@ test('a stop can be undone: Resume keeps counting from the original start and re
     vi.useRealTimers();
   }
 });
+
+test('the essay list opens with the growth snapshot when there is one (A-S1)', () => {
+  render(<EssayList essays={[{ id: 'e1', title: 'Climate', status: 'Feedback ready' }]} snapshot={{ strength: 'Organization', workingOn: 'Comma splices' }} />);
+  const card = screen.getByRole('region', { name: 'Your writing so far' });
+  expect(card.textContent).toContain('Your strongest area: Organization.');
+  expect(card.textContent).toContain('Working on: Comma splices.');
+});
+
+test('no snapshot card without data', () => {
+  render(<EssayList essays={[{ id: 'e1', title: 'Climate', status: 'Feedback ready' }]} snapshot={{ strength: null, workingOn: null }} />);
+  expect(screen.queryByRole('region', { name: 'Your writing so far' })).toBeNull();
+});
+
+test('a poem submitted as an argumentative essay asks first; submitting again goes ahead (A7)', () => {
+  createEssay.mockResolvedValue({ ok: false, error: 'x' });
+  const poem = Array.from({ length: 10 }, (_, i) => `the light is in my eyes ${i}`).join('\n') + '\n' + 'the word '.repeat(10);
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Night' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: poem } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(screen.getByRole('alert').textContent).toContain('This looks like a poem or song');
+  expect(createEssay).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(createEssay).toHaveBeenCalledTimes(1);
+});
+
+test("the student's own rubric is sent with the essay, and the self-rating lists its criteria (A2.1)", () => {
+  createEssay.mockResolvedValue({ ok: false, error: 'x' });
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Climate' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'the word '.repeat(30) } });
+  fireEvent.change(screen.getByLabelText('Your rubric (optional)'), { target: { value: 'Use of sources: cites two\nVoice: sounds like you' } });
+  expect(screen.getByLabelText('Use of sources')).toBeTruthy();
+  expect(screen.queryByLabelText('Thesis')).toBeNull();
+  fireEvent.change(screen.getByLabelText('Voice'), { target: { value: '3' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(createEssay.mock.calls[0][0]).toMatchObject({ rubric: 'Use of sources: cites two\nVoice: sounds like you',
+    selfAssessment: { scores: [{ criterion: 'Voice', score: 3 }], weakness: null } });
+});
+
+test('a rubric with one line is refused before sending', () => {
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Climate' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'the word '.repeat(30) } });
+  fireEvent.change(screen.getByLabelText('Your rubric (optional)'), { target: { value: 'Just one' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(screen.getByRole('alert').textContent).toContain('Write 2 to 8 criteria');
+  expect(createEssay).not.toHaveBeenCalled();
+});

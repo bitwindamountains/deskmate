@@ -10,7 +10,7 @@ export const MAX_CHUNK_CHARS = 15_000;
 export const chunksWithinLimits = (chunks: Chunk[]): boolean =>
   chunks.length <= MAX_CHUNKS && chunks.every((c) => c.text.length <= MAX_CHUNK_CHARS);
 export type ImportInput = { deckId?: string; newDeckTitle?: string; examDate?: string; title: string; kind: 'pdf' | 'text'; pages: PageText[];
-  cardDensity?: 'fewer' | 'standard' | 'more' };
+  cardDensity?: 'fewer' | 'standard' | 'more'; cardTypes?: ('basic' | 'cloze' | 'why')[] };
 
 const Schema = z.object({
   deckId: z.string().uuid().optional(),
@@ -20,6 +20,7 @@ const Schema = z.object({
   kind: z.enum(['pdf', 'text']),
   pages: z.array(z.object({ page: z.number().int().min(1), text: z.string() })).min(1).max(500),
   cardDensity: z.enum(['fewer', 'standard', 'more']).optional(),
+  cardTypes: z.array(z.enum(['basic', 'cloze', 'why'])).min(1).max(3).refine((t) => new Set(t).size === t.length).optional(),
 });
 const SAVE_FAILED = "We couldn't save your material. Please try again.";
 

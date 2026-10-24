@@ -119,3 +119,25 @@ test('inline edit saves front and back, and rejects an empty side', async () => 
   await waitFor(() => expect(saveCard).toHaveBeenCalledWith('a', { front: 'What is ADP?', back: 'Back a' }));
   expect(await screen.findByRole('checkbox', { name: 'What is ADP?' })).toBeTruthy();
 });
+
+test('Suggest a rewrite fills the edit form; nothing is saved until Save (B-S8)', async () => {
+  const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ suggestion: { front: 'Where is ATP made?', back: 'Mitochondria' } }), { status: 200 }));
+  vi.stubGlobal('fetch', fetchMock);
+  render(<CardList cards={cards} />);
+  fireEvent.click(within(rows()[0]).getByRole('button', { name: 'Edit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Suggest a rewrite' }));
+  await waitFor(() => expect((screen.getByLabelText('Front') as HTMLTextAreaElement).value).toBe('Where is ATP made?'));
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ cardId: 'a' });
+  expect(screen.getByText('Suggested rewrite. Change anything, then Save. Cancel keeps the card as it was.')).toBeTruthy();
+  expect(saveCard).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
+});
+
+test('a refused suggestion shows its reason in the form', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ message: 'This card has no source passage to check a rewrite against. Edit it yourself instead.' }), { status: 409 })));
+  render(<CardList cards={cards} />);
+  fireEvent.click(within(rows()[0]).getByRole('button', { name: 'Edit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Suggest a rewrite' }));
+  expect((await screen.findByRole('alert')).textContent).toBe('This card has no source passage to check a rewrite against. Edit it yourself instead.');
+  vi.unstubAllGlobals();
+});

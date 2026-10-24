@@ -24,3 +24,8 @@ export function rankFeedback<T extends Pick<FeedbackItem, 'layer' | 'severity' |
     .sort((a, b) => b.priority_score - a.priority_score) // Array.prototype.sort is stable: ties keep input order
     .map((it, i) => ({ ...it, priority_rank: i + 1 }));
 }
+
+/** Spec J5: 5 priorities once the student's last three answers to a priority were all "Got it", otherwise 3. */
+export function priorityCount(recent: { action: string }[] | null | undefined): 3 | 5 {
+  return recent?.length === 3 && recent.every((e) => e.action === 'got_it') ? 5 : 3;
+}
