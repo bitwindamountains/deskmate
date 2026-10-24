@@ -16,6 +16,7 @@ import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/s
 import { CardHelpPanel } from './card-help';
 import { conceptSummary, interleave } from '@/review/interleave';
 import { Summary } from './summary';
+import { MathText } from '@/components/math-text';
 
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
@@ -283,7 +284,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
       {explain && <ExplainNote front={explain} />}
 
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
-        <h2 className="text-[1.44rem] leading-snug font-bold text-balance">{current.front}</h2>
+        <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={current.front} /></h2>
 
         {phase !== 'rate' ? (
           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void check(); }}>
@@ -321,7 +322,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
             )}
             <div>
               <h3 className="text-sm font-bold text-ink-muted">Answer</h3>
-              <p className="mt-1">{current.back}</p>
+              <p className="mt-1"><MathText text={current.back} /></p>
             </div>
             <div className="space-y-2 md:col-span-2">
               <div className="flex flex-wrap gap-x-4">
