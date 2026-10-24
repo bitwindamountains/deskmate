@@ -4,7 +4,7 @@ import { AppPage } from '@/components/page';
 import type { ItemRow } from '@/lib/essay/analyze';
 import { parseSelfAssessment } from '@/lib/essay/self-check';
 import { paragraphs } from '@/lib/essay/text';
-import { DEFAULT_RUBRIC } from '@/llm/prompts';
+import { rubricOf } from '@/lib/essay/rubric';
 import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import { EssayView, type Analysis } from './essay-view';
@@ -16,7 +16,6 @@ import { headStartCategories } from '@/growth/learner';
 // Same columns the analyze route returns, so the client can swap in its responses wholesale.
 const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id,revised_summary';
 const LOAD_FAILED = "We couldn't load your essay.";
-const rubricMax = Object.fromEntries(DEFAULT_RUBRIC.map((c) => [c.name, c.maxScore]));
 
 export default async function EssayPage({ params }: { params: Promise<{ essayId: string }> }) {
   const { profile } = await requireOnboardedUser();
@@ -24,7 +23,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   if (!z.uuid().safeParse(essayId).success) notFound();
   const db = await createClient();
   const [essay, draft] = await Promise.all([
-    db.from('essays').select('id,title,timed_minutes').eq('id', essayId).maybeSingle(),
+    db.from('essays').select('id,title,timed_minutes,rubric').eq('id', essayId).maybeSingle(),
     db.from('drafts').select('id,version,content,layers,outline,minutes_used').eq('essay_id', essayId).order('version', { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (essay.error || draft.error) throw new Error(LOAD_FAILED);
@@ -44,7 +43,9 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   ]);
   if (items.error || analysis.error || rewrites.error || self.error) throw new Error(LOAD_FAILED);
   // Re-checked on read: a row written straight to the table must not break the page.
-  const parsedSelf = self.data ? parseSelfAssessment(self.data) : null;
+  const rubric = rubricOf(essay.data.rubric);
+  const rubricMax = Object.fromEntries(rubric.map((c) => [c.name, c.maxScore]));
+  const parsedSelf = self.data ? parseSelfAssessment(self.data, rubric) : null;
   const selfAssessment = parsedSelf?.ok ? parsedSelf.value : null;
   // A failed read of this nicety falls back to Top 3 rather than failing the page.
   const topCount = priorityCount(recent.data);
