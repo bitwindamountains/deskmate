@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AppPage } from '@/components/page';
 import { SignOut } from '@/components/sign-out';
 import { requireOnboardedUser } from '@/lib/profile/require';
+import { YourData } from './your-data';
 
 export default async function ProfilePage() {
   const { profile } = await requireOnboardedUser();
@@ -30,6 +31,7 @@ export default async function ProfilePage() {
           <Link href="/progress" className="btn">See your progress</Link>
         </div>
       </section>
+      <YourData />
       <SignOut />
     </AppPage>
   );
