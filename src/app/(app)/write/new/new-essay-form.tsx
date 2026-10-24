@@ -3,10 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { extractEssayFile } from '@/lib/essay/extract';
-import { validateEssay, type EssayType } from '@/lib/essay/text';
+import { looksLikeVerse, validateEssay, type EssayType } from '@/lib/essay/text';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { createEssay } from '../actions';
 import { minutesUsed, TimeLeft, Timer } from './timer';
+
+// A7: types whose rubric expects prose arguments, where a poem would get misplaced feedback.
+const PROSE_TYPES: EssayType[] = ['argumentative', 'expository', 'compare-contrast', 'research'];
 
 const TYPES: [EssayType, string][] = [
   ['argumentative', 'Argumentative'], ['expository', 'Expository'], ['narrative', 'Narrative'],
@@ -28,6 +31,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const [reading, setReading] = useState(false);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [essayType, setEssayType] = useState<EssayType>(initialPrompt ? 'expository' : 'argumentative');
+  const [verseAsked, setVerseAsked] = useState(false); // A7: asked once about this text and type; submitting again goes ahead
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
   const [selfScores, setSelfScores] = useState<Record<string, string>>({});
@@ -51,6 +55,10 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     if (!title.trim()) return setError('Add a title for your essay.', 'title');
     const v = validateEssay(content);
     if (!v.ok) return setError(v.error, 'essay');
+    if (!verseAsked && PROSE_TYPES.includes(essayType) && looksLikeVerse(content)) {
+      setVerseAsked(true);
+      return setError('This looks like a poem or song. Draft Coach is built for essays: for creative writing, choose Narrative or Personal statement as the essay type. To check it as it is, select Get feedback again.', 'essay');
+    }
     setError('');
     start(async () => {
       try {
@@ -97,7 +105,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
 
       <div>
         <label htmlFor="essay" className="mb-1 block">Your essay</label>
-        <textarea id="essay" rows={14} value={content} onChange={(e) => setContent(e.target.value)} className="field" {...bad('essay')} />
+        <textarea id="essay" rows={14} value={content} onChange={(e) => { setContent(e.target.value); setVerseAsked(false); }} className="field" {...bad('essay')} />
       </div>
 
       <div>
@@ -117,7 +125,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
           </div>
           <div>
             <label htmlFor="essay-type" className="mb-1 block">Essay type</label>
-            <select id="essay-type" value={essayType} onChange={(e) => setEssayType(e.target.value as EssayType)} className="field">
+            <select id="essay-type" value={essayType} onChange={(e) => { setEssayType(e.target.value as EssayType); setVerseAsked(false); }} className="field">
               {TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
