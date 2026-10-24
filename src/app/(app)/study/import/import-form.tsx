@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import type { PageText } from '@/chunk';
 import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
-import { extractEssayFile } from '@/lib/essay/extract';
+import { extractEssayFile, IMAGE_ACCEPT, isImage } from '@/lib/essay/extract';
 import { DAILY_GENERATIONS } from '@/lib/generate/limits';
 import { MAX_PAGES, validateImport } from '@/lib/import/validate';
 import { createSource } from './actions';
@@ -42,8 +42,8 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
     setError('');
     if (!file) return;
     const pick = ++picks.current;
-    if (file.name.toLowerCase().endsWith('.docx')) {
-      // A Word file has no pages to pick from, so its text goes in the box like pasted notes, after anything already there.
+    if (file.name.toLowerCase().endsWith('.docx') || isImage(file.name)) {
+      // A Word file or a photo has no pages to pick from, so its text goes in the box like pasted notes, after anything already there.
       const r = await extractEssayFile(file);
       if (pick !== picks.current) return;
       if (!r.ok) return setError(r.error, 'pdf');
@@ -52,7 +52,7 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
       setDocName(file.name);
       return;
     }
-    if (!file.name.toLowerCase().endsWith('.pdf')) return setError('Choose a PDF or Word (.docx) file.', 'pdf');
+    if (!file.name.toLowerCase().endsWith('.pdf')) return setError('Choose a PDF, a Word (.docx) file or a photo.', 'pdf');
     try {
       const { extractPdfPages } = await import('@/lib/import/pdf');
       const pages = await extractPdfPages(file);
@@ -76,7 +76,7 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
     } else pages = [{ page: 1, text }];
     const input = {
       ...(deck === NEW ? { newDeckTitle: newTitle, examDate: examDate || undefined } : { deckId: deck }),
-      title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : docName.replace(/\.docx$/i, '')).slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
+      title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : docName.replace(/\.(docx|png|jpe?g|webp)$/i, '')).slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
       kind: pdf ? ('pdf' as const) : ('text' as const),
       pages,
       cardDensity: density,
@@ -112,14 +112,14 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
       )}
 
       <div>
-        <label htmlFor="pdf" className="mb-1 block">PDF or Word file</label>
+        <label htmlFor="pdf" className="mb-1 block">PDF, Word file or photo</label>
         <input ref={fileRef} id="pdf" type="file"
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="field" {...bad('pdf')} onChange={(e) => pick(e.target.files?.[0])}
+          accept={`.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,${IMAGE_ACCEPT}`} className="field" {...bad('pdf')} onChange={(e) => pick(e.target.files?.[0])}
           onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files[0]); }} onDragOver={(e) => e.preventDefault()} />
         {/* Always rendered, so screen readers announce the file once it has been read (WCAG 4.1.3). */}
         <div role="status">
           {pdf && <p className="mt-1">{pdf.name}: {pdf.pages.length} pages</p>}
-          {!pdf && docName && <p className="mt-1">{docName}: its text is in the box below, where you can edit it.</p>}
+          {!pdf && docName && <p className="mt-1">{isImage(docName) ? `${docName}: read on this device. Check the text in the box below; photos often have a few mistakes.` : `${docName}: its text is in the box below, where you can edit it.`}</p>}
         </div>
       </div>
 

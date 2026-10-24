@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { extractEssayFile } from '@/lib/essay/extract';
+import { extractEssayFile, IMAGE_ACCEPT, isImage } from '@/lib/essay/extract';
 import { looksLikeVerse, validateEssay, type EssayType } from '@/lib/essay/text';
 import { parseRubric } from '@/lib/essay/rubric';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
@@ -36,7 +36,8 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const rubricParse = parseRubric(rubricText);
   // A2.1: the self-rating follows the rubric the essay will be scored on.
   const criteria = rubricParse.ok && rubricParse.rubric ? rubricParse.rubric : DEFAULT_RUBRIC;
-  const [verseAsked, setVerseAsked] = useState(false); // A7: asked once about this text and type; submitting again goes ahead
+  const [verseAsked, setVerseAsked] = useState(false);
+  const [ocrNote, setOcrNote] = useState(false); // B7: text read from a photo needs checking // A7: asked once about this text and type; submitting again goes ahead
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
   const [selfScores, setSelfScores] = useState<Record<string, string>>({});
@@ -51,7 +52,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     setReading(true);
     const r = await extractEssayFile(file);
     setReading(false);
-    if (r.ok) { setContent(r.text); setVerseAsked(false); }
+    if (r.ok) { setContent(r.text); setVerseAsked(false); setOcrNote(isImage(file.name)); }
     else setError(r.error, 'file');
   }
 
@@ -116,10 +117,11 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
       </div>
 
       <div>
-        <label htmlFor="essay-file" className="mb-1 block">Or upload a .pdf or .docx file</label>
+        <label htmlFor="essay-file" className="mb-1 block">Or upload a .pdf, a .docx, or a photo of handwriting</label>
         <input id="essay-file" type="file" className="field" {...bad('file')}
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept={`.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,${IMAGE_ACCEPT}`}
           onChange={(e) => pick(e.target.files?.[0])} />
+        <p role="status" className="text-sm text-ink-muted empty:hidden">{ocrNote && 'Read from your photo on this device. Check the text in the box: handwriting often has a few mistakes.'}</p>
         {reading && <p className="mt-1" role="status">Reading your file…</p>}
       </div>
 
