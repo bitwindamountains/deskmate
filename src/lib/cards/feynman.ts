@@ -6,12 +6,13 @@ import { feynmanPrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { Feynman } from '@/llm/schemas';
 import { conceptKey } from '@/review/prereqs';
+import { allRows } from '@/lib/cards/transfer';
 
 export type FeynmanFeedback = { covered: string[]; missed: string[]; misconception: string | null; added: number; dropped: number };
 export type FeynmanResult = { ok: true; feedback: FeynmanFeedback } | { ok: false; status: 400 | 404 | 429 | 503; message: string };
 
 export const MIN_WORDS = 20, MAX_WORDS = 600;
-const Input = z.object({ deckId: z.uuid(), concept: z.string().trim().min(1).max(120), explanation: z.string().trim().max(5000) });
+const Input = z.object({ deckId: z.uuid(), concept: z.string().trim().min(1).max(120), explanation: z.string().trim().max(8000) }); // the word count is the real limit
 const NOT_FOUND = { ok: false, status: 404, message: "We couldn't find cards for that concept." } as const;
 const LIMIT = () => ({ ok: false, status: 429, message: `You've asked for a lot of help today. More unlocks ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, message: 'Feedback is busy right now. Try again in a minute.' } as const;
@@ -31,11 +32,16 @@ export async function requestFeynman(db: Db, userId: string, input: unknown, env
   if (!v.success || words < MIN_WORDS || words > MAX_WORDS) {
     return { ok: false, status: 400, message: `Explain it in ${MIN_WORDS} to ${MAX_WORDS} words.` };
   }
+  // Every kept card's concept (paged, so big decks work), then full details for this concept's cards only.
+  const all = await allRows<{ id: string; concept: string }>((from, to) => db.from('cards').select('id,concept')
+    .eq('deck_id', v.data.deckId).eq('status', 'kept').order('id').range(from, to));
+  if (!all) return BUSY;
+  const ids = all.filter((c) => conceptKey(c.concept) === conceptKey(v.data.concept)).slice(0, 12).map((c) => c.id);
+  if (!ids.length) return NOT_FOUND;
   const { data, error } = await db.from('cards').select('id,deck_id,front,back,key_points,concept,importance,source_chunk_id,source_chunks(text)')
-    .eq('deck_id', v.data.deckId).eq('status', 'kept').limit(500);
-  if (error) return BUSY;
-  const cards = ((data ?? []) as unknown as CardRow[]).filter((c) => conceptKey(c.concept) === conceptKey(v.data.concept)).slice(0, 12);
-  if (!cards.length) return NOT_FOUND;
+    .in('id', ids).order('id');
+  if (error || !data?.length) return BUSY;
+  const cards = data as unknown as CardRow[];
 
   const { data: allowed, error: qErr } = await db.rpc('consume_hint_quota');
   if (qErr) return BUSY;

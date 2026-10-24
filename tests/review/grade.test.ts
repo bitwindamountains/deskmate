@@ -80,3 +80,15 @@ test('explanation card types always go to the AI grader; order questions use the
   expect((await gradeLocally(input('compare'), embed)).needsLlm).toBe(true);
   expect((await gradeLocally(input('application'), embed)).needsLlm).toBe(true);
 });
+
+test('put-in-order cards: steps in the wrong order score 0.4 (Hard); the right order keeps full marks (B2.3)', async () => {
+  const { gradeLocally } = await import('@/review/grade');
+  const keyPoints = ['prophase', 'metaphase', 'anaphase', 'telophase'];
+  const input = (answer: string) => ({ type: 'sequence' as const, reference: 'Prophase, metaphase, anaphase, telophase', keyPoints, answer, responseMs: 3000 });
+  const embed = async (texts: string[]) => texts.map(() => [1, 0, 0]); // every key point "matches"
+  const wrong = await gradeLocally(input('telophase then anaphase then metaphase then prophase'), embed);
+  expect(wrong).toMatchObject({ score: 0.4, missed: ['The order of the steps'], needsLlm: false });
+  expect((await gradeLocally(input('first prophase, then metaphase, anaphase and telophase'), embed)).score).toBe(1);
+  // a step said in other words can't be placed on the device, so the AI grader checks the order
+  expect((await gradeLocally(input('prophase, the chromosomes line up, anaphase, telophase'), embed)).needsLlm).toBe(true);
+});
