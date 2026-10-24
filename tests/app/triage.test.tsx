@@ -191,3 +191,14 @@ test('a refused improvement shows its reason and keeps the card', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe('This card has no source passage to check a rewrite against. Edit it yourself instead.');
   expect(front()).toBe('Front a');
 });
+
+test('a rewrite that arrives after the student moved on is dropped, not opened on the next card', async () => {
+  let answer!: (r: Response) => void;
+  fetchMock.mockReturnValueOnce(new Promise<Response>((r) => { answer = r; }));
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a'), card('b')]} existing={[]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Improve this card' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Keep' }));
+  await act(async () => answer(new Response(JSON.stringify({ suggestion: { front: 'Rewrite of a', back: 'x' } }), { status: 200 })));
+  expect(screen.queryByLabelText('Front')).toBeNull();
+  expect(front()).toBe('Front b');
+});

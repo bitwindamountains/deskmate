@@ -21,18 +21,19 @@ export function splitMath(text: string): MathPart[] {
 }
 
 type Katex = typeof import('katex').default;
+let loaded: Katex | null = null; // shared, so cards mounted after the first load render math straight away
 
 /** B7: card text with formulas rendered. KaTeX (and its CSS) loads only for text that has math. */
 export function MathText({ text }: { text: string }) {
   const parts = splitMath(text);
   const hasMath = parts.some((p) => 'math' in p);
-  const [katex, setKatex] = useState<Katex | null>(null);
+  const [katex, setKatex] = useState<Katex | null>(loaded);
 
   useEffect(() => {
     if (!hasMath || katex) return;
     let live = true;
     void Promise.all([import('katex'), import('katex/dist/katex.min.css')])
-      .then(([k]) => { if (live) setKatex(() => k.default); })
+      .then(([k]) => { loaded = k.default; if (live) setKatex(() => k.default); })
       .catch(() => {}); // offline and not cached: the TeX source stays readable as text
     return () => { live = false; };
   }, [hasMath, katex]);
