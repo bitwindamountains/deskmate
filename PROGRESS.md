@@ -40,6 +40,8 @@ Handoff for the next session. Update it at the end of each session. Last updated
   - `docs/metrics.sql`: read-only queries for the brief's success metrics (Part F), to run in the Supabase SQL editor.
 
 ## Owner decisions (October 2026)
+The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these and the builder's rulings with reasons and alternatives; add new ones in both places.
+
 - Students only: no teacher, class or school features.
 - Free-tier AI only: no paid models, and no heavy AI features that need them (Phase 2d).
 - Hosting is prep only: `docs/deploy.md` is the Vercel Hobby checklist, and the owner deploys.
@@ -61,6 +63,7 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - Browser-only libraries (pdf.js, sql.js) are aliased to `src/lib/server-stub.ts` in `next.config.ts` and must be loaded with a lazy `await import()`. A static import breaks the build.
 - PostgREST returns at most 1,000 rows: page with `allRows` (`src/lib/cards/transfer.ts`).
 - Server action bodies are limited to 1 MB, which is why Anki cards are sent in batches of 500.
+- `.superpowers/qa/session.mts` (local, gitignored) was fixed on 2026-10-24: it still wrote the dropped `first_language` column and ignored the error, so its user never onboarded.
 - Browser QA:
   - run a production build on port 3200;
   - make a QA user with `node --env-file=.env.local --experimental-strip-types .superpowers/qa/session.mts`, using `@example.test` emails only;
