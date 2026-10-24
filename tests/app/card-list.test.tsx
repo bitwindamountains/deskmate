@@ -141,3 +141,9 @@ test('a refused suggestion shows its reason in the form', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe('This card has no source passage to check a rewrite against. Edit it yourself instead.');
   vi.unstubAllGlobals();
 });
+
+test('cards made by AI from notes are labelled; hand-written or imported ones are not (E2)', () => {
+  render(<CardList cards={[card('a', { front: 'From notes' }), card('b', { front: 'Mine', sourceId: null })]} />);
+  expect(rows()[0].textContent).toContain('Made by AI from your notes');
+  expect(rows()[1].textContent).not.toContain('Made by AI');
+});

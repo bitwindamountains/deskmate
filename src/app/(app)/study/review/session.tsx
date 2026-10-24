@@ -285,6 +285,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       {explain && <ExplainNote front={explain} />}
 
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+        {/* E2: a card made from the student's notes says so; quoteIsExample marks cards with no source passage. */}
+        {!current.quoteIsExample && <p className="text-sm text-ink-muted">Made by AI from your notes</p>}
         <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={current.front} /></h2>
 
         {phase !== 'rate' ? (
