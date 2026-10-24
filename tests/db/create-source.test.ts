@@ -28,6 +28,18 @@ test('createSource stores chunks with positions 0..n-1 and does not consume quot
   expect(src).toEqual({ quota_consumed_at: null, page_count: 4, kind: 'text', card_density: 'standard' });
 });
 
+test('createSource stores the chosen card types; all three by default; an unknown type is refused', async () => {
+  const r = await insertSource(A.client, A.userId, { newDeckTitle: 'Law', title: 'Notes', kind: 'text', pages: [{ page: 1, text }], cardTypes: ['why'] });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((await adminClient().from('sources').select('card_types').eq('id', r.sourceId).single()).data).toEqual({ card_types: ['why'] });
+  const d = await insertSource(A.client, A.userId, { newDeckTitle: 'Law 2', title: 'Notes', kind: 'text', pages: [{ page: 1, text }] });
+  if (!d.ok) throw new Error(d.error);
+  expect((await adminClient().from('sources').select('card_types').eq('id', d.sourceId).single()).data).toEqual({ card_types: ['basic', 'cloze', 'why'] });
+  const { data: deck } = await A.client.from('decks').select('id').limit(1).single();
+  expect((await A.client.from('sources').insert({ user_id: A.userId, deck_id: deck!.id, title: 'x', kind: 'text', page_count: 1, card_types: ['essay'] })).error).not.toBeNull();
+});
+
 test('createSource stores the chosen card density; an unknown one is refused', async () => {
   const r = await insertSource(A.client, A.userId, { newDeckTitle: 'Chem', title: 'Notes', kind: 'text', pages: [{ page: 1, text }], cardDensity: 'more' });
   expect(r.ok).toBe(true);
