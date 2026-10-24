@@ -205,7 +205,9 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
                     <span id={`front-text-${c.id}`} className="font-bold"><MathText text={c.front} /></span>
                   </label>
                   <p className="max-w-prose"><MathText text={c.back} /></p>
+                  {/* E2: AI-made cards are labelled; hand-written, imported and practice cards have no source passage. */}
                   <p className="text-sm text-ink-muted">{TYPE_LABEL[c.type]} · {c.concept} · {STATUS_LABEL[c.status]}</p>
+                  {c.sourceId && <p className="text-sm text-ink-muted">Made by AI from your notes</p>}
                   {c.lapses >= 4 && <p className="text-sm font-bold">Slipping</p>}
                   <div className="flex flex-wrap gap-3 pt-1">
                     <button type="button" className="btn" aria-describedby={`front-text-${c.id}`}
