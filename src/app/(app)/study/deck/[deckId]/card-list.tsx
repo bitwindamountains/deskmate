@@ -24,7 +24,8 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
   const [concept, setConcept] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
-  const [editing, setEditing] = useState<{ id: string; front: string; back: string; error: string } | null>(null);
+  const [editing, setEditing] = useState<{ id: string; front: string; back: string; error: string; suggested?: boolean } | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState('');
   const [say, setSay] = useState('');
   const [busy, setBusy] = useState(false);
@@ -79,6 +80,25 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
   }
 
   function cancelDelete() { setConfirming(false); deleteBtn.current?.focus(); }
+
+  // B-S8 "Improve with AI": the same rewrite as triage's Improve; it fills the form only if that card is still being edited.
+  async function suggest() {
+    if (!editing) return;
+    const id = editing.id;
+    setSuggesting(true);
+    try {
+      const res = await fetch('/api/cards/improve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId: id }) });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.suggestion) setSay('Suggested rewrite filled in. Check it, then Save.');
+      setEditing((cur) => (!cur || cur.id !== id ? cur : res.ok && body.suggestion
+        ? { ...cur, front: body.suggestion.front, back: body.suggestion.back, error: '', suggested: true }
+        : { ...cur, error: body.message ?? 'Help is busy right now. Try again in a minute.' }));
+    } catch {
+      setEditing((cur) => (cur && cur.id === id ? { ...cur, error: "We couldn't reach Scholar. Check your connection and try again." } : cur));
+    } finally {
+      setSuggesting(false);
+    }
+  }
 
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
@@ -159,20 +179,23 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
             <li key={c.id} className="space-y-2 rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
               {editing?.id === c.id ? (
                 <form onSubmit={saveEdit} className="space-y-4">
+                  {editing.suggested && <p className="text-ink-muted">Suggested rewrite. Change anything, then Save. Cancel keeps the card as it was.</p>}
                   {editing.error && <p id="edit-err" role="alert" className="error">{editing.error}</p>}
                   <div>
                     <label htmlFor={`front-${c.id}`} className="mb-1 block">Front</label>
-                    <textarea id={`front-${c.id}`} rows={3} maxLength={500} value={editing.front} className="field" autoFocus {...errId}
+                    {/* read-only while a rewrite is on its way, so it never lands on top of the student's typing */}
+                    <textarea id={`front-${c.id}`} rows={3} maxLength={500} value={editing.front} className="field" autoFocus readOnly={suggesting} {...errId}
                       onChange={(e) => setEditing({ ...editing, front: e.target.value })} />
                   </div>
                   <div>
                     <label htmlFor={`back-${c.id}`} className="mb-1 block">Back</label>
-                    <textarea id={`back-${c.id}`} rows={4} maxLength={500} value={editing.back} className="field" {...errId}
+                    <textarea id={`back-${c.id}`} rows={4} maxLength={500} value={editing.back} className="field" readOnly={suggesting} {...errId}
                       onChange={(e) => setEditing({ ...editing, back: e.target.value })} />
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <button type="submit" className="btn btn-primary">Save</button>
                     <button type="button" className="btn" onClick={() => setEditing(null)}>Cancel</button>
+                    <button type="button" className="btn" disabled={suggesting} onClick={suggest}>{suggesting ? 'Suggesting…' : 'Suggest a rewrite'}</button>
                   </div>
                 </form>
               ) : (

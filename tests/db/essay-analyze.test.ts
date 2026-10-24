@@ -80,6 +80,19 @@ test('global layer stores scores, anchored strengths and items; drops the unanch
   expect(calls.map((c) => c.task)).toContain('essay_global');
 });
 
+test("an essay with the student's own rubric is scored on it; scores keep only its criteria, under its exact names (A2.1)", async () => {
+  const U = await createTestUser(); created.push(U.userId); // own user: A's daily essay checks are counted by other tests
+  const { essayId, draftId } = await newDraft(U);
+  const rubric = [{ name: 'Use of sources', description: 'cites two', weight: 1, maxScore: 4 }, { name: 'Voice', description: 'sounds like you', weight: 1, maxScore: 4 }];
+  await adminClient().from('essays').update({ rubric }).eq('id', essayId);
+  const fn = fakeComplete({ essay_global: { ...GLOBAL, rubric_scores: [
+    { criterion: 'use of sources', score: 3, justification: 'j', confidence: 'high' }, { criterion: 'Thesis', score: 2, justification: 'j', confidence: 'low' }] } });
+  expect((await analyzeLayer(U.client, U.userId, draftId, 'global', {}, { completeFn: fn })).ok).toBe(true);
+  expect(((fn.mock.calls[0] as unknown[])[1] as { user: string }).user).toContain('- Use of sources (1-4): cites two');
+  const saved = (await adminClient().from('analyses').select('rubric_scores').eq('draft_id', draftId).single()).data!.rubric_scores as { criterion: string }[];
+  expect(saved.map((s) => s.criterion)).toEqual(['Use of sources']);
+});
+
 test('second call for a done layer returns saved items with no LLM call', async () => {
   const { draftId } = await newDraft(A);
   await analyzeLayer(A.client, A.userId, draftId, 'global', {}, { completeFn: fakeComplete({ essay_global: GLOBAL }) });

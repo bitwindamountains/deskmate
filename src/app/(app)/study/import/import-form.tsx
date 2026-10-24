@@ -24,6 +24,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   const [newTitle, setNewTitle] = useState('');
   const [examDate, setExamDate] = useState('');
   const [density, setDensity] = useState<'fewer' | 'standard' | 'more'>('standard');
+  const [types, setTypes] = useState<('basic' | 'cloze' | 'why')[]>(['basic', 'cloze', 'why']);
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(MAX_PAGES);
 
@@ -69,7 +70,9 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
       kind: pdf ? ('pdf' as const) : ('text' as const),
       pages,
       cardDensity: density,
+      cardTypes: types,
     };
+    if (!types.length) return setError('Pick at least one card type.', 'types');
     const v = validateImport(input);
     if (!v.ok) {
       const m = v.error;
@@ -152,6 +155,16 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
         {([['fewer', 'Fewer: core ideas only'], ['standard', 'Standard'], ['more', 'More: supporting ideas too']] as const).map(([v, label]) => (
           <label key={v} className="flex min-h-11 items-center gap-2">
             <input type="radio" name="density" value={v} checked={density === v} onChange={() => setDensity(v)} /> {label}
+          </label>
+        ))}
+      </fieldset>
+
+      <fieldset {...(errField === 'types' ? { 'aria-describedby': 'import-err' } : {})}>
+        <legend className="mb-1">Card types</legend>
+        {([['basic', 'Q&A'], ['cloze', 'Fill in the blank'], ['why', 'Explain why']] as const).map(([v, label]) => (
+          <label key={v} className="flex min-h-11 items-center gap-2">
+            <input type="checkbox" checked={types.includes(v)}
+              onChange={() => setTypes((t) => (t.includes(v) ? t.filter((x) => x !== v) : (['basic', 'cloze', 'why'] as const).filter((x) => x === v || t.includes(x))))} /> {label}
           </label>
         ))}
       </fieldset>

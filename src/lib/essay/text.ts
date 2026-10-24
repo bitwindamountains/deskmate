@@ -48,3 +48,15 @@ export function anchorQuote(paras: string[], hintIndex: number, quote: string): 
   }
   return null;
 }
+
+/**
+ * A7: a poem or song submitted as an essay. Verse is many short lines that mostly don't end like sentences.
+ * ponytail: a line-shape heuristic, measured on the samples in tests/lib/essay-text.test.ts; it asks, it never blocks.
+ */
+export function looksLikeVerse(content: string): boolean {
+  const lines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 8) return false;
+  const short = lines.filter((l) => l.split(/\s+/).length <= 8).length;
+  const ended = lines.filter((l) => /[.!?"”]$/.test(l)).length;
+  return short / lines.length >= 0.6 && ended / lines.length < 0.5;
+}

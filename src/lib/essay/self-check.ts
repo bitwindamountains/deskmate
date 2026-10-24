@@ -1,20 +1,23 @@
 import { z } from 'zod';
-import { DEFAULT_RUBRIC } from '@/llm/prompts';
+import { DEFAULT_RUBRIC, type RubricCriterion } from '@/llm/prompts';
 
 export type SelfScore = { criterion: string; score: number };
 export type SelfAssessment = { scores: SelfScore[]; weakness: string | null };
 
-const MAX = new Map(DEFAULT_RUBRIC.map((c) => [c.name, c.maxScore]));
-const Input = z.object({
-  scores: z.array(z.object({ criterion: z.string(), score: z.number().int() })
-    .refine((s) => MAX.has(s.criterion) && s.score >= 1 && s.score <= MAX.get(s.criterion)!)).max(DEFAULT_RUBRIC.length),
-  weakness: z.string().trim().max(300).nullable().transform((s) => s || null),
-});
+// Scores must name a criterion of the essay's rubric (A2.1: the student's own, or the default).
+const inputFor = (rubric: RubricCriterion[]) => {
+  const max = new Map(rubric.map((c) => [c.name, c.maxScore]));
+  return z.object({
+    scores: z.array(z.object({ criterion: z.string(), score: z.number().int() })
+      .refine((s) => max.has(s.criterion) && s.score >= 1 && s.score <= max.get(s.criterion)!)).max(rubric.length),
+    weakness: z.string().trim().max(300).nullable().transform((s) => s || null),
+  });
+};
 
 /** Trust boundary for the optional self-rating (A3.7). An untouched form is { ok: true, value: null }: nothing to save. */
-export function parseSelfAssessment(input: unknown): { ok: true; value: SelfAssessment | null } | { ok: false } {
+export function parseSelfAssessment(input: unknown, rubric: RubricCriterion[] = DEFAULT_RUBRIC): { ok: true; value: SelfAssessment | null } | { ok: false } {
   if (input === undefined || input === null) return { ok: true, value: null };
-  const r = Input.safeParse(input);
+  const r = inputFor(rubric).safeParse(input);
   if (!r.success) return { ok: false };
   return { ok: true, value: r.data.scores.length || r.data.weakness ? r.data : null };
 }

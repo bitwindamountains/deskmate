@@ -35,10 +35,14 @@ const RETRY_MS = 3000, MAX_WAITS = 20; // 409: another tab is running this layer
 const rank = (xs: ItemRow[]) => rankFeedback(xs as (ItemRow & { rubric_criterion: string })[]);
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null, timed = null }: {
+export function EssayView({ essayId, draftId, version, content, paragraphs, layers, items: initialItems, analysis: initialAnalysis, rewritesUsed, showScores, rubricMax, outline: initialOutline = null, threads: initialThreads = {}, selfAssessment = null, timed = null, topCount = 3, headStart = [] }: {
   essayId: string; draftId: string; version: number; content: string; paragraphs: string[]; layers: Record<string, string>; items: ItemRow[]; analysis: Analysis | null;
   rewritesUsed: number; showScores: boolean; rubricMax: Record<string, number>; outline?: OutlineLine[] | null;
   threads?: Record<string, ThreadMessage[]>; selfAssessment?: SelfAssessment | null;
+  /** Spec J5: 5 once the student has addressed three priorities in a row, otherwise 3. */
+  topCount?: 3 | 5;
+  /** Spec J7: categories whose items open at hint 2, because the student has needed hint 4+ there across 3 essays. */
+  headStart?: string[];
   /** A4.5: the time limit, and the minutes used (first draft only). */
   timed?: { limit: number; used: number | null } | null;
 }) {
@@ -51,6 +55,8 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
     Object.fromEntries(LAYERS.map((l) => [l, { state: layers[l] === 'done' ? 'done' : 'waiting' }])) as Record<Layer, LayerState>);
   const [statusOf, setStatusOf] = useState<Record<string, string>>({});
   const [shownOf, setShownOf] = useState<Record<string, number>>({});
+  // Only when the item has a second hint to show; LanguageTool items have no ladder.
+  const opensAt = (it: ItemRow) => (headStart.includes(it.category) && it.hints[1] ? Math.max(it.highest_level, 2) : it.highest_level);
   const [noteOf, setNoteOf] = useState<Record<string, string | undefined>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [used, setUsed] = useState(rewritesUsed);
@@ -110,7 +116,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
 
   const status = (it: ItemRow) => statusOf[it.id] ?? it.status;
   // Top 3 ranks the server statuses, so a Got it in this session doesn't reshuffle the list under the student.
-  const top3 = useMemo(() => rank(items.filter((i) => isOpen(i.status))).slice(0, 3), [items]);
+  const top3 = useMemo(() => rank(items.filter((i) => isOpen(i.status))).slice(0, topCount), [items, topCount]);
   const topIds = new Set(top3.map((i) => i.id));
   const rest = items.filter((i) => !topIds.has(i.id));
   const globalOpen = items.some((i) => i.layer === 'global' && isOpen(status(i)));
@@ -141,7 +147,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
   }
 
   async function nextHint(it: ItemRow) {
-    let level = (shownOf[it.id] ?? it.highest_level) + 1;
+    let level = (shownOf[it.id] ?? opensAt(it)) + 1;
     if (level <= 2 && !it.hints[level - 1]) level = 3; // levels 1-2 come only from the analysis; the route makes 3-5
     const stored = level <= 4 ? it.hints[level - 1] : it.rewrite;
     const reveal = () => setShownOf((x) => ({ ...x, [it.id]: level }));
@@ -208,7 +214,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
 
   const api: CardApi = {
     status, rewritesLeft: Math.max(0, REWRITE_CAP - used),
-    shown: (it) => shownOf[it.id] ?? it.highest_level,
+    shown: (it) => shownOf[it.id] ?? opensAt(it),
     note: (it) => noteOf[it.id],
     busy: (it) => busyId === it.id,
     markId: (it) => markOf[it.id] ?? null,
@@ -310,7 +316,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
 
             {(top3.length > 0 || layerState.global.state === 'done') && (
               <section aria-labelledby="top-h" className="space-y-3">
-                <h2 id="top-h" className="text-xl font-bold">Top 3 priorities</h2>
+                <h2 id="top-h" className="text-xl font-bold">Top {topCount} priorities</h2>
                 {top3.length > 0 ? (
                   <button id="start-focus" type="button" className="btn btn-primary"
                     onClick={() => setFocus({ ids: top3.map((i) => i.id), id: (top3.find((i) => isOpen(status(i))) ?? top3[0]).id })}>

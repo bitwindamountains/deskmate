@@ -90,6 +90,23 @@ test('layers load in order with their progress copy; a failed paragraph layer sh
   expect(screen.queryByText(BUSY)).toBeNull();
 });
 
+test('after three priorities addressed in a row the student sees a Top 5 (spec J5)', () => {
+  view({ topCount: 5 });
+  const top = screen.getByRole('region', { name: 'Top 5 priorities' });
+  const ids = within(top).getAllByRole('article').map((a) => a.id);
+  expect(ids.slice(0, 3)).toEqual(['card-g1', 'card-p1', 'card-g2']);
+  expect(ids.length).toBeGreaterThan(3);
+  expect(ids.length).toBeLessThanOrEqual(5);
+});
+
+test('a category the student needs a head start in opens at hint 2 (spec J7)', () => {
+  view({ headStart: ['cat-g1'] });
+  const started = document.getElementById('card-g1')!;
+  expect(within(started).getByText('Hint one g1')).toBeTruthy();
+  expect(within(started).getByText('Hint two g1')).toBeTruthy();
+  expect(within(document.getElementById('card-p1')!).queryByText('Hint one p1')).toBeNull();
+});
+
 test('Top 3 shows the three highest-ranked open items; Show all groups the rest by layer', () => {
   view();
   const top = screen.getByRole('region', { name: 'Top 3 priorities' });
