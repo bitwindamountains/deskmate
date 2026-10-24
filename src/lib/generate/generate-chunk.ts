@@ -91,11 +91,3 @@ export async function generateChunk(db: Db, userId: string, sourceId: string, po
   if (markErr) return BUSY;
   return { ok: true, cards: withPage(inserted), droppedUngrounded: generated.cards.length - kept.length, alreadyGenerated: false };
 }
-
-/** Spec §6.5: card generations left today (UTC day, like the quota function). RLS scopes the row to the student. */
-export async function generationsLeft(db: Db): Promise<number> {
-  const day = new Date().toISOString().slice(0, 10);
-  const { data, error } = await db.from('quota_usage').select('generations').eq('day', day).maybeSingle();
-  if (error) throw new Error("We couldn't load your card generations.");
-  return Math.max(0, DAILY_GENERATIONS - ((data?.generations as number | undefined) ?? 0));
-}

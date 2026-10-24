@@ -5,14 +5,17 @@ import { useRef, useState, useTransition } from 'react';
 import type { PageText } from '@/chunk';
 import { extractEssayFile } from '@/lib/essay/extract';
 import { DAILY_GENERATIONS } from '@/lib/generate/limits';
-import { resetsIn } from '@/lib/time/reset';
 import { MAX_PAGES, validateImport } from '@/lib/import/validate';
 import { createSource } from './actions';
 
 const NEW = '__new';
 
-/** generationsLeft: null when it couldn't load, so no note is shown rather than a wrong one. */
-export function ImportForm({ decks, generationsLeft = null }: { decks: { id: string; title: string }[]; generationsLeft?: number | null }) {
+/**
+ * generationsLeft: null when it couldn't load, so no note is shown rather than a wrong one. resetText comes from the server
+ * (resetsIn reads the clock), so the server and browser render the same words.
+ */
+export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { decks: { id: string; title: string }[];
+  generationsLeft?: number | null; resetText?: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setErrorMsg] = useState('');
@@ -101,7 +104,7 @@ export function ImportForm({ decks, generationsLeft = null }: { decks: { id: str
       {generationsLeft !== null && (
         <p className="text-ink-muted">{generationsLeft > 0
           ? `${generationsLeft} card ${generationsLeft === 1 ? 'generation' : 'generations'} left today`
-          : `You've used today's ${DAILY_GENERATIONS} card generations. They reset ${resetsIn()}. You can still save material now.`}</p>
+          : `You've used today's ${DAILY_GENERATIONS} card generations. They reset ${resetText}. You can still save material now.`}</p>
       )}
 
       <div>

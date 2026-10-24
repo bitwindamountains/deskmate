@@ -102,3 +102,10 @@ test('within the limit, no limit note', () => {
   plan([deck('bio', 'Bio')], [card('a', null), card('b', null)]);
   expect(screen.queryByText(/start on later days/)).toBeNull();
 });
+
+test('caught up because the daily limit is reached: Today still says why new cards wait', () => {
+  const fresh = Array.from({ length: 40 }, (_, i) => card(`n${i}`, null));
+  render(<TodayPlan decks={[deck('bio', 'Bio')]} cards={fresh} minutes={20} newIntroducedToday={20} now={now} newLimit={20} />);
+  expect(screen.getByText(/all caught up/)).toBeTruthy();
+  expect(screen.getByText('40 more new cards start on later days. Up to 20 new cards a day keeps your reviews manageable.')).toBeTruthy();
+});

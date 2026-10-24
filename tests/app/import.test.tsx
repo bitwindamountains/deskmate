@@ -142,6 +142,6 @@ test('with no card type picked, nothing is sent', () => {
 test('the import page says how many card generations are left today (spec 6.5)', () => {
   const { rerender } = render(<ImportForm decks={[]} generationsLeft={2} />);
   expect(screen.getByText('2 card generations left today')).toBeTruthy();
-  rerender(<ImportForm decks={[]} generationsLeft={0} />);
-  expect(screen.getByText(/^You've used today's 3 card generations\. They reset in (about \d+ hours?|under an hour)\. You can still save material now\.$/)).toBeTruthy();
+  rerender(<ImportForm decks={[]} generationsLeft={0} resetText="in about 7 hours" />);
+  expect(screen.getByText("You've used today's 3 card generations. They reset in about 7 hours. You can still save material now.")).toBeTruthy();
 });
