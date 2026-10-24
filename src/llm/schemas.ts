@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CARD_TYPES } from '@/lib/cards/types';
 
 export const FeedbackItem = z.object({
   layer: z.enum(['global', 'paragraph', 'sentence']),
@@ -54,7 +55,7 @@ export const EssayParagraphs = z.object({
 export type EssayParagraphs = z.infer<typeof EssayParagraphs>;
 
 export const Card = z.object({
-  type: z.enum(['basic', 'cloze', 'why']),
+  type: z.enum(CARD_TYPES),
   front: z.string(),
   back: z.string(),
   key_points: z.array(z.string()),
@@ -91,6 +92,19 @@ export type CardHelp = z.infer<typeof CardHelp>;
 /** B2.5 "Improve this card": the same card rewritten under the card rules, still quoting the source exactly. */
 export const CardImprove = Card.pick({ front: true, back: true, source_quote: true });
 export type CardImprove = z.infer<typeof CardImprove>;
+
+/** B3.1: the card's question reworded, with the same answer. */
+export const CardRephrase = z.object({ question: z.string() });
+export type CardRephrase = z.infer<typeof CardRephrase>;
+
+/** B3.7: what the student's explanation covered and missed, and up to 3 grounded cards for the missed points. */
+export const Feynman = z.object({
+  covered: z.array(z.string()).max(8),
+  missed: z.array(z.string()).max(8),
+  misconception: z.string().nullable().default(null),
+  cards: z.array(Card.omit({ importance: true })).max(3),
+});
+export type Feynman = z.infer<typeof Feynman>;
 
 /** A coach reply on one feedback item (A2.9 questions, A3.10 disputes). verdict and revised_summary are for disputes only. */
 export const ItemDialogue = z.object({

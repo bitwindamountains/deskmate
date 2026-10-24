@@ -1,6 +1,7 @@
 import type { PatternKey } from './patterns';
+import type { CardType } from '@/lib/cards/types';
 
-export type TemplateCard = { type: 'basic' | 'cloze' | 'why'; front: string; back: string; key_points: string[]; example: string };
+export type TemplateCard = { type: CardType; front: string; back: string; key_points: string[]; example: string };
 
 /**
  * The essay → cards template bank (spec §8.3, brief C1). Written once by hand, about general writing and never about a

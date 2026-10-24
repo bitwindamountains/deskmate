@@ -5,7 +5,7 @@ const createSource = vi.fn();
 vi.mock('@/app/(app)/study/import/actions', () => ({ createSource: (...a: unknown[]) => createSource(...a) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 const extractEssayFile = vi.fn();
-vi.mock('@/lib/essay/extract', () => ({ extractEssayFile: (f: File) => extractEssayFile(f) }));
+vi.mock('@/lib/essay/extract', async (orig) => ({ ...(await orig<object>()), extractEssayFile: (f: File) => extractEssayFile(f) }));
 
 import { ImportForm } from '@/app/(app)/study/import/import-form';
 
@@ -53,7 +53,7 @@ test('a Word file fills the text box and imports as text named after the file', 
   extractEssayFile.mockResolvedValue({ ok: true, text: 'Mitochondria make ATP. '.repeat(10).trim() });
   createSource.mockResolvedValue({ ok: false, error: 'x' });
   render(<ImportForm decks={[]} />);
-  fireEvent.change(screen.getByLabelText('PDF or Word file'), { target: { files: [file('Cell notes.docx')] } });
+  fireEvent.change(screen.getByLabelText('PDF, Word file or photo'), { target: { files: [file('Cell notes.docx')] } });
   await waitFor(() => expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toContain('Mitochondria make ATP.'));
   fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
   fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
@@ -63,18 +63,18 @@ test('a Word file fills the text box and imports as text named after the file', 
 test('an unreadable Word file or another file type says so', async () => {
   extractEssayFile.mockResolvedValue({ ok: false, error: "We couldn't read that file. Try another file or paste the text instead." });
   render(<ImportForm decks={[]} />);
-  const input = screen.getByLabelText('PDF or Word file');
+  const input = screen.getByLabelText('PDF, Word file or photo');
   fireEvent.change(input, { target: { files: [file('notes.docx')] } });
   expect((await screen.findByRole('alert')).textContent).toBe("We couldn't read that file. Try another file or paste the text instead.");
   fireEvent.change(input, { target: { files: [file('notes.pages')] } });
-  expect((await screen.findByRole('alert')).textContent).toBe('Choose a PDF or Word (.docx) file.');
+  expect((await screen.findByRole('alert')).textContent).toBe('Choose a PDF, a Word (.docx) file or a photo.');
 });
 
 test('emptying the box after a Word file drops its name, so new pasted notes are not titled after it', async () => {
   extractEssayFile.mockResolvedValue({ ok: true, text: 'Old notes. '.repeat(10).trim() });
   createSource.mockResolvedValue({ ok: false, error: 'x' });
   render(<ImportForm decks={[]} />);
-  fireEvent.change(screen.getByLabelText('PDF or Word file'), { target: { files: [file('Cell notes.docx')] } });
+  fireEvent.change(screen.getByLabelText('PDF, Word file or photo'), { target: { files: [file('Cell notes.docx')] } });
   const box = screen.getByLabelText('Paste text') as HTMLTextAreaElement;
   await waitFor(() => expect(box.value).toContain('Old notes.'));
   fireEvent.change(box, { target: { value: '' } });
@@ -88,7 +88,7 @@ test('a Word file adds to notes already in the box instead of replacing them', a
   extractEssayFile.mockResolvedValue({ ok: true, text: 'From the file.' });
   render(<ImportForm decks={[]} />);
   fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'My own notes.' } });
-  fireEvent.change(screen.getByLabelText('PDF or Word file'), { target: { files: [file('more.docx')] } });
+  fireEvent.change(screen.getByLabelText('PDF, Word file or photo'), { target: { files: [file('more.docx')] } });
   await waitFor(() => expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('My own notes.\n\nFrom the file.'));
   expect(screen.getByRole('status').textContent).toContain('more.docx');
 });
@@ -98,7 +98,7 @@ test('a slow file that finishes after a newer pick is ignored', async () => {
   extractEssayFile.mockReturnValueOnce(new Promise((r) => { finish = r; }));
   extractEssayFile.mockResolvedValueOnce({ ok: true, text: 'Second file.' });
   render(<ImportForm decks={[]} />);
-  const input = screen.getByLabelText('PDF or Word file');
+  const input = screen.getByLabelText('PDF, Word file or photo');
   fireEvent.change(input, { target: { files: [file('slow.docx')] } });
   fireEvent.change(input, { target: { files: [file('fast.docx')] } });
   await waitFor(() => expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('Second file.'));
@@ -144,4 +144,23 @@ test('the import page says how many card generations are left today (spec 6.5)',
   expect(screen.getByText('2 card generations left today')).toBeTruthy();
   rerender(<ImportForm decks={[]} generationsLeft={0} resetText="in about 7 hours" />);
   expect(screen.getByText("You've used today's 3 card generations. They reset in about 7 hours. You can still save material now.")).toBeTruthy();
+});
+
+test('Phase 2 card types are offered but off by default (B2.3)', () => {
+  createSource.mockResolvedValue({ ok: false, error: 'x' });
+  render(<ImportForm decks={[]} />);
+  for (const name of ['Apply it (a short scenario)', 'Compare two ideas', 'Put steps in order']) expect((screen.getByLabelText(name) as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(screen.getByLabelText('Compare two ideas'));
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'the cell makes energy '.repeat(10) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect(createSource.mock.calls[0][0]).toMatchObject({ cardTypes: ['basic', 'cloze', 'why', 'compare'] });
+});
+
+test('a photo of notes is read on the device into the box, with a reminder to check it (B2.1, B7)', async () => {
+  extractEssayFile.mockResolvedValue({ ok: true, text: 'Glycolysis happens in the cytoplasm.' });
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('PDF, Word file or photo'), { target: { files: [new File(['x'], 'lecture.jpg', { type: 'image/jpeg' })] } });
+  await waitFor(() => expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('Glycolysis happens in the cytoplasm.'));
+  expect(screen.getByRole('status').textContent).toContain('lecture.jpg: read on this device. Check the text in the box below');
 });

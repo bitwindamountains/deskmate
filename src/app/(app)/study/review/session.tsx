@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
+import { MicButton } from '@/components/mic-button';
 import { ReportProblem } from '@/components/report-problem';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
@@ -79,6 +80,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   const [sureNote, setSureNote] = useState<{ front: string; quote: string; example?: boolean } | null>(null); // after a confidently wrong answer (B3.2)
   const [showSource, setShowSource] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // "Make a mnemonic" on the current card
+  // B3.1: a rewording of the current card's question; keyed by card id so a late answer never lands on the next card.
+  const [asked, setAsked] = useState<{ id: string; question: string | null; error: string; busy: boolean; original: boolean } | null>(null);
   const [slipping, setSlipping] = useState<Slip | null>(null); // last card is a leech (B3.3)
   const [explain, setExplain] = useState<string | null>(null); // a missed why card can become a writing task (C1)
   const shownAt = useRef(Date.now());
@@ -158,6 +161,20 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     setPhase('rate');
   }
 
+  async function askAnotherWay(id: string) {
+    setAsked({ id, question: null, error: '', busy: true, original: false });
+    const done = (patch: { question?: string; error?: string }) =>
+      setAsked((a) => (a?.id === id ? { ...a, busy: false, question: patch.question ?? null, error: patch.error ?? '' } : a));
+    try {
+      const res = await fetch('/api/cards/rephrase', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId: id }) });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && typeof body.question === 'string') done({ question: body.question });
+      else done({ error: body.message ?? 'Help is busy right now. Try again in a minute.' });
+    } catch {
+      done({ error: "We couldn't reach Scholar. The card works as it is offline." });
+    }
+  }
+
   async function rate(g: Grade) {
     if (!current || !checked || phase !== 'rate') return;
     const now = new Date();
@@ -185,6 +202,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     setConfidence(null);
     setShowSource(false);
     setHelpOpen(false);
+    setAsked(null);
     setText('');
     setChecked(null);
     setPhase('answer');
@@ -287,7 +305,24 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
         {/* E2: a card made from the student's notes says so. Only an explicit false (set by loadStudy) counts, so a card without the field isn't labelled. */}
         {current.quoteIsExample === false && <p className="text-sm text-ink-muted">Made by AI from your notes</p>}
-        <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={current.front} /></h2>
+        {(() => {
+          const mine = asked?.id === current.id ? asked : null;
+          const reworded = mine?.question && !mine.original ? mine.question : null;
+          return (
+            <>
+              <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={reworded ?? current.front} /></h2>
+              {phase !== 'rate' && (
+                <div className="flex flex-wrap items-center gap-x-4 text-sm">
+                  {reworded && <span className="text-ink-muted">Asked another way</span>}
+                  {mine?.question
+                    ? <button type="button" className="underline" onClick={() => setAsked({ ...mine, original: !mine.original })}>{reworded ? 'Show the original' : 'Ask it another way'}</button>
+                    : <button type="button" className="underline" disabled={mine?.busy} onClick={() => void askAnotherWay(current.id)}>{mine?.busy ? 'Rewording…' : 'Ask it another way'}</button>}
+                  {mine?.error && <span role="alert" className="error">{mine.error}</span>}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {phase !== 'rate' ? (
           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void check(); }}>
@@ -309,6 +344,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
                 aria-describedby="answer-hint" onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void check(); } }} />
               <p id="answer-hint" className="mt-1 text-sm text-ink-muted">Enter to check. Shift+Enter for a new line.</p>
+              {/* B3.6: spoken words are added to what's typed, for the student to check before checking. */}
+              <div className="mt-2"><MicButton key={current.id} onText={(t) => setText((x) => (x.trim() ? `${x.trimEnd()} ${t}` : t))} /></div>
             </div>
             <div className="flex flex-wrap gap-3">
               <button type="submit" className="btn btn-primary" disabled={phase === 'checking'}>Check</button>
