@@ -272,3 +272,20 @@ test('a practice card sure-but-wrong note says Example:', async () => {
   expect(await screen.findByText('Example: It rained, we stayed in.')).toBeTruthy();
   expect(screen.queryByText(/From your notes/)).toBeNull();
 });
+
+test('Ask it another way shows a reworded question; the original is one tap away (B3.1)', async () => {
+  fetchMock.mockResolvedValueOnce(json(200, { question: 'Reworded question?', cached: false }));
+  await start([card('a')]);
+  fireEvent.click(screen.getByRole('button', { name: 'Ask it another way' }));
+  expect(await screen.findByRole('heading', { level: 2, name: 'Reworded question?' })).toBeTruthy();
+  expect(JSON.parse(fetchMock.mock.calls.at(-1)![1].body)).toEqual({ cardId: 'a' });
+  fireEvent.click(screen.getByRole('button', { name: 'Show the original' }));
+  expect(screen.queryByRole('heading', { level: 2, name: 'Reworded question?' })).toBeNull();
+});
+
+test('a refused rewording explains why and keeps the card as it is', async () => {
+  fetchMock.mockResolvedValueOnce(json(422, { error: 'unusable', message: "We couldn't find a fair way to reword this one. Try the card as it is." }));
+  await start([card('a')]);
+  fireEvent.click(screen.getByRole('button', { name: 'Ask it another way' }));
+  expect(await screen.findByText("We couldn't find a fair way to reword this one. Try the card as it is.")).toBeTruthy();
+});

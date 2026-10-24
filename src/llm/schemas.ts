@@ -93,6 +93,10 @@ export type CardHelp = z.infer<typeof CardHelp>;
 export const CardImprove = Card.pick({ front: true, back: true, source_quote: true });
 export type CardImprove = z.infer<typeof CardImprove>;
 
+/** B3.1: the card's question reworded, with the same answer. */
+export const CardRephrase = z.object({ question: z.string() });
+export type CardRephrase = z.infer<typeof CardRephrase>;
+
 /** A coach reply on one feedback item (A2.9 questions, A3.10 disputes). verdict and revised_summary are for disputes only. */
 export const ItemDialogue = z.object({
   reply: z.string().min(1),
