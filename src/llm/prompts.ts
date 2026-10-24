@@ -107,7 +107,8 @@ function essayContext(i: EssayInput): string {
     i.assignmentPrompt ? `Assignment prompt:\n${wrapData('assignment', i.assignmentPrompt)}` : 'Assignment prompt: none given',
     // It varies per essay, so it rides in the user message and the system prompt stays static.
     ...(i.timedMinutes ? [`Written under a ${i.timedMinutes}-minute time limit; weigh structure and planning over polish.`] : []),
-    `Rubric:\n${rubric}`,
+    // A student's own rubric (A2.1) is their text, so it is wrapped as data; the default rubric prompt is unchanged.
+    `Rubric:\n${i.rubric && i.rubric !== DEFAULT_RUBRIC ? wrapData('rubric', rubric) : rubric}`,
     `Essay (paragraphs numbered [P0], [P1], ...):\n${wrapData('essay', paragraphs)}`,
   ].join('\n\n');
 }
