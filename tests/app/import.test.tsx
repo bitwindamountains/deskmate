@@ -117,3 +117,24 @@ test('the student picks how many cards; Standard is the default (B2.2)', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
   expect(createSource.mock.calls[0][0]).toMatchObject({ cardDensity: 'fewer' });
 });
+
+test('the student picks card types; all three by default, and at least one is needed (B-S2)', () => {
+  createSource.mockResolvedValue({ ok: false, error: 'x' });
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'the cell makes energy '.repeat(10) } });
+  for (const name of ['Q&A', 'Fill in the blank', 'Explain why']) expect((screen.getByLabelText(name) as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(screen.getByLabelText('Fill in the blank'));
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect(createSource.mock.calls[0][0]).toMatchObject({ cardTypes: ['basic', 'why'] });
+});
+
+test('with no card type picked, nothing is sent', () => {
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'the cell makes energy '.repeat(10) } });
+  for (const name of ['Q&A', 'Fill in the blank', 'Explain why']) fireEvent.click(screen.getByLabelText(name));
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect(screen.getByRole('alert').textContent).toBe('Pick at least one card type.');
+  expect(createSource).not.toHaveBeenCalled();
+});

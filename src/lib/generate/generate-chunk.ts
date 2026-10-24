@@ -1,6 +1,6 @@
 import { isGrounded } from '@/grounding';
 import { logCalls, type Db } from '@/lib/llm-calls';
-import { cardGeneratePrompt, type CardDensity, type DiscardReason } from '@/llm/prompts';
+import { cardGeneratePrompt, type CardDensity, type CardType, type DiscardReason } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardGenerate } from '@/llm/schemas';
 import { resetsIn } from '@/lib/time/reset';
@@ -18,7 +18,7 @@ const QUOTA = () => ({ ok: false, status: 429, error: 'quota', message: `You've 
 const BUSY = { ok: false, status: 503, error: 'busy', message: 'The AI service is busy. Your material is saved; try again in a few minutes.' } as const;
 
 type ChunkRow = { id: string; text: string; page_start: number | null; generated_at: string | null;
-  sources: { deck_id: string; card_density?: CardDensity; decks: { subject: string | null } | null } };
+  sources: { deck_id: string; card_density?: CardDensity; card_types?: CardType[]; decks: { subject: string | null } | null } };
 
 /** The reason the student gives for most of their recent discards, when there are enough to call it a pattern. */
 async function discardPattern(db: Db): Promise<DiscardReason | undefined> {
@@ -40,7 +40,7 @@ async function discardPattern(db: Db): Promise<DiscardReason | undefined> {
 export async function generateChunk(db: Db, userId: string, sourceId: string, position: number,
   env: Record<string, string | undefined>, completeFn: typeof complete = complete): Promise<GenerateResult> {
   const { data, error } = await db.from('source_chunks')
-    .select('id,text,page_start,generated_at,sources(deck_id,card_density,decks(subject))')
+    .select('id,text,page_start,generated_at,sources(deck_id,card_density,card_types,decks(subject))')
     .eq('source_id', sourceId).eq('position', position).maybeSingle();
   if (error) return BUSY;
   if (!data) return NOT_FOUND;
@@ -66,7 +66,7 @@ export async function generateChunk(db: Db, userId: string, sourceId: string, po
   try {
     const subject = chunk.sources?.decks?.subject ?? 'general';
     const prompt = cardGeneratePrompt({ chunk: chunk.text, subject, level: 'college', density: chunk.sources?.card_density,
-      avoid: await discardPattern(db) });
+      avoid: await discardPattern(db), types: chunk.sources?.card_types });
     const r = await completeFn('card_generate', prompt, CardGenerate, { env });
     await logCalls(db, userId, r.log);
     generated = r.data;
@@ -75,7 +75,9 @@ export async function generateChunk(db: Db, userId: string, sourceId: string, po
     return BUSY;
   }
 
-  const kept = generated.cards.filter((c) => isGrounded(chunk.text, c.source_quote));
+  // B-S2: a card of a type the student left out is dropped even if the model made it anyway.
+  const types = chunk.sources?.card_types;
+  const kept = generated.cards.filter((c) => isGrounded(chunk.text, c.source_quote) && (!types || types.includes(c.type)));
   let inserted: unknown[] = [];
   if (kept.length) {
     const { data: rows, error: insErr } = await db.from('cards')
