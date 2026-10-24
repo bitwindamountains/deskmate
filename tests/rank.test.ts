@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { rankFeedback } from '../src/rank.js';
+import { priorityCount, rankFeedback } from '../src/rank.js';
 
 type It = { layer: 'global' | 'paragraph' | 'sentence'; severity: 'low' | 'medium' | 'high'; category: string; rubric_criterion: string; id?: string };
 
@@ -36,4 +36,13 @@ test('ranks are 1..n and ties keep input order', () => {
     ['2', 2],
     ['3', 3],
   ]);
+});
+
+test.each([
+  [[{ action: 'got_it' }, { action: 'got_it' }, { action: 'got_it' }], 5],
+  [[{ action: 'got_it' }, { action: 'disagree' }, { action: 'got_it' }], 3],
+  [[{ action: 'got_it' }, { action: 'got_it' }], 3],
+  [null, 3],
+])('priorityCount %j -> %i (spec J5)', (recent, n) => {
+  expect(priorityCount(recent)).toBe(n);
 });
