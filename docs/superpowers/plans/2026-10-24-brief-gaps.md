@@ -17,5 +17,7 @@
 7. **Improve this card (B2.5).** In triage, "Improve" asks for a rewrite under the card rules, grounded in the same source passage. The student keeps theirs or uses the suggestion. New task `card_improve`, from the 60-a-day helper calls. Eval run and ledger row. Commit: `feat: improve a card in triage`.
 8. **Rulings and PROGRESS.md.** Commit: `docs: rulings and PROGRESS.md for the brief gaps`.
 
+Tasks 6 and 7 share `src/llm/prompts.ts` and were measured together, so they landed as one commit: `feat: fewer or more cards, discard signal, and improve a card in triage`.
+
 ## Rulings
-- **Essays stay capped at 2,000 words (A7 asks for chunking up to 5,000).** A 5,000-word essay is roughly 7,000 input tokens for the big-picture pass alone, before the schema and the output. That would use most of Groq's free per-minute token allowance on one student's check and block others. The paragraph pass would also need chunking, which this note's ledger shows costs quality when context is cut. Revisit with a paid or larger free tier.
+- **Essays stay capped at 2,000 words (A7 asks for chunking up to 5,000).** A 5,000-word essay is roughly 7,000 input tokens for the big-picture pass alone, before the schema and the output. Groq's free tier allows 8,000 tokens a minute on `openai/gpt-oss-120b` (hit and measured on 2026-10-24 while probing card generation), so one long essay check would use nearly all of it and block other students. The paragraph pass would also need chunking, which this note's ledger shows costs quality when context is cut. Revisit with a paid or larger free tier.

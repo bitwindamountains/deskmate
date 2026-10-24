@@ -4,14 +4,15 @@ Handoff for the next session. Update it at the end of each session. Last updated
 
 ## State
 - `main` has everything through PR #26. PR #18 removed feedback translation and the first-language question (English only), and PR #20 dropped their schema (`scholar.item_translations` and `profiles.first_language`; both were empty). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 489/489 unit tests, 174/174 DB tests, typecheck and the production build pass.
-- PR #26 (2026-10-24, plan and rulings: `docs/superpowers/plans/2026-10-24-small-gaps.md`) closed the small gaps: limit messages say how long until they reset instead of "midnight UTC"; Recall imports Word (.docx) files; problem reports keep a copy of the reported text (`problem_reports.snapshot`, filled in by a database trigger so it can't be faked). No PRs are open.
-- All migrations through `20261024142000_scholar_report_snapshot_trigger.sql` are applied (2026-10-24), and the advisors show nothing for `scholar`.
+- PR #26 (2026-10-24, plan and rulings: `docs/superpowers/plans/2026-10-24-small-gaps.md`) closed the small gaps: limit messages say how long until they reset instead of "midnight UTC"; Recall imports Word (.docx) files; problem reports keep a copy of the reported text (`problem_reports.snapshot`, filled in by a database trigger so it can't be faked).
+- **Branch `brief-gaps`** (second completeness review, against the brief; plan and rulings: `docs/superpowers/plans/2026-10-24-brief-gaps.md`): Today's empty state offers both tools; non-English essays are refused before any AI call; a public `/privacy` notice (**owner reviews the wording**); math renders in cards (KaTeX); new cards per day and target retention are settings; import offers Fewer/Standard/More cards, and generation learns from the student's discards; triage has "Improve this card". Essays stay capped at 2,000 words (ruling: Groq's free tier allows 8,000 tokens a minute).
+- All migrations through `20261024150000_scholar_card_density.sql` are applied (2026-10-24), and the advisors show nothing for `scholar`.
 - `20261024130000_scholar_anon_ping.sql` grants anon `usage` on schema `scholar` so the keep-alive cron can call `ping()`. Anon has no table or column grants there and `ping` is its only executable function, so **every new scholar function must keep revoking execute from public**.
 - `graphify-out/` (local, gitignored) was rebuilt on 2026-10-24, and git hooks rebuild it after each commit (code only).
 
 ## What's built
 - **Draft Coach**:
-  - feedback in three layers (global, paragraph, sentence via LanguageTool);
+  - feedback in three layers (global, paragraph, sentence via LanguageTool), English essays only (checked before any AI call);
   - a hint ladder, "I disagree" and questions on a feedback item;
   - an outline, a self-assessment, read-aloud and timed writing;
   - a growth profile.
@@ -20,11 +21,15 @@ Handoff for the next session. Update it at the end of each session. Last updated
   - FSRS reviews with confidence ratings;
   - a mastery map, exam mode and a Today plan in the student's own time zone;
   - Word (.docx) import, CSV and Anki (.apkg) import, CSV export;
+  - Fewer/Standard/More cards per import, generation that learns from discards, and "Improve this card" in triage;
+  - math in cards (KaTeX, loaded only when a card has math);
+  - settings for new cards per day and target retention;
   - course goals (matched on the device) and prerequisites with suggestions when a concept keeps being missed.
 - **Shared**:
   - Profile → "Your data": download everything as one JSON file (built in the browser through RLS), or delete all Scholar data (typed confirmation, clears the device, signs out);
   - "Report a problem" in the review session and on each feedback card (`scholar.problem_reports`; the owner reads them with SQL);
-  - a daily Vercel cron to `/api/keep-alive`, so the free Supabase project doesn't pause.
+  - a daily Vercel cron to `/api/keep-alive`, so the free Supabase project doesn't pause;
+  - a public privacy notice at `/privacy`, linked from sign-in, onboarding and Profile.
 
 ## Owner decisions (October 2026)
 - Students only: no teacher, class or school features.
@@ -35,12 +40,13 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - The owner merges PRs. After a merge, delete the branch locally and on GitHub.
 
 ## Next steps
-1. **Small gaps:** none open. Ruled on in `docs/superpowers/plans/2026-10-24-small-gaps.md`: daily limits stay on the UTC day (a local day could be gamed by changing time zone), failed AI calls are not queued (nothing is lost; a queue needs a worker that Hobby can't run often enough), and a magic link opened in another browser keeps the layout's one refresh.
+1. **Brief gaps:** closed or ruled on in `docs/superpowers/plans/2026-10-24-brief-gaps.md`. **Small gaps:** none open. Ruled on in `docs/superpowers/plans/2026-10-24-small-gaps.md`: daily limits stay on the UTC day (a local day could be gamed by changing time zone), failed AI calls are not queued (nothing is lost; a queue needs a worker that Hobby can't run often enough), and a magic link opened in another browser keeps the layout's one refresh.
 2. **Waiting on the owner:**
    - tune `GOAL_MATCH = 0.5` (`src/review/goals.ts`) once real course material exists;
    - import a real deck exported from current Anki (WAL mode and multi-frame zstd are unverified);
    - deploy per `docs/deploy.md`, including custom SMTP for sign-in emails; after deploying, check `/api/keep-alive` answers `{"ok":true}` and the cron shows in Vercel;
-   - try "Your data", "Report a problem" and the Word import in a browser (not checked yet);
+   - review the wording of `/privacy` (the brief recommends a legal review before launch), and add a contact address for removing a sign-in;
+   - try "Your data", "Report a problem", the Word import, math in cards and "Improve this card" in a browser (not checked yet);
    - get feedback from beta students before new features.
 
 ## Gotchas
