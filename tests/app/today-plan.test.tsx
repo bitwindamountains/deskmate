@@ -91,3 +91,14 @@ test('Today counts days and the next review on the student calendar when given t
   expect(screen.getByText(/Next review: tomorrow/)).toBeTruthy();
   expect(screen.getByText(/in 3 days/)).toBeTruthy();
 });
+
+test('more new cards than the daily limit: Today says how many start later, and why (B7)', () => {
+  const fresh = Array.from({ length: 50 }, (_, i) => card(`n${i}`, null));
+  render(<TodayPlan decks={[deck('bio', 'Bio')]} cards={fresh} minutes={20} newIntroducedToday={0} now={now} newLimit={20} />);
+  expect(screen.getByText('30 more new cards start on later days. Up to 20 new cards a day keeps your reviews manageable.')).toBeTruthy();
+});
+
+test('within the limit, no limit note', () => {
+  plan([deck('bio', 'Bio')], [card('a', null), card('b', null)]);
+  expect(screen.queryByText(/start on later days/)).toBeNull();
+});
