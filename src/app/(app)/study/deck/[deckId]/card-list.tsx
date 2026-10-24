@@ -89,6 +89,7 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
     try {
       const res = await fetch('/api/cards/improve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId: id }) });
       const body = await res.json().catch(() => ({}));
+      if (res.ok && body.suggestion) setSay('Suggested rewrite filled in. Check it, then Save.');
       setEditing((cur) => (!cur || cur.id !== id ? cur : res.ok && body.suggestion
         ? { ...cur, front: body.suggestion.front, back: body.suggestion.back, error: '', suggested: true }
         : { ...cur, error: body.message ?? 'Help is busy right now. Try again in a minute.' }));
@@ -182,12 +183,13 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
                   {editing.error && <p id="edit-err" role="alert" className="error">{editing.error}</p>}
                   <div>
                     <label htmlFor={`front-${c.id}`} className="mb-1 block">Front</label>
-                    <textarea id={`front-${c.id}`} rows={3} maxLength={500} value={editing.front} className="field" autoFocus {...errId}
+                    {/* read-only while a rewrite is on its way, so it never lands on top of the student's typing */}
+                    <textarea id={`front-${c.id}`} rows={3} maxLength={500} value={editing.front} className="field" autoFocus readOnly={suggesting} {...errId}
                       onChange={(e) => setEditing({ ...editing, front: e.target.value })} />
                   </div>
                   <div>
                     <label htmlFor={`back-${c.id}`} className="mb-1 block">Back</label>
-                    <textarea id={`back-${c.id}`} rows={4} maxLength={500} value={editing.back} className="field" {...errId}
+                    <textarea id={`back-${c.id}`} rows={4} maxLength={500} value={editing.back} className="field" readOnly={suggesting} {...errId}
                       onChange={(e) => setEditing({ ...editing, back: e.target.value })} />
                   </div>
                   <div className="flex flex-wrap gap-3">
