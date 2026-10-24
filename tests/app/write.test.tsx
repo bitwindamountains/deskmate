@@ -217,3 +217,27 @@ test('a poem submitted as an argumentative essay asks first; submitting again go
   fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
   expect(createEssay).toHaveBeenCalledTimes(1);
 });
+
+test("the student's own rubric is sent with the essay, and the self-rating lists its criteria (A2.1)", () => {
+  createEssay.mockResolvedValue({ ok: false, error: 'x' });
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Climate' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'the word '.repeat(30) } });
+  fireEvent.change(screen.getByLabelText('Your rubric (optional)'), { target: { value: 'Use of sources: cites two\nVoice: sounds like you' } });
+  expect(screen.getByLabelText('Use of sources')).toBeTruthy();
+  expect(screen.queryByLabelText('Thesis')).toBeNull();
+  fireEvent.change(screen.getByLabelText('Voice'), { target: { value: '3' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(createEssay.mock.calls[0][0]).toMatchObject({ rubric: 'Use of sources: cites two\nVoice: sounds like you',
+    selfAssessment: { scores: [{ criterion: 'Voice', score: 3 }], weakness: null } });
+});
+
+test('a rubric with one line is refused before sending', () => {
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Climate' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'the word '.repeat(30) } });
+  fireEvent.change(screen.getByLabelText('Your rubric (optional)'), { target: { value: 'Just one' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(screen.getByRole('alert').textContent).toContain('Write 2 to 8 criteria');
+  expect(createEssay).not.toHaveBeenCalled();
+});

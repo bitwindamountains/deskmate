@@ -1,10 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { DEFAULT_RUBRIC } from '@/llm/prompts';
+import { parseRubric } from './rubric';
 import { parseSelfAssessment, type SelfAssessment } from './self-check';
 import { ESSAY_TYPES, paragraphHash, paragraphs, validateEssay, type EssayType } from './text';
 
 export type EssayInput = { title: string; essayType: EssayType; gradeLevel: string; assignmentPrompt: string | null;
   citationStyle: string | null; content: string; selfAssessment?: SelfAssessment;
+  /** A2.1: the student's rubric as typed, one criterion per line; empty or absent means the default. */
+  rubric?: string | null;
   /** Timed writing (A4.5): the limit chosen and the minutes the student used. */
   timedMinutes?: 20 | 30 | 45 | null; minutesUsed?: number | null };
 export type CreateEssayResult = { ok: true; essayId: string } | { ok: false; error: string };
@@ -30,15 +34,17 @@ export async function insertEssay(db: SupabaseClient<any, any, any>, userId: str
   // Length first, so an over-long paste gets the word-count message rather than the generic one.
   const v = validateEssay(typeof input?.content === 'string' ? input.content : '');
   if (!v.ok) return v;
+  const rubric = parseRubric(typeof input?.rubric === 'string' ? input.rubric.slice(0, 4000) : '');
+  if (!rubric.ok) return rubric;
   const parsed = Schema.safeParse(input);
-  const self = parseSelfAssessment(input?.selfAssessment);
+  const self = parseSelfAssessment(input?.selfAssessment, rubric.rubric ?? DEFAULT_RUBRIC);
   if (!parsed.success || !self.ok) return fail;
   const i = parsed.data;
   let essayId: string | undefined;
   try {
     const { data, error } = await db.from('essays').insert({
       user_id: userId, title: i.title, essay_type: i.essayType, grade_level: i.gradeLevel,
-      assignment_prompt: i.assignmentPrompt, citation_style: i.citationStyle, timed_minutes: i.timedMinutes ?? null,
+      assignment_prompt: i.assignmentPrompt, citation_style: i.citationStyle, timed_minutes: i.timedMinutes ?? null, rubric: rubric.rubric,
     }).select('id').single();
     if (error || !data) return fail;
     essayId = data.id as string;

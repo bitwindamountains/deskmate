@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { extractEssayFile } from '@/lib/essay/extract';
 import { looksLikeVerse, validateEssay, type EssayType } from '@/lib/essay/text';
+import { parseRubric } from '@/lib/essay/rubric';
 import { DEFAULT_RUBRIC } from '@/llm/prompts';
 import { createEssay } from '../actions';
 import { minutesUsed, TimeLeft, Timer } from './timer';
@@ -31,6 +32,10 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
   const [reading, setReading] = useState(false);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [essayType, setEssayType] = useState<EssayType>(initialPrompt ? 'expository' : 'argumentative');
+  const [rubricText, setRubricText] = useState('');
+  const rubricParse = parseRubric(rubricText);
+  // A2.1: the self-rating follows the rubric the essay will be scored on.
+  const criteria = rubricParse.ok && rubricParse.rubric ? rubricParse.rubric : DEFAULT_RUBRIC;
   const [verseAsked, setVerseAsked] = useState(false); // A7: asked once about this text and type; submitting again goes ahead
   const [gradeLevel, setGradeLevel] = useState('college');
   const [citationStyle, setCitationStyle] = useState('');
@@ -55,6 +60,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     if (!title.trim()) return setError('Add a title for your essay.', 'title');
     const v = validateEssay(content);
     if (!v.ok) return setError(v.error, 'essay');
+    if (!rubricParse.ok) return setError(rubricParse.error, 'rubric');
     if (!verseAsked && PROSE_TYPES.includes(essayType) && looksLikeVerse(content)) {
       setVerseAsked(true);
       return setError('This looks like a poem or song. Draft Coach is built for essays: for creative writing, choose Narrative or Personal statement as the essay type. To check it as it is, select Get feedback again.', 'essay');
@@ -63,12 +69,13 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     start(async () => {
       try {
         // A3.7: optional; only the criteria the student rated are sent, and nothing at all when the section is untouched.
-        const scores = DEFAULT_RUBRIC.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
+        const scores = criteria.flatMap((c) => (selfScores[c.name] ? [{ criterion: c.name, score: Number(selfScores[c.name]) }] : []));
         const self = scores.length || weakness.trim() ? { selfAssessment: { scores, weakness: weakness.trim() || null } } : {};
         // A4.5: only a started timer makes this a timed essay; minutes used are whole minutes, rounded up.
         const time = timed && startedAt !== null ? { timedMinutes: Number(timed) as 20 | 30 | 45, minutesUsed: minutesUsed(Number(timed), startedAt, stoppedAt) } : {};
         const r = await createEssay({
           title: title.trim(), essayType, gradeLevel, assignmentPrompt: prompt.trim() || null, citationStyle: citationStyle || null, content, ...self, ...time,
+          ...(rubricText.trim() ? { rubric: rubricText } : {}),
         });
         if (r.ok) router.push(`/write/${r.essayId}`);
         else setError(r.error);
@@ -142,6 +149,14 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
               {CITATIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          <div>
+            <label htmlFor="rubric" className="mb-1 block">Your rubric (optional)</label>
+            <textarea id="rubric" rows={5} maxLength={4000} value={rubricText} onChange={(e) => setRubricText(e.target.value)} className="field"
+              {...bad('rubric')} aria-describedby={error && errField === 'rubric' ? 'essay-err rubric-help' : 'rubric-help'} />
+            <p id="rubric-help" className="mt-1 text-sm text-ink-muted">
+              One criterion per line, like &quot;Evidence: uses specific sources&quot;. 2 to 8 lines, each scored 1 to 4. Leave it empty to use Scholar&apos;s rubric.
+            </p>
+          </div>
         </div>
       </details>
 
@@ -149,7 +164,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Rate it yourself first (optional)</summary>
         <div className="mt-4 space-y-5">
           <p className="text-ink-muted">After feedback, you&apos;ll see how your rating compares with the coach&apos;s.</p>
-          {DEFAULT_RUBRIC.map((c) => (
+          {criteria.map((c) => (
             <div key={c.name}>
               <label htmlFor={`self-${c.name}`} className="mb-1 block">{c.name}</label>
               <select id={`self-${c.name}`} value={selfScores[c.name] ?? ''} className="field" aria-describedby={`self-${c.name}-d`}

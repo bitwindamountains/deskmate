@@ -3,14 +3,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { AppPage } from '@/components/page';
-import { DEFAULT_RUBRIC } from '@/llm/prompts';
+import { rubricOf } from '@/lib/essay/rubric';
 import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import type { Score } from '../essay-view';
 import { LAYER_LABEL, STATUS_LABEL } from '../feedback-card';
 
 const LOAD_FAILED = "We couldn't load your essay.";
-const rubricMax: Record<string, number> = Object.fromEntries(DEFAULT_RUBRIC.map((c) => [c.name, c.maxScore]));
 const version = (v: unknown) => (typeof v === 'string' && /^[1-9]\d{0,5}$/.test(v) ? Number(v) : null);
 
 type Draft = { id: string; version: number; content: string };
@@ -26,7 +25,7 @@ export default async function ComparePage({ params, searchParams }: {
   if (!z.uuid().safeParse(essayId).success || from === null || to === null) notFound();
   const db = await createClient();
   const [essay, drafts] = await Promise.all([
-    db.from('essays').select('id,title').eq('id', essayId).maybeSingle(),
+    db.from('essays').select('id,title,rubric').eq('id', essayId).maybeSingle(),
     db.from('drafts').select('id,version,content').eq('essay_id', essayId).in('version', [from, to]),
   ]);
   if (essay.error || drafts.error) throw new Error(LOAD_FAILED);
@@ -40,6 +39,7 @@ export default async function ComparePage({ params, searchParams }: {
   ]);
   if (analyses.error || items.error) throw new Error(LOAD_FAILED);
   const scoresOf = (id: string) => (analyses.data as { draft_id: string; rubric_scores: Score[] }[]).find((x) => x.draft_id === id)?.rubric_scores ?? [];
+  const rubricMax: Record<string, number> = Object.fromEntries(rubricOf(essay.data.rubric).map((c) => [c.name, c.maxScore]));
   const sa = scoresOf(a.id), sb = scoresOf(b.id);
   const criteria = [...new Set([...sa, ...sb].map((s) => s.criterion))];
   const cell = (xs: Score[], c: string) => {
