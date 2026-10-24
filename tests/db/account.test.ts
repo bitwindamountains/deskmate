@@ -43,6 +43,17 @@ test('reports: own card or feedback item only, known reasons, notes up to 500 ch
   expect((await A.client.from('problem_reports').select('reason').order('created_at')).data!.map((r) => r.reason)).toEqual(['grading', 'unfair']);
 });
 
+test('a report keeps a copy of the reported text, even after the card is deleted', async () => {
+  const card = (await adminClient().from('cards').insert({ user_id: A.userId, deck_id: a.deck, source_chunk_id: null, type: 'basic',
+    front: 'What makes ATP?', back: 'Mitochondria', key_points: [], source_quote: '', concept: 'Cells', bloom_level: 'remember',
+    importance: 2, status: 'kept' }).select('id').single()).data!.id;
+  await reportProblem(A.client, A.userId, { target: 'card', targetId: card, reason: 'wrong', note: '' });
+  await A.client.from('cards').delete().eq('id', card);
+  const snap = async (id: string) => (await A.client.from('problem_reports').select('snapshot').eq('target_id', id).single()).data!.snapshot;
+  expect(await snap(card)).toEqual({ front: 'What makes ATP?', back: 'Mitochondria' });
+  expect(await snap(a.item)).toEqual({ summary: 'Claim lacks evidence', revised_summary: null, quote: null });
+});
+
 test('export has every own row, nobody else rows, and no embeddings', async () => {
   const data = (await exportMyData(A.client))!;
   expect(data.decks.map((r) => r.id)).toEqual([a.deck]);
