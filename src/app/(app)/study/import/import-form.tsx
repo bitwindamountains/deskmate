@@ -23,6 +23,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   const [deck, setDeck] = useState(decks[0]?.id ?? NEW);
   const [newTitle, setNewTitle] = useState('');
   const [examDate, setExamDate] = useState('');
+  const [density, setDensity] = useState<'fewer' | 'standard' | 'more'>('standard');
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(MAX_PAGES);
 
@@ -67,6 +68,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
       title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : docName.replace(/\.docx$/i, '')).slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
       kind: pdf ? ('pdf' as const) : ('text' as const),
       pages,
+      cardDensity: density,
     };
     const v = validateImport(input);
     if (!v.ok) {
@@ -144,6 +146,15 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
           </div>
         </>
       )}
+
+      <fieldset>
+        <legend className="mb-1">How many cards?</legend>
+        {([['fewer', 'Fewer: core ideas only'], ['standard', 'Standard'], ['more', 'More: supporting ideas too']] as const).map(([v, label]) => (
+          <label key={v} className="flex min-h-11 items-center gap-2">
+            <input type="radio" name="density" value={v} checked={density === v} onChange={() => setDensity(v)} /> {label}
+          </label>
+        ))}
+      </fieldset>
 
       <button type="submit" disabled={pending} className="btn btn-primary">Make flashcards</button>
     </form>

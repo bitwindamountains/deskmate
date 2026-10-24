@@ -2,13 +2,17 @@ import Link from 'next/link';
 import { AppPage } from '@/components/page';
 import { SignOut } from '@/components/sign-out';
 import { requireOnboardedUser } from '@/lib/profile/require';
+import { studySettings } from '@/review/schedule';
 import { YourData } from './your-data';
 
 export default async function ProfilePage() {
   const { profile } = await requireOnboardedUser();
   const prefs = profile.preferences ?? {};
+  const study = studySettings(prefs);
   const rows: [string, string][] = [
     ['Daily study time', `${profile.study_minutes_per_day} minutes`],
+    ['New cards a day', String(study.newLimit)],
+    ['Target retention', `${Math.round(study.retention * 100)}%`],
     ['Reading font', prefs.font === 'dyslexic' ? 'Dyslexia-friendly' : 'Standard'],
     ['Reduce motion', prefs.reduced_motion ? 'On' : 'Off'],
     ['Show rubric scores', prefs.show_scores === false ? 'Off' : 'On'],

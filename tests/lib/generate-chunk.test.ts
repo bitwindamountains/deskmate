@@ -12,7 +12,7 @@ function fakeDb(respond: (o: Op) => { data?: unknown; error?: unknown }) {
     let op = 'select';
     const args: unknown[] = [];
     const c: Record<string, unknown> = {};
-    for (const m of ['select', 'insert', 'update', 'eq', 'order', 'maybeSingle', 'single']) {
+    for (const m of ['select', 'insert', 'update', 'eq', 'order', 'maybeSingle', 'single', 'in', 'limit']) {
       c[m] = (...a: unknown[]) => {
         if (m === 'insert' || m === 'update') op = m;
         args.push([m, ...a]);
@@ -73,6 +73,41 @@ test('ungrounded card is dropped and counted', async () => {
   expect(insertAt).toBeGreaterThan(-1);
   expect(updateAt).toBeGreaterThan(insertAt);
   expect(ops.some((o) => o.table === 'llm_calls' && o.op === 'insert')).toBe(true);
+});
+
+test("the source's density and the student's discard pattern reach the prompt (B2.2, B2.5)", async () => {
+  const discarded = (n: number, reason: string) => Array.from({ length: n }, () => ({ discard_reason: reason }));
+  const { db } = fakeDb(({ table, op, args }) => {
+    if (table === 'source_chunks' && op === 'select') return { data: { ...chunkRow(), sources: { ...chunkRow().sources, card_density: 'fewer' } } };
+    if (table === 'cards' && op === 'select' && JSON.stringify(args).includes('discarded')) return { data: [...discarded(6, 'trivial'), ...discarded(2, 'wrong')] };
+    if (table === 'cards' && op === 'select') return { data: [] };
+    if (table === 'consume_generation_quota') return { data: true };
+    if (table === 'cards' && op === 'insert') return { data: [] };
+    return {};
+  });
+  const completeFn = okComplete([]);
+  await generateChunk(db, 'user-1', 'src-1', 0, {}, completeFn);
+  const user = (completeFn.mock.calls[0] as unknown[])[1] as { user: string };
+  expect(user.user).toContain('Card count: fewer than usual');
+  expect(user.user).toContain('usually discards cards as too trivial');
+});
+
+test('a few scattered discards are not a pattern', async () => {
+  const { db } = fakeDb(({ table, op, args }) => {
+    if (table === 'source_chunks' && op === 'select') return { data: chunkRow() };
+    if (table === 'cards' && op === 'select' && JSON.stringify(args).includes('discarded')) {
+      return { data: [{ discard_reason: 'trivial' }, { discard_reason: 'trivial' }, { discard_reason: 'wrong' }] };
+    }
+    if (table === 'cards' && op === 'select') return { data: [] };
+    if (table === 'consume_generation_quota') return { data: true };
+    if (table === 'cards' && op === 'insert') return { data: [] };
+    return {};
+  });
+  const completeFn = okComplete([]);
+  await generateChunk(db, 'user-1', 'src-1', 0, {}, completeFn);
+  const user = ((completeFn.mock.calls[0] as unknown[])[1] as { user: string }).user;
+  expect(user).not.toContain('discards');
+  expect(user).not.toContain('Card count');
 });
 
 test('already generated chunk returns existing cards without an LLM call', async () => {

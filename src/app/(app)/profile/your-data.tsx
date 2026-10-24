@@ -42,6 +42,7 @@ export function YourData() {
   return (
     <section aria-labelledby="your-data" className="mt-8 max-w-prose space-y-6 rounded-xl border border-line bg-surface p-6">
       <h2 id="your-data" className="text-xl font-bold">Your data</h2>
+      <p><a href="/privacy" className="underline">Read what Scholar keeps and who sees it</a>.</p>
       <div className="space-y-2">
         <p>Download everything you have in Scholar (essays, drafts, feedback, cards and reviews) as one JSON file.</p>
         <button type="button" className="btn" disabled={downloading} onClick={download}>

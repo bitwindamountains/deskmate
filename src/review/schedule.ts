@@ -11,6 +11,8 @@ export interface StudyCard { id: string; deckId: string; type: 'basic' | 'cloze'
 /** Scheduling weight: importance, plus one when the card matches the deck's course goals. */
 export const weight = (c: StudyCard) => c.importance + (c.goalMatch ? 1 : 0);
 export interface SessionOptions { now: Date; minutes: number; newIntroducedToday: number; examDate: Date | null; doMore?: boolean;
+  /** The student's daily new-card limit (B2.6); NEW_CARD_LIMIT when unset. */
+  newLimit?: number;
   /** The student's zone when this runs on the server (Today plan); omitted on the device. */
   zone?: string }
 
@@ -18,8 +20,28 @@ export const SECONDS_PER_CARD = 25;
 export const NEW_CARD_LIMIT = 20;
 const DAY_MS = 86400000;
 
-export const makeScheduler = (fuzz: boolean): FSRS => fsrs(generatorParameters({ request_retention: 0.9, enable_fuzz: fuzz }));
-const scheduler = makeScheduler(true);
+export const DEFAULT_RETENTION = 0.9;
+export const makeScheduler = (fuzz: boolean, retention = DEFAULT_RETENTION): FSRS =>
+  fsrs(generatorParameters({ request_retention: retention, enable_fuzz: fuzz }));
+/**
+ * The student's B2.6 settings, checked. preferences is jsonb the user can write directly through the API,
+ * so an out-of-range or missing value falls back to the default instead of breaking scheduling.
+ */
+export function studySettings(p?: { new_cards_per_day?: unknown; retention?: unknown } | null): { newLimit: number; retention: number } {
+  const n = p?.new_cards_per_day, r = p?.retention;
+  return {
+    newLimit: typeof n === 'number' && Number.isInteger(n) && n >= 5 && n <= 100 ? n : NEW_CARD_LIMIT,
+    retention: typeof r === 'number' && r >= 0.8 && r <= 0.97 ? r : DEFAULT_RETENTION,
+  };
+}
+const schedulers = new Map<number, FSRS>();
+/** One scheduler per target retention (B2.6, the student's setting), built once. */
+export function schedulerFor(retention = DEFAULT_RETENTION): FSRS {
+  let s = schedulers.get(retention);
+  if (!s) schedulers.set(retention, (s = makeScheduler(true, retention)));
+  return s;
+}
+const scheduler = schedulerFor();
 
 // zone: the student's IANA zone when this runs on the server; omitted on the device, where local time is already theirs.
 const startOfDay = (d: Date, offsetDays = 0, zone?: string) =>
@@ -88,7 +110,7 @@ export function buildSession(cards: StudyCard[], o: SessionOptions): { queue: St
 
   const fresh = cards.filter((c) => !c.state)
     .sort((a, b) => weight(b) - weight(a)) // stable sort keeps input order on ties
-    .slice(0, Math.max(0, NEW_CARD_LIMIT - o.newIntroducedToday));
+    .slice(0, Math.max(0, (o.newLimit ?? NEW_CARD_LIMIT) - o.newIntroducedToday));
 
   let queue = [...due, ...weak, ...fresh];
   if (!o.doMore) queue = queue.slice(0, Math.floor((o.minutes * 60) / SECONDS_PER_CARD));

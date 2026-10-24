@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { writeHref } from '@/growth/prompts';
 import { gradeLocally } from '@/review/grade';
 import type { TestQuestion } from '@/review/practice-test';
+import { MathText } from '@/components/math-text';
 
 type Outcome = { q: TestQuestion; right: boolean };
 
@@ -62,8 +63,8 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
             <ul className="space-y-3 [overflow-wrap:anywhere]">
               {missed.map((o) => (
                 <li key={o.q.cardId} className="rounded-xl border border-line bg-surface p-4">
-                  <p className="font-bold">{o.q.prompt}</p>
-                  <p>{`Answer: ${o.q.answer}`}</p>
+                  <p className="font-bold"><MathText text={o.q.prompt} /></p>
+                  <p>Answer: <MathText text={o.q.answer} /></p>
                 </li>
               ))}
             </ul>
@@ -84,17 +85,17 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
       <form className="space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]" onSubmit={(e) => { e.preventDefault(); void next(); }}>
         {q.kind === 'choice' ? (
           <fieldset className="space-y-2">
-            <legend className="mb-2 text-[1.44rem] leading-snug font-bold">{q.prompt}</legend>
+            <legend className="mb-2 text-[1.44rem] leading-snug font-bold"><MathText text={q.prompt} /></legend>
             {q.choices!.map((c) => (
               <label key={c} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3">
                 <input type="radio" name={`q-${i}`} value={c} checked={pick === c} onChange={() => setPick(c)} />
-                <span>{c}</span>
+                <span><MathText text={c} /></span>
               </label>
             ))}
           </fieldset>
         ) : (
           <>
-            <h2 className="text-[1.44rem] leading-snug font-bold">{q.prompt}</h2>
+            <h2 className="text-[1.44rem] leading-snug font-bold"><MathText text={q.prompt} /></h2>
             <label htmlFor="test-answer" className="block font-bold">Your answer</label>
             <textarea id="test-answer" rows={3} className="field" value={text} disabled={unsure} onChange={(e) => setText(e.target.value)} />
           </>
@@ -102,7 +103,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
         {unsure ? (
           <div role="status" className="space-y-3">
             <p className="font-bold">Check this one yourself</p>
-            <p>{q.answer}</p>
+            <p><MathText text={q.answer} /></p>
             <div className="flex flex-wrap gap-3">
               <button ref={gotIt} type="button" className="btn" onClick={() => record(true)}>I got it right</button>
               <button type="button" className="btn" onClick={() => record(false)}>I missed it</button>

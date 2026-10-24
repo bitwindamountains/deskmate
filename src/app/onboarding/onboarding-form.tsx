@@ -35,6 +35,20 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
           <input id="study_minutes_per_day" name="study_minutes_per_day" type="number" min={5} max={120} defaultValue={defaults?.study_minutes_per_day ?? 20} className={input} {...bad('study_minutes_per_day')} />
           <Err id="study_minutes_per_day-err" msg={e.study_minutes_per_day} />
         </div>
+        <div>
+          <label htmlFor="new_cards_per_day" className="mb-1 block">New cards a day</label>
+          <input id="new_cards_per_day" name="new_cards_per_day" type="number" min={5} max={100}
+            defaultValue={defaults?.preferences?.new_cards_per_day ?? 20} className={input} {...bad('new_cards_per_day')} />
+          <Err id="new_cards_per_day-err" msg={e.new_cards_per_day} />
+        </div>
+        <div>
+          <label htmlFor="retention_percent" className="mb-1 block">How much do you want to remember? (80 to 97%)</label>
+          <input id="retention_percent" name="retention_percent" type="number" min={80} max={97}
+            defaultValue={Math.round((defaults?.preferences?.retention ?? 0.9) * 100)} className={input} {...bad('retention_percent')}
+            aria-describedby={e.retention_percent ? 'retention_percent-err' : 'retention_percent-help'} />
+          <p id="retention_percent-help" className="mt-1 text-sm text-ink-muted">Higher means more reviews. 90% suits most students.</p>
+          <Err id="retention_percent-err" msg={e.retention_percent} />
+        </div>
 
         <fieldset>
           <legend className="mb-1">Reading font</legend>
@@ -54,7 +68,7 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
         {/* ponytail: this sentence names every service that receives student text: the `trainsOnInputs: false` providers in
             src/llm/config.ts and LanguageTool (src/lib/essay/languagetool.ts). Update it with either. Confirm LanguageTool's
             privacy terms before launch. */}
-        <p>Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq&apos;s terms say it does not train its models on what you send.</p>
+        <p>Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq&apos;s terms say it does not train its models on what you send. <a href="/privacy" className="underline">Read the privacy notice</a>.</p>
 
         <button type="submit" disabled={pending} className="btn btn-primary">{defaults ? 'Save changes' : 'Start studying'}</button>
       </form>

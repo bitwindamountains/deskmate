@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { removeCards, saveCard, setStatus } from './actions';
+import { MathText } from '@/components/math-text';
 
 export type EditorCard = { id: string; type: 'basic' | 'cloze' | 'why'; front: string; back: string; concept: string;
   status: 'pending' | 'kept' | 'suspended'; lapses: number; sourceId: string | null };
@@ -178,9 +179,9 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
                 <>
                   <label className="flex min-h-11 items-start gap-3">
                     <input type="checkbox" className="mt-0.5 shrink-0" checked={selected.has(c.id)} onChange={() => toggle(c.id)} />
-                    <span id={`front-text-${c.id}`} className="font-bold">{c.front}</span>
+                    <span id={`front-text-${c.id}`} className="font-bold"><MathText text={c.front} /></span>
                   </label>
-                  <p className="max-w-prose">{c.back}</p>
+                  <p className="max-w-prose"><MathText text={c.back} /></p>
                   <p className="text-sm text-ink-muted">{TYPE_LABEL[c.type]} · {c.concept} · {STATUS_LABEL[c.status]}</p>
                   {c.lapses >= 4 && <p className="text-sm font-bold">Slipping</p>}
                   <div className="flex flex-wrap gap-3 pt-1">

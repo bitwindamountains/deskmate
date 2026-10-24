@@ -1,7 +1,9 @@
 import { expect, test } from 'vitest';
 import { anchorQuote, paragraphHash, paragraphs, validateEssay } from '@/lib/essay/text';
 
-const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(' ');
+// Real English words, so the English-only check passes and only the length rule is under test.
+const WORDS = 'the student wrote that this essay is about how a school can help'.split(' ');
+const words = (n: number) => Array.from({ length: n }, (_, i) => WORDS[i % WORDS.length]).join(' ');
 
 test('validateEssay: 49 words fails with the 50-word message; 2,001 words names the count', () => {
   expect(validateEssay(words(49))).toEqual({ ok: false, error: 'Add a little more: feedback needs at least 50 words.' });
@@ -10,6 +12,11 @@ test('validateEssay: 49 words fails with the 50-word message; 2,001 words names 
     ok: false,
     error: 'This essay is 2,001 words. Draft Coach handles up to 2,000 words for now; paste one section at a time.',
   });
+});
+
+test('validateEssay: an essay that is not in English is refused before any AI call', () => {
+  const spanish = Array.from({ length: 12 }, () => 'Los estudiantes pasan más tiempo con sus teléfonos.').join(' ');
+  expect(validateEssay(spanish)).toEqual({ ok: false, error: "This doesn't look like English. Draft Coach gives feedback on essays written in English only." });
 });
 
 test('validateEssay: more than 40 paragraphs fails', () => {
