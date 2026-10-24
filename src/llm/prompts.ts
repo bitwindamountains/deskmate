@@ -225,7 +225,9 @@ export function itemDialoguePrompt(i: DialogueInput): Prompt {
 }
 
 export type CardDensity = 'fewer' | 'standard' | 'more';
-export type DiscardReason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
+/** Discard reasons that say something about how cards are written. 'duplicate' is left out: triage's on-device dedupe
+ *  records it automatically, and duplicates usually span imports this prompt can't see. */
+export type DiscardReason = 'trivial' | 'wrong' | 'unclear';
 const DENSITY_LINE: Record<CardDensity, string | null> = {
   fewer: 'Card count: fewer than usual, about half as many. Keep only the ideas most likely to be on an exam.',
   standard: null,
@@ -234,7 +236,6 @@ const DENSITY_LINE: Record<CardDensity, string | null> = {
 const AVOID_LINE: Record<DiscardReason, string> = {
   trivial: 'This student usually discards cards as too trivial: leave out minor details, and when unsure, make no card.',
   wrong: 'This student usually discards cards as wrong: only make cards the source states plainly.',
-  duplicate: 'This student usually discards cards as duplicates: never cover one idea in two cards.',
   unclear: 'This student usually discards cards as unclear: make every question answerable without the source.',
 };
 

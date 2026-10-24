@@ -23,6 +23,17 @@ const DAY_MS = 86400000;
 export const DEFAULT_RETENTION = 0.9;
 export const makeScheduler = (fuzz: boolean, retention = DEFAULT_RETENTION): FSRS =>
   fsrs(generatorParameters({ request_retention: retention, enable_fuzz: fuzz }));
+/**
+ * The student's B2.6 settings, checked. preferences is jsonb the user can write directly through the API,
+ * so an out-of-range or missing value falls back to the default instead of breaking scheduling.
+ */
+export function studySettings(p?: { new_cards_per_day?: unknown; retention?: unknown } | null): { newLimit: number; retention: number } {
+  const n = p?.new_cards_per_day, r = p?.retention;
+  return {
+    newLimit: typeof n === 'number' && Number.isInteger(n) && n >= 5 && n <= 100 ? n : NEW_CARD_LIMIT,
+    retention: typeof r === 'number' && r >= 0.8 && r <= 0.97 ? r : DEFAULT_RETENTION,
+  };
+}
 const schedulers = new Map<number, FSRS>();
 /** One scheduler per target retention (B2.6, the student's setting), built once. */
 export function schedulerFor(retention = DEFAULT_RETENTION): FSRS {

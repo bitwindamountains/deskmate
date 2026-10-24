@@ -12,7 +12,7 @@ function fakeDb(respond: (o: Op) => { data?: unknown; error?: unknown }) {
     let op = 'select';
     const args: unknown[] = [];
     const c: Record<string, unknown> = {};
-    for (const m of ['select', 'insert', 'update', 'eq', 'order', 'maybeSingle', 'single', 'not', 'limit']) {
+    for (const m of ['select', 'insert', 'update', 'eq', 'order', 'maybeSingle', 'single', 'in', 'limit']) {
       c[m] = (...a: unknown[]) => {
         if (m === 'insert' || m === 'update') op = m;
         args.push([m, ...a]);

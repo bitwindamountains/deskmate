@@ -5,6 +5,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 import { loadStudy } from '@/lib/review/load';
 import { createClient } from '@/lib/supabase/server';
 import { TodayPlan } from './plan';
+import { studySettings } from '@/review/schedule';
 
 export default async function TodayPage() {
   const { profile } = await requireOnboardedUser();
@@ -14,7 +15,7 @@ export default async function TodayPage() {
   return (
     <AppPage current="today" title="Today">
       <TodayPlan decks={decks} cards={cards} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} now={new Date()} essays={essays} zone={zone}
-        newLimit={profile.preferences?.new_cards_per_day} />
+        newLimit={studySettings(profile.preferences).newLimit} />
     </AppPage>
   );
 }
