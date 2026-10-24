@@ -25,3 +25,8 @@ test('hint head start: a category needing hint 4+ on average across 3 essays sta
   ];
   expect(headStartCategories(items)).toEqual(['evidence']);
 });
+
+test('items resolved without opening a hint bring the average down, so the head start switches off', () => {
+  const items = [opened('evidence', 'e1', 5), opened('evidence', 'e2', 4), opened('evidence', 'e3', 4), opened('evidence', 'e4', 0), opened('evidence', 'e4', 0)];
+  expect(headStartCategories(items)).toEqual([]);
+});

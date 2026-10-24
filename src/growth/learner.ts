@@ -37,11 +37,12 @@ export function leechRate(leeches: number, total: number): number | null {
 /**
  * Spec J7: categories where, across at least 3 essays, the student has needed hint 4 or more on average.
  * Their items open at hint 2, so the student isn't made to click through hints that rarely help them.
+ * Pass every item the student opened or resolved: one resolved without a hint counts as 0, so the head start
+ * switches off as the student improves (shown-for-free hints aren't recorded as views).
  */
 export function headStartCategories(items: { category: string; essay_id: string; highest_level: number }[]): string[] {
   const by = new Map<string, { essays: Set<string>; total: number; n: number }>();
   for (const i of items) {
-    if (i.highest_level < 1) continue; // never opened
     const c = by.get(i.category) ?? { essays: new Set<string>(), total: 0, n: 0 };
     c.essays.add(i.essay_id);
     c.total += i.highest_level;

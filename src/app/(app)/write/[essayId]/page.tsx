@@ -12,6 +12,7 @@ import type { ThreadMessage } from './item-dialogue';
 import type { OutlineLine } from './outline';
 import { priorityCount } from '@/rank';
 import { headStartCategories } from '@/growth/learner';
+import { allRows } from '@/lib/cards/transfer';
 
 // Same columns the analyze route returns, so the client can swap in its responses wholesale.
 const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id,revised_summary';
@@ -38,8 +39,10 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
     db.from('self_assessments').select('scores,weakness').eq('draft_id', draftId).maybeSingle(),
     // Spec J5: the student's last three answers to a priority, across essays; RLS scopes it to them.
     db.from('feedback_events').select('action').in('action', ['got_it', 'disagree']).order('created_at', { ascending: false }).limit(3),
-    // Spec J7: every item the student has opened a hint on, with its essay, to find categories that need a head start.
-    db.from('feedback_items').select('category,highest_level,drafts!inner(essay_id)').gte('highest_level', 1),
+    // Spec J7: original items (a carried copy repeats its parent's level) the student opened or resolved, paged past 1,000.
+    allRows((from, to) => db.from('feedback_items').select('category,highest_level,drafts!inner(essay_id)')
+      .or('highest_level.gte.1,status.in.(got_it,addressed)').is('carried_from_id', null).neq('source', 'languagetool')
+      .order('id').range(from, to)),
   ]);
   if (items.error || analysis.error || rewrites.error || self.error) throw new Error(LOAD_FAILED);
   // Re-checked on read: a row written straight to the table must not break the page.
@@ -49,7 +52,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   const selfAssessment = parsedSelf?.ok ? parsedSelf.value : null;
   // A failed read of this nicety falls back to Top 3 rather than failing the page.
   const topCount = priorityCount(recent.data);
-  const headStart = headStartCategories(((opened.data ?? []) as unknown as { category: string; highest_level: number; drafts: { essay_id: string } }[])
+  const headStart = headStartCategories(((opened ?? []) as unknown as { category: string; highest_level: number; drafts: { essay_id: string } }[])
     .map((i) => ({ category: i.category, highest_level: i.highest_level, essay_id: i.drafts.essay_id })));
   const ids = items.data.map((i) => i.id as string);
   const messages = ids.length
