@@ -54,7 +54,7 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
         {/* ponytail: this sentence names every service that receives student text: the `trainsOnInputs: false` providers in
             src/llm/config.ts and LanguageTool (src/lib/essay/languagetool.ts). Update it with either. Confirm LanguageTool's
             privacy terms before launch. */}
-        <p>Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq&apos;s terms say it does not train its models on what you send.</p>
+        <p>Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this, and essays are also checked by LanguageTool for spelling and grammar. Groq&apos;s terms say it does not train its models on what you send. <a href="/privacy" className="underline">Read the privacy notice</a>.</p>
 
         <button type="submit" disabled={pending} className="btn btn-primary">{defaults ? 'Save changes' : 'Start studying'}</button>
       </form>
