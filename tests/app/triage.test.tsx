@@ -212,6 +212,10 @@ test('swiping the card right keeps it, left opens the discard reasons, a short d
   };
   swipe(200, 230);
   expect(setCardStatus).not.toHaveBeenCalled();
+  // A mouse drag is text selection, not a swipe.
+  fireEvent.pointerDown(cardEl, { clientX: 100, isPrimary: true, pointerType: 'mouse' });
+  fireEvent.pointerUp(cardEl, { clientX: 260, isPrimary: true, pointerType: 'mouse' });
+  expect(setCardStatus).not.toHaveBeenCalled();
   swipe(100, 260);
   expect(setCardStatus).toHaveBeenCalledWith(['a'], 'kept', undefined);
   await waitFor(() => expect(front()).toBe('Front b'));

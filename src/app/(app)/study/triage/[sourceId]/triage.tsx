@@ -35,8 +35,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   const [say, setSay] = useState('');
   const [improving, setImproving] = useState(false);
   const [improveError, setImproveError] = useState('');
-  const [suggested, setSuggested] = useState(false);
-  const swipeFrom = useRef<number | null>(null); // B2.5 swipe: x where the press started // the edit form holds the AI's rewrite, not the student's text
+  const [suggested, setSuggested] = useState(false); // the edit form holds the AI's rewrite, not the student's text
+  const swipeFrom = useRef<number | null>(null); // B2.5 swipe: x where the press started
   const [mode, setMode] = useState<'view' | 'reason' | 'edit'>('view');
   const [draft, setDraft] = useState({ front: '', back: '', error: '' });
 
@@ -244,7 +244,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
       {current ? (
         <section aria-label="Current card" className="touch-pan-y space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]"
           // B2.5: swipe right keeps, left discards, the same as the arrow keys. touch-pan-y leaves vertical scrolling to the page.
-          onPointerDown={(e) => { swipeFrom.current = mode !== 'edit' && e.isPrimary ? e.clientX : null; }}
+          // Touch and pen only: a mouse drag here is selecting card text, and its click could press Keep a second time.
+          onPointerDown={(e) => { swipeFrom.current = mode !== 'edit' && e.isPrimary && e.pointerType !== 'mouse' ? e.clientX : null; }}
           onPointerCancel={() => { swipeFrom.current = null; }}
           onPointerUp={(e) => {
             const from = swipeFrom.current;

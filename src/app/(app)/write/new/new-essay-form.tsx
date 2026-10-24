@@ -51,7 +51,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
     setReading(true);
     const r = await extractEssayFile(file);
     setReading(false);
-    if (r.ok) setContent(r.text);
+    if (r.ok) { setContent(r.text); setVerseAsked(false); }
     else setError(r.error, 'file');
   }
 
@@ -164,15 +164,16 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Rate it yourself first (optional)</summary>
         <div className="mt-4 space-y-5">
           <p className="text-ink-muted">After feedback, you&apos;ll see how your rating compares with the coach&apos;s.</p>
-          {criteria.map((c) => (
+          {/* ids by position: a student's criterion name can hold spaces, which would split aria-describedby */}
+          {criteria.map((c, i) => (
             <div key={c.name}>
-              <label htmlFor={`self-${c.name}`} className="mb-1 block">{c.name}</label>
-              <select id={`self-${c.name}`} value={selfScores[c.name] ?? ''} className="field" aria-describedby={`self-${c.name}-d`}
+              <label htmlFor={`self-${i}`} className="mb-1 block">{c.name}</label>
+              <select id={`self-${i}`} value={selfScores[c.name] ?? ''} className="field" aria-describedby={`self-${i}-d`}
                 onChange={(e) => setSelfScores((s) => ({ ...s, [c.name]: e.target.value }))}>
                 <option value="">Not rated</option>
                 {Array.from({ length: c.maxScore }, (_, k) => <option key={k} value={k + 1}>{`${k + 1} of ${c.maxScore}`}</option>)}
               </select>
-              <p id={`self-${c.name}-d`} className="mt-1 text-sm text-ink-muted">{c.description}</p>
+              <p id={`self-${i}-d`} className="mt-1 text-sm text-ink-muted">{c.description}</p>
             </div>
           ))}
           <div>
