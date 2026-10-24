@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import type { PageText } from '@/chunk';
+import { extractEssayFile } from '@/lib/essay/extract';
 import { MAX_PAGES, validateImport } from '@/lib/import/validate';
 import { createSource } from './actions';
 
@@ -14,9 +15,11 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   const [error, setErrorMsg] = useState('');
   const [errField, setErrField] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const picks = useRef(0); // reading a file is async: only the latest pick may change the form
   const setError = (msg: string, field = '') => { setErrorMsg(msg); setErrField(msg ? field : ''); };
   const [pdf, setPdf] = useState<{ name: string; pages: PageText[] } | null>(null);
   const [text, setText] = useState('');
+  const [docName, setDocName] = useState(''); // a Word file's name, once its text is in the box
   const [deck, setDeck] = useState(decks[0]?.id ?? NEW);
   const [newTitle, setNewTitle] = useState('');
   const [examDate, setExamDate] = useState('');
@@ -26,14 +29,27 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   async function pick(file?: File) {
     setError('');
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.pdf')) return setError('Choose a PDF file.', 'pdf');
+    const pick = ++picks.current;
+    if (file.name.toLowerCase().endsWith('.docx')) {
+      // A Word file has no pages to pick from, so its text goes in the box like pasted notes, after anything already there.
+      const r = await extractEssayFile(file);
+      if (pick !== picks.current) return;
+      if (!r.ok) return setError(r.error, 'pdf');
+      setPdf(null);
+      setText((t) => (t.trim() ? `${t.trimEnd()}\n\n${r.text}` : r.text));
+      setDocName(file.name);
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith('.pdf')) return setError('Choose a PDF or Word (.docx) file.', 'pdf');
     try {
       const { extractPdfPages } = await import('@/lib/import/pdf');
       const pages = await extractPdfPages(file);
+      if (pick !== picks.current) return;
       setPdf({ name: file.name, pages });
       setFrom(1);
       setTo(Math.min(pages.length, MAX_PAGES));
     } catch {
+      if (pick !== picks.current) return;
       setPdf(null);
       setError("We couldn't read that PDF. Try another file or paste the text instead.", 'pdf');
     }
@@ -48,7 +64,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
     } else pages = [{ page: 1, text }];
     const input = {
       ...(deck === NEW ? { newDeckTitle: newTitle, examDate: examDate || undefined } : { deckId: deck }),
-      title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : '').slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
+      title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : docName.replace(/\.docx$/i, '')).slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
       kind: pdf ? ('pdf' as const) : ('text' as const),
       pages,
     };
@@ -75,10 +91,15 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
       {error && <p id="import-err" role="alert" className="error">{error}</p>}
 
       <div>
-        <label htmlFor="pdf" className="mb-1 block">PDF file</label>
-        <input ref={fileRef} id="pdf" type="file" accept=".pdf,application/pdf" className="field" {...bad('pdf')} onChange={(e) => pick(e.target.files?.[0])}
+        <label htmlFor="pdf" className="mb-1 block">PDF or Word file</label>
+        <input ref={fileRef} id="pdf" type="file"
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="field" {...bad('pdf')} onChange={(e) => pick(e.target.files?.[0])}
           onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files[0]); }} onDragOver={(e) => e.preventDefault()} />
-        {pdf && <p className="mt-1">{pdf.name}: {pdf.pages.length} pages</p>}
+        {/* Always rendered, so screen readers announce the file once it has been read (WCAG 4.1.3). */}
+        <div role="status">
+          {pdf && <p className="mt-1">{pdf.name}: {pdf.pages.length} pages</p>}
+          {!pdf && docName && <p className="mt-1">{docName}: its text is in the box below, where you can edit it.</p>}
+        </div>
       </div>
 
       {pdf && pdf.pages.length > MAX_PAGES && (
@@ -100,7 +121,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
       ) : (
         <div>
           <label htmlFor="paste" className="mb-1 block">Paste text</label>
-          <textarea id="paste" rows={8} value={text} onChange={(e) => setText(e.target.value)} className="field" {...bad('paste')} />
+          <textarea id="paste" rows={8} value={text} onChange={(e) => { setText(e.target.value); if (!e.target.value.trim()) setDocName(''); }} className="field" {...bad('paste')} />
         </div>
       )}
 

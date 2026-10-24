@@ -6,7 +6,10 @@ const Report = z.object({ target: z.enum(['card', 'feedback_item']), targetId: z
   note: z.string().trim().max(500) });
 export type ReportInput = z.input<typeof Report>;
 
-/** Brief lines 442 and 853: "Report a problem" on AI output. RLS only accepts a card or item the student owns. */
+/**
+ * Brief lines 442 and 853: "Report a problem" on AI output. RLS only accepts a card or item the student owns,
+ * and a database trigger copies the reported text into `snapshot`.
+ */
 export async function reportProblem(db: Db, userId: string, input: ReportInput): Promise<void> {
   const v = Report.safeParse(input);
   if (!v.success) throw new Error("We couldn't send that report.");

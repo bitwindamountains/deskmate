@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { resetsIn } from '@/lib/time/reset';
 
 export type EssayStatus = 'Feedback ready' | 'Waiting for feedback' | 'Revising';
 export type EssaySummary = { id: string; title: string; status: EssayStatus };
@@ -15,7 +16,7 @@ const NewEssay = ({ className = '' }: { className?: string }) => <Link href="/wr
 function ChecksLeft({ n }: { n: number }) {
   return (
     <p className="mb-6 text-ink-muted">
-      {n > 0 ? `${n} essay ${n === 1 ? 'check' : 'checks'} left today` : "You've used today's 5 essay checks. They reset at midnight UTC."}
+      {n > 0 ? `${n} essay ${n === 1 ? 'check' : 'checks'} left today` : `You've used today's 5 essay checks. They reset ${resetsIn()}.`}
     </p>
   );
 }

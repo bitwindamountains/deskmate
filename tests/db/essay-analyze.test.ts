@@ -116,7 +116,7 @@ test('sixth draft of the day is 429 with the quota message and no LLM call', asy
   const sixth = await newDraft(U, ESSAY, first.essayId, 6);
   const fn = fakeComplete({ essay_global: GLOBAL });
   const r = await analyzeLayer(U.client, U.userId, sixth.draftId, 'global', {}, { completeFn: fn });
-  expect(r).toEqual({ ok: false, status: 429, error: 'quota', message: "You've used today's 5 essay checks. They reset at midnight UTC." });
+  expect(r).toEqual({ ok: false, status: 429, error: 'quota', message: expect.stringMatching(/^You've used today's 5 essay checks\. They reset in (about \d+ hours?|under an hour)\.$/) });
   expect(fn).not.toHaveBeenCalled();
   expect(await layers(sixth.draftId)).toEqual({ global: 'failed' });
 });

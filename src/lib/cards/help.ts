@@ -3,6 +3,7 @@ import { logCalls, type Db } from '@/lib/llm-calls';
 import { cardHelpPrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardHelp } from '@/llm/schemas';
+import { resetsIn } from '@/lib/time/reset';
 
 type Help = { explanation: string; mnemonic: string; analogy: string };
 export type CardHelpResult = { ok: true; help: Help; added: number; dropped: number; cached: boolean }
@@ -18,7 +19,7 @@ async function cardKey(front: string, back: string): Promise<string> {
 }
 
 const NOT_FOUND = { ok: false, status: 404, message: "We couldn't find that card." } as const;
-const LIMIT = { ok: false, status: 429, message: "You've asked for a lot of help today. More unlocks at midnight UTC." } as const;
+const LIMIT = () => ({ ok: false, status: 429, message: `You've asked for a lot of help today. More unlocks ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, message: 'Help is busy right now. Try again in a minute.' } as const;
 
 /** On-demand help for a card (B3.3 leeches, B3.8 mnemonics). Cached per card; one call takes one of the day's helper calls. */
@@ -46,7 +47,7 @@ export async function requestCardHelp(db: Db, userId: string, cardId: string, en
   // Same daily budget as essay hints: every on-demand LLM helper call counts once, before the call.
   const { data: allowed, error: qErr } = await db.rpc('consume_hint_quota');
   if (qErr) return BUSY;
-  if (!allowed) return LIMIT;
+  if (!allowed) return LIMIT();
 
   const chunk = card.source_chunks?.text ?? '';
   let help: CardHelp;

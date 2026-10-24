@@ -23,7 +23,7 @@ const card = (id: string, front = `Front ${id}`): CardRow => ({
 const ok = (cards: CardRow[]) => new Response(JSON.stringify({ cards, droppedUngrounded: 0, alreadyGenerated: false }), { status: 200, headers: { 'content-type': 'application/json' } });
 const err = (status: number, error: string, message: string) => new Response(JSON.stringify({ error, message }), { status, headers: { 'content-type': 'application/json' } });
 const BUSY = 'The AI service is busy. Your material is saved; try again in a few minutes.';
-const QUOTA = "You've used today's 3 card generations. They reset at midnight UTC.";
+const QUOTA = "You've used today's 3 card generations. They reset in about 7 hours.";
 
 const fetchMock = vi.fn();
 beforeEach(() => {
