@@ -6,6 +6,7 @@ import { findDuplicates } from '@/lib/embed/duplicates';
 import { getEmbedder } from '@/lib/embed/embed';
 import type { CardRow } from '@/lib/generate/generate-chunk';
 import { editCard, saveEmbeddings, setCardStatus } from '../actions';
+import { MathText } from '@/components/math-text';
 
 type Reason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
 export type KnownCard = { id: string; front: string; back: string; embedding: number[] | null };
@@ -230,8 +231,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
             </form>
           ) : (
             <>
-              <h2 className="text-xl font-bold text-balance">{current.front}</h2>
-              <p className="max-w-prose">{current.back}</p>
+              <h2 className="text-xl font-bold text-balance"><MathText text={current.front} /></h2>
+              <p className="max-w-prose"><MathText text={current.back} /></p>
               <p className="text-sm text-ink-muted">{snippet(current)}</p>
             </>
           )}
