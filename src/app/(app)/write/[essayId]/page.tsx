@@ -11,6 +11,7 @@ import { EssayView, type Analysis } from './essay-view';
 import type { ThreadMessage } from './item-dialogue';
 import type { OutlineLine } from './outline';
 import { priorityCount } from '@/rank';
+import { headStartCategories } from '@/growth/learner';
 
 // Same columns the analyze route returns, so the client can swap in its responses wholesale.
 const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id,revised_summary';
@@ -30,7 +31,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   if (!essay.data || !draft.data) notFound();
 
   const draftId = draft.data.id as string;
-  const [items, analysis, rewrites, self, recent] = await Promise.all([
+  const [items, analysis, rewrites, self, recent, opened] = await Promise.all([
     db.from('feedback_items').select(ITEM_COLS).eq('draft_id', draftId).order('created_at'),
     db.from('analyses').select('rubric_scores,strengths,safety_concern,prompt_alignment').eq('draft_id', draftId).maybeSingle(),
     db.from('feedback_events').select('id,feedback_items!inner(draft_id)', { count: 'exact', head: true })
@@ -38,6 +39,8 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
     db.from('self_assessments').select('scores,weakness').eq('draft_id', draftId).maybeSingle(),
     // Spec J5: the student's last three answers to a priority, across essays; RLS scopes it to them.
     db.from('feedback_events').select('action').in('action', ['got_it', 'disagree']).order('created_at', { ascending: false }).limit(3),
+    // Spec J7: every item the student has opened a hint on, with its essay, to find categories that need a head start.
+    db.from('feedback_items').select('category,highest_level,drafts!inner(essay_id)').gte('highest_level', 1),
   ]);
   if (items.error || analysis.error || rewrites.error || self.error) throw new Error(LOAD_FAILED);
   // Re-checked on read: a row written straight to the table must not break the page.
@@ -45,6 +48,8 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
   const selfAssessment = parsedSelf?.ok ? parsedSelf.value : null;
   // A failed read of this nicety falls back to Top 3 rather than failing the page.
   const topCount = priorityCount(recent.data);
+  const headStart = headStartCategories(((opened.data ?? []) as unknown as { category: string; highest_level: number; drafts: { essay_id: string } }[])
+    .map((i) => ({ category: i.category, highest_level: i.highest_level, essay_id: i.drafts.essay_id })));
   const ids = items.data.map((i) => i.id as string);
   const messages = ids.length
     ? await db.from('feedback_messages').select('item_id,role,kind,text,verdict').in('item_id', ids).order('created_at')
@@ -59,7 +64,7 @@ export default async function EssayPage({ params }: { params: Promise<{ essayId:
       <EssayView key={draftId} essayId={essayId} draftId={draftId} version={draft.data.version as number} content={draft.data.content}
         paragraphs={paragraphs(draft.data.content)} layers={(draft.data.layers ?? {}) as Record<string, string>}
         items={items.data as unknown as ItemRow[]} analysis={analysis.data as Analysis | null} rewritesUsed={rewrites.count ?? 0}
-        showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax} topCount={topCount}
+        showScores={profile.preferences?.show_scores !== false} rubricMax={rubricMax} topCount={topCount} headStart={headStart}
         outline={draft.data.outline as OutlineLine[] | null} threads={threads}
         selfAssessment={selfAssessment}
         timed={essay.data.timed_minutes ? { limit: essay.data.timed_minutes as number, used: (draft.data.minutes_used as number | null) ?? null } : null} />

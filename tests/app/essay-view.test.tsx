@@ -99,6 +99,14 @@ test('after three priorities addressed in a row the student sees a Top 5 (spec J
   expect(ids.length).toBeLessThanOrEqual(5);
 });
 
+test('a category the student needs a head start in opens at hint 2 (spec J7)', () => {
+  view({ headStart: ['cat-g1'] });
+  const started = document.getElementById('card-g1')!;
+  expect(within(started).getByText('Hint one g1')).toBeTruthy();
+  expect(within(started).getByText('Hint two g1')).toBeTruthy();
+  expect(within(document.getElementById('card-p1')!).queryByText('Hint one p1')).toBeNull();
+});
+
 test('Top 3 shows the three highest-ranked open items; Show all groups the rest by layer', () => {
   view();
   const top = screen.getByRole('region', { name: 'Top 3 priorities' });
