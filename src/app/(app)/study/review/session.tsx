@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
+import { ReportProblem } from '@/components/report-problem';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
 import { promptForWhy, writeHref } from '@/growth/prompts';
@@ -331,6 +332,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
               </div>
               {showSource && <blockquote className="border-l-2 border-line pl-3 text-ink-muted">{current.sourceQuote}</blockquote>}
               {helpOpen && <CardHelpPanel cardId={current.id} deckId={current.deckId} />}
+              <ReportProblem key={current.id} target="card" targetId={current.id} />
             </div>
             {(checked.hit.length > 0 || checked.missed.length > 0) && (
               <ul className="space-y-1 md:col-span-2">
