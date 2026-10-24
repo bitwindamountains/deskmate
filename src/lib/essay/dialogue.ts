@@ -3,6 +3,7 @@ import { itemDialoguePrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { ItemDialogue } from '@/llm/schemas';
 import { paragraphs } from './text';
+import { resetsIn } from '@/lib/time/reset';
 
 type Kind = 'question' | 'dispute';
 type Verdict = 'keep' | 'modify' | 'withdraw';
@@ -16,7 +17,7 @@ export const MAX_COACH_REPLIES = 4;
 const MAX_WORDS = 120;
 const NOT_FOUND = { ok: false, status: 404, message: "We couldn't find that feedback." } as const;
 const AT_LIMIT = { ok: false, status: 409, message: "That's as far as I can take this one. Try the hint ladder, or mark it Got it." } as const;
-const LIMIT = { ok: false, status: 429, message: "You've asked for a lot of help today. More unlocks at midnight UTC." } as const;
+const LIMIT = () => ({ ok: false, status: 429, message: `You've asked for a lot of help today. More unlocks ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, message: 'The coach is busy right now. Try again in a minute.' } as const;
 
 const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
@@ -48,7 +49,7 @@ export async function sendDialogue(db: Db, userId: string, itemId: string, kind:
 
   const { data: allowed, error: qErr } = await db.rpc('consume_hint_quota');
   if (qErr) return BUSY;
-  if (!allowed) return LIMIT;
+  if (!allowed) return LIMIT();
 
   const paras = paragraphs(item.drafts.content);
   let r: ItemDialogue;

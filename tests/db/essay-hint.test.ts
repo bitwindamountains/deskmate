@@ -126,7 +126,7 @@ test('daily hint limit reached is 429 with no LLM call and no rewrite slot used'
   const item = await newItem(U, await newDraft(U));
   await adminClient().from('quota_usage').insert({ user_id: U.userId, day: new Date().toISOString().slice(0, 10), hints: 60 });
   const fn = ladder();
-  const limit = { ok: false, status: 429, message: "You've asked for a lot of hints today. More unlock at midnight UTC." };
+  const limit = { ok: false, status: 429, message: expect.stringMatching(/^You've asked for a lot of hints today\. More unlock in (about \d+ hours?|under an hour)\.$/) };
   expect(await requestHint(U.client, U.userId, item, 3, {}, fn)).toEqual(limit);
   expect(await requestHint(U.client, U.userId, item, 5, {}, rewrite())).toEqual(limit);
   expect(fn).not.toHaveBeenCalled();

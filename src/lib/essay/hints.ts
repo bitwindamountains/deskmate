@@ -4,6 +4,7 @@ import { hintLadderPrompt, hintRewritePrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { HintLadder, HintRewrite } from '@/llm/schemas';
 import { paragraphs } from './text';
+import { resetsIn } from '@/lib/time/reset';
 
 export type HintResult = { ok: true; text: string } | { ok: false; status: 404 | 409 | 429 | 503; message: string };
 
@@ -17,7 +18,7 @@ const WORDS_GONE = { ok: false, status: 409, message: "The words this item point
 const CAP = { ok: false, status: 429, message: "You've used this draft's 3 suggested rewrites." } as const;
 const NO_REWRITE = { ok: false, status: 503, message: "Couldn't make a suggestion for this one." } as const;
 const BUSY = { ok: false, status: 503, message: 'Hints are busy right now. Try again in a minute.' } as const;
-const DAILY_LIMIT = { ok: false, status: 429, message: "You've asked for a lot of hints today. More unlock at midnight UTC." } as const;
+const DAILY_LIMIT = () => ({ ok: false, status: 429, message: `You've asked for a lot of hints today. More unlock ${resetsIn()}.` }) as const;
 
 // No ghostwriting (brief E2): a rewrite may not outgrow the words it replaces.
 const rewriteCap = (quote: string) => Math.max(25, Math.floor(1.5 * wordCount(quote)));
@@ -43,7 +44,7 @@ export async function requestHint(db: Db, userId: string, itemId: string, level:
   const takeHint = async (): Promise<HintResult | null> => {
     const { data: ok, error: qErr } = await db.rpc('consume_hint_quota');
     if (qErr) return BUSY;
-    return ok ? null : DAILY_LIMIT;
+    return ok ? null : DAILY_LIMIT();
   };
 
   let text: string;

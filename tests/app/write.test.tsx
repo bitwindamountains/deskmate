@@ -74,7 +74,7 @@ test('Write list shows essay checks left today', () => {
   rerender(<EssayList essays={[]} checksLeft={1} />);
   expect(screen.getByText('1 essay check left today')).toBeTruthy();
   rerender(<EssayList essays={[]} checksLeft={0} />);
-  expect(screen.getByText("You've used today's 5 essay checks. They reset at midnight UTC.")).toBeTruthy();
+  expect(screen.getByText(/^You've used today's 5 essay checks\. They reset in (about \d+ hours?|under an hour)\.$/)).toBeTruthy();
 });
 
 test('rating it yourself first sends the scores and weakness; untouched criteria are left out', () => {
