@@ -100,7 +100,7 @@ test('another user item is 404 with no LLM call; helper limit reached is 429', a
   const own = await newItem(U);
   await setHints(U, 60);
   expect(await sendDialogue(U.client, U.userId, own, 'question', 'Hi?', {}, fn)).toEqual({ ok: false, status: 429,
-    message: "You've asked for a lot of help today. More unlocks at midnight UTC." });
+    message: expect.stringMatching(/^You've asked for a lot of help today\. More unlocks in (about \d+ hours?|under an hour)\.$/) });
   expect(fn).not.toHaveBeenCalled();
 });
 

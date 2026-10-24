@@ -6,6 +6,7 @@ import { EssayGlobal, EssayParagraphs, type FeedbackItem } from '@/llm/schemas';
 import { applyJudgement, planCarryOver, type CarryPlan, type PrevItem } from './carry';
 import { checkSentences } from './languagetool';
 import { anchorQuote, paragraphs } from './text';
+import { resetsIn } from '@/lib/time/reset';
 
 export type Layer = 'global' | 'paragraphs' | 'sentences';
 export type ItemRow = { id: string; layer: 'global' | 'paragraph' | 'sentence'; category: string; rubric_criterion: string | null;
@@ -22,7 +23,7 @@ export type AnalyzeResult =
 const ITEM_COLS = 'id,layer,category,rubric_criterion,paragraph_index,quote,anchor_start,anchor_end,severity,summary,hints,rewrite,replacements,convention,source,status,highest_level,carried_from_id,revised_summary';
 const NOT_FOUND = { ok: false, status: 404, error: 'not_found', message: "We couldn't find that essay." } as const;
 const RUNNING = { ok: false, status: 409, error: 'running', message: 'This feedback is already on its way.' } as const;
-const QUOTA = { ok: false, status: 429, error: 'quota', message: "You've used today's 5 essay checks. They reset at midnight UTC." } as const;
+const QUOTA = () => ({ ok: false, status: 429, error: 'quota', message: `You've used today's 5 essay checks. They reset ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, error: 'busy', message: 'Feedback is busy right now. Your essay is saved; try again in a minute.' } as const;
 const ITEM_LAYER = { global: 'global', paragraphs: 'paragraph', sentences: 'sentence' } as const;
 
@@ -89,7 +90,7 @@ export async function analyzeLayer(db: Db, userId: string, draftId: string, laye
   const { data: allowed, error: quotaErr } = await db.rpc('consume_essay_quota', { p_draft_id: draftId });
   if (quotaErr || !allowed) {
     await finish('failed');
-    return quotaErr ? BUSY : QUOTA;
+    return quotaErr ? BUSY : QUOTA();
   }
 
   try {
