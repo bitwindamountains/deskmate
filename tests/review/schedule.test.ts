@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { Rating } from 'ts-fsrs';
 import {
-  applyRating, buildSession, daysUntil, makeScheduler, NEW_CARD_LIMIT, newCardCapacity, nextReview, parseDay, readiness, retrievability,
+  applyRating, buildSession, daysUntil, makeScheduler, NEW_CARD_LIMIT, schedulerFor, newCardCapacity, nextReview, parseDay, readiness, retrievability,
   type StateRow, type StudyCard, weight,
 } from '@/review/schedule';
 
@@ -63,6 +63,20 @@ test('doMore lifts the minutes cap but not the new-card limit', () => {
   const s = buildSession([...news, ...dues], { ...opts, doMore: true });
   expect(s.queue.length).toBe(30);
   expect(s.queue.filter((c) => !c.state).length).toBe(NEW_CARD_LIMIT);
+});
+
+test("the student's own new-card limit replaces the default (B2.6)", () => {
+  const s = buildSession([...news, ...dues], { ...opts, doMore: true, newLimit: 5 });
+  expect(s.queue.filter((c) => !c.state).length).toBe(5);
+});
+
+test('a higher target retention schedules the next review sooner', () => {
+  const at = new Date('2026-10-01T09:00:00Z');
+  const due = (r: number) => new Date(applyRating(card('r', null), 3, at, null, schedulerFor(r)).state.due).getTime();
+  const first = applyRating(card('r', null), 3, at, null).state;
+  const again = (r: number) => new Date(applyRating(card('r', first), 3, new Date(first.due), null, makeScheduler(false, r)).state.due).getTime();
+  expect(due(0.9)).toBeGreaterThan(0);
+  expect(again(0.97)).toBeLessThan(again(0.8));
 });
 
 test('exam priority ranks importance × (1 − R) when overloaded', () => {

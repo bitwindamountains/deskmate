@@ -8,7 +8,9 @@ export type ReviewPayload = { client_review_id: string; card_id: string; answer_
   final_rating: Grade; response_ms: number | null; reviewed_at: string; confidence?: Confidence };
 export type CachedCard = Omit<StudyCard, 'state'> & { front: string; back: string; keyPoints: string[] };
 export type OutboxRow = { client_review_id: string; reviewedAt: string; review: ReviewPayload; prevState: StateRow | null;
-  state: StateRow; needsRegrade: 0 | 1; examDate: string | null };
+  state: StateRow; needsRegrade: 0 | 1; examDate: string | null;
+  /** The student's target retention at review time, so a regrade schedules the same way. Older rows have none (0.9). */
+  retention?: number };
 
 export class ScholarDB extends Dexie {
   cards!: EntityTable<CachedCard, 'id'>;
@@ -32,10 +34,10 @@ export async function cacheDueCards(cards: (StudyCard & { front: string; back: s
 
 /** examDate is the exam in force when the card was reviewed, so a later regrade caps the same way. */
 export async function enqueueReview(review: ReviewPayload, prevState: StateRow | null, state: StateRow,
-  needsRegrade: boolean, examDate: Date | null): Promise<void> {
+  needsRegrade: boolean, examDate: Date | null, retention?: number): Promise<void> {
   await db.transaction('rw', db.outbox, db.states, async () => {
     await db.outbox.put({ client_review_id: review.client_review_id, reviewedAt: review.reviewed_at, review, prevState, state,
-      needsRegrade: needsRegrade ? 1 : 0, examDate: examDate?.toISOString() ?? null });
+      needsRegrade: needsRegrade ? 1 : 0, examDate: examDate?.toISOString() ?? null, retention });
     await db.states.put(state);
   });
 }

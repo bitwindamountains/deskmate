@@ -13,7 +13,8 @@ export default async function TodayPage() {
   const [{ decks, cards, newIntroducedToday }, essays] = await Promise.all([loadStudy(db, undefined, zone), essaysWithOpenPriorities(db)]);
   return (
     <AppPage current="today" title="Today">
-      <TodayPlan decks={decks} cards={cards} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} now={new Date()} essays={essays} zone={zone} />
+      <TodayPlan decks={decks} cards={cards} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} now={new Date()} essays={essays} zone={zone}
+        newLimit={profile.preferences?.new_cards_per_day} />
     </AppPage>
   );
 }

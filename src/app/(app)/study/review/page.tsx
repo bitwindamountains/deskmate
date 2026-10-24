@@ -18,7 +18,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const label = focus ? shown[0]?.concept.trim() ?? concept!.trim() : null;
   return (
     <AppPage current="study" title={label ? `Review: ${label}` : 'Review'}>
-      <ReviewSession cards={shown} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} examDates={examDates} />
+      <ReviewSession cards={shown} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} examDates={examDates}
+        newLimit={profile.preferences?.new_cards_per_day} retention={profile.preferences?.retention} />
     </AppPage>
   );
 }

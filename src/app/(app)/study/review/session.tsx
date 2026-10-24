@@ -11,7 +11,7 @@ import type { ReviewCard } from '@/lib/review/load';
 import type { Confidence } from '@/review/calibration';
 import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
-import { applyRating, buildSession, nextReview, parseDay, type Grade } from '@/review/schedule';
+import { applyRating, buildSession, DEFAULT_RETENTION, nextReview, parseDay, schedulerFor, type Grade } from '@/review/schedule';
 import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/store';
 import { CardHelpPanel } from './card-help';
 import { conceptSummary, interleave } from '@/review/interleave';
@@ -62,8 +62,9 @@ function SureNote({ front, quote, example }: { front: string; quote: string; exa
 }
 
 /** cards: the user's kept cards with their server state. examDates: deck id → exam day (YYYY-MM-DD) or null. */
-export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
-  { cards: ReviewCard[]; minutes: number; newIntroducedToday: number; examDates: Record<string, string | null> }) {
+export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, newLimit, retention = DEFAULT_RETENTION }:
+  { cards: ReviewCard[]; minutes: number; newIntroducedToday: number; examDates: Record<string, string | null>; newLimit?: number;
+    retention?: number }) {
   const [all, setAll] = useState<ReviewCard[] | null>(null);
   const [queue, setQueue] = useState<ReviewCard[]>([]);
   const [i, setI] = useState(0);
@@ -93,7 +94,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
   const nearestExam = () => Object.values(examDates).filter((d): d is string => !!d).map((d) => parseDay(d))
     .filter((d) => d.getTime() >= new Date().setHours(0, 0, 0, 0)).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   const build = (from: ReviewCard[], doMore: boolean) => buildSession(from, {
-    now: new Date(), minutes, newIntroducedToday: newIntroducedToday + introduced.current, examDate: nearestExam(), doMore,
+    now: new Date(), minutes, newIntroducedToday: newIntroducedToday + introduced.current, examDate: nearestExam(), doMore, newLimit,
   }).queue as ReviewCard[];
 
   useEffect(() => {
@@ -161,14 +162,14 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates }:
     if (!current || !checked || phase !== 'rate') return;
     const now = new Date();
     const exam = examFor(current.deckId);
-    const { state } = applyRating(current, g, now, exam);
+    const { state } = applyRating(current, g, now, exam, schedulerFor(retention));
     const review: ReviewPayload = {
       client_review_id: crypto.randomUUID(), card_id: current.id, answer_text: checked.answer, grade_source: checked.source,
       ai_score: checked.score, suggested_rating: checked.suggested, final_rating: g, response_ms: checked.ms, reviewed_at: now.toISOString(),
       ...(confidence ? { confidence } : {}),
     };
     try {
-      await enqueueReview(review, current.state, state, checked.needsRegrade, exam);
+      await enqueueReview(review, current.state, state, checked.needsRegrade, exam, retention);
     } catch {
       try { await recordReview(review, state); } catch { setError(SAVE_FAILED); return; } // no IndexedDB: save directly
     }

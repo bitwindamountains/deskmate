@@ -9,6 +9,8 @@ export default async function ProfilePage() {
   const prefs = profile.preferences ?? {};
   const rows: [string, string][] = [
     ['Daily study time', `${profile.study_minutes_per_day} minutes`],
+    ['New cards a day', String(prefs.new_cards_per_day ?? 20)],
+    ['Target retention', `${Math.round((prefs.retention ?? 0.9) * 100)}%`],
     ['Reading font', prefs.font === 'dyslexic' ? 'Dyslexia-friendly' : 'Standard'],
     ['Reduce motion', prefs.reduced_motion ? 'On' : 'Off'],
     ['Show rubric scores', prefs.show_scores === false ? 'Off' : 'On'],

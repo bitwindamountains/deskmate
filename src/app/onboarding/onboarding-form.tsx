@@ -35,6 +35,20 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
           <input id="study_minutes_per_day" name="study_minutes_per_day" type="number" min={5} max={120} defaultValue={defaults?.study_minutes_per_day ?? 20} className={input} {...bad('study_minutes_per_day')} />
           <Err id="study_minutes_per_day-err" msg={e.study_minutes_per_day} />
         </div>
+        <div>
+          <label htmlFor="new_cards_per_day" className="mb-1 block">New cards a day</label>
+          <input id="new_cards_per_day" name="new_cards_per_day" type="number" min={5} max={100}
+            defaultValue={defaults?.preferences?.new_cards_per_day ?? 20} className={input} {...bad('new_cards_per_day')} />
+          <Err id="new_cards_per_day-err" msg={e.new_cards_per_day} />
+        </div>
+        <div>
+          <label htmlFor="retention_percent" className="mb-1 block">How much do you want to remember? (80 to 97%)</label>
+          <input id="retention_percent" name="retention_percent" type="number" min={80} max={97}
+            defaultValue={Math.round((defaults?.preferences?.retention ?? 0.9) * 100)} className={input} {...bad('retention_percent')}
+            aria-describedby={e.retention_percent ? 'retention_percent-err' : 'retention_percent-help'} />
+          <p id="retention_percent-help" className="mt-1 text-sm text-ink-muted">Higher means more reviews. 90% suits most students.</p>
+          <Err id="retention_percent-err" msg={e.retention_percent} />
+        </div>
 
         <fieldset>
           <legend className="mb-1">Reading font</legend>
