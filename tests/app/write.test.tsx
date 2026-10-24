@@ -204,3 +204,16 @@ test('no snapshot card without data', () => {
   render(<EssayList essays={[{ id: 'e1', title: 'Climate', status: 'Feedback ready' }]} snapshot={{ strength: null, workingOn: null }} />);
   expect(screen.queryByRole('region', { name: 'Your writing so far' })).toBeNull();
 });
+
+test('a poem submitted as an argumentative essay asks first; submitting again goes ahead (A7)', () => {
+  createEssay.mockResolvedValue({ ok: false, error: 'x' });
+  const poem = Array.from({ length: 10 }, (_, i) => `the light is in my eyes ${i}`).join('\n') + '\n' + 'the word '.repeat(10);
+  render(<NewEssayForm />);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Night' } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: poem } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(screen.getByRole('alert').textContent).toContain('This looks like a poem or song');
+  expect(createEssay).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
+  expect(createEssay).toHaveBeenCalledTimes(1);
+});
