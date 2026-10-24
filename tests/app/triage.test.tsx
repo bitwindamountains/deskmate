@@ -171,3 +171,23 @@ test('duplicates in a batch are discarded and announced', async () => {
   expect(saveEmbeddings).toHaveBeenCalledWith([{ id: 'a', embedding: [1, 0] }, { id: 'b', embedding: [0, 1] }]);
   expect(front()).toBe('other');
 });
+
+test('Improve this card opens the edit form with the suggested rewrite; Save stores it, nothing is saved before', async () => {
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ suggestion: { front: 'Where does glycolysis happen?', back: 'In the cytoplasm' } }), { status: 200 }));
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a')]} existing={[]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Improve this card' }));
+  expect(await screen.findByText('Suggested rewrite. Change anything, then Save. Cancel keeps your card as it was.')).toBeTruthy();
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ cardId: 'a' });
+  expect((screen.getByLabelText('Front') as HTMLTextAreaElement).value).toBe('Where does glycolysis happen?');
+  expect(editCard).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(editCard).toHaveBeenCalledWith('a', { front: 'Where does glycolysis happen?', back: 'In the cytoplasm' }));
+});
+
+test('a refused improvement shows its reason and keeps the card', async () => {
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'no_source', message: 'This card has no source passage to check a rewrite against. Edit it yourself instead.' }), { status: 409 }));
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a')]} existing={[]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Improve this card' }));
+  expect((await screen.findByRole('alert')).textContent).toBe('This card has no source passage to check a rewrite against. Edit it yourself instead.');
+  expect(front()).toBe('Front a');
+});
