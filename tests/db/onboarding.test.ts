@@ -24,7 +24,7 @@ const row = async (u: User) => (await adminClient().from('profiles').select('*')
 
 // ponytail: completeOnboarding builds its query from a Next request-scoped client, so these
 // replicate its exact update queries (src/app/onboarding/actions.ts) against a real session client.
-const fields = { first_language: 'en', study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false } };
+const fields = { study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false } };
 const firstTime = (u: User, now = new Date().toISOString()) =>
   u.client.from('profiles').update({ ...fields, adult_attested_at: now, onboarded_at: now }).eq('user_id', u.userId).is('onboarded_at', null).select('user_id');
 
@@ -35,8 +35,7 @@ test('completing onboarding sets both timestamps for own row only', async () => 
   const a = await row(A);
   expect(a?.adult_attested_at).toBeTruthy();
   expect(a?.onboarded_at).toBeTruthy();
-  expect(a?.first_language).toBe('en');
-  expect(await row(B)).toMatchObject({ adult_attested_at: null, onboarded_at: null, first_language: null });
+  expect(await row(B)).toMatchObject({ adult_attested_at: null, onboarded_at: null });
 });
 
 test('a second first-time update matches no rows (guard keeps the original consent timestamp)', async () => {
@@ -50,11 +49,11 @@ test('a second first-time update matches no rows (guard keeps the original conse
 test('an edit leaves adult_attested_at unchanged', async () => {
   const before = (await row(A))?.adult_attested_at;
   const { data, error } = await A.client.from('profiles')
-    .update({ first_language: 'tl', study_minutes_per_day: 30, preferences: { font: 'dyslexic', reduced_motion: true } })
+    .update({ study_minutes_per_day: 30, preferences: { font: 'dyslexic', reduced_motion: true } })
     .eq('user_id', A.userId).select('user_id');
   expect(error).toBeNull();
   expect(data).toHaveLength(1);
-  expect(await row(A)).toMatchObject({ adult_attested_at: before, first_language: 'tl', study_minutes_per_day: 30 });
+  expect(await row(A)).toMatchObject({ adult_attested_at: before, study_minutes_per_day: 30 });
 });
 
 test('onboarded_at without adult_attested_at is rejected', async () => {
