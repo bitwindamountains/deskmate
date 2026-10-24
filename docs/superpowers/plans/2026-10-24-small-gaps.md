@@ -5,8 +5,20 @@
 ## Tasks
 1. **Quota messages.** Daily limits stay on the UTC day. The messages now say how long is left ("They reset in about 7 hours") instead of "at midnight UTC". Helper: `src/lib/time/reset.ts`. Commit: `fix: limit messages say how long until they reset`.
 2. **Word files in Recall.** The import form accepts `.docx` and puts its text in the paste box, reusing Draft Coach's `extractEssayFile`. Commit: `feat: import a Word file into Recall`.
-3. **Report snapshots.** `problem_reports.snapshot` keeps the reported text (card front/back, or feedback summary/quote), read on the server through RLS, so a report still means something after the card is edited or deleted. Commit: `feat: reports keep a copy of the reported text`.
+3. **Report snapshots.** `problem_reports.snapshot` keeps the reported text (card front/back, or feedback summary/quote), so a report still means something after the card is edited or deleted. Commit: `feat: reports keep a copy of the reported text`.
 4. **Rulings and PROGRESS.md.** Commit: `docs: rulings and PROGRESS.md for the small gaps`.
+
+## Review (`/code-review high --fix`) and follow-ups
+- **Fixed:**
+  - The snapshot is now filled in by a `scholar_private` `security definer` trigger instead of the client, so it can't be faked. Each field is cut to 1,000 characters, so a long card can still be reported (migration `20261024142000`).
+  - A Word file adds to text already in the box instead of replacing it.
+  - A file read that finishes after a newer pick is ignored.
+  - The file line is a live region, so screen readers announce it.
+  - The Word file's name is dropped when the box is emptied.
+  - The snapshot DB test no longer depends on test order.
+- **Not changed:**
+  - Migrations `20261024140000` and `141000` stay two files, because both were applied before the review.
+  - The quota wording repeated in `essays.tsx` and `analyze.ts` was repeated before this work. Sharing it would import the analysis module (with the LLM router) into the Write page.
 
 ## Rulings
 - **Daily limits stay on the UTC day.** A per-student local day would come from a time zone the browser sends. Changing that zone moves the day boundary, so a student could get up to three days' limits in one real day. One fixed boundary can't be gamed, and the messages now give the time left, which is correct in every zone.
