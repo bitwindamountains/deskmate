@@ -24,7 +24,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 ## Hard rules
 - Free, open-source, or free-tier services only. Pin exact versions (`npm i -E`).
 - **Shared Supabase project.** Touch only the schemas `scholar` and `scholar_private`. Never touch `public`, `auth`, `rentflow`, `invoicetracker`.
-- Migrations are hand-written in `supabase/migrations/`. The owner sees each one before it is applied. Run the Supabase advisors after applying.
+- Migrations are hand-written in `supabase/migrations/`. Claude may apply them (owner grant, brief Part K #15): run the DB tests and the Supabase advisors after applying, and name each migration in its PR. Anything destructive (dropping a table or column, deleting data) still waits for the owner.
 - Every table: RLS on; `revoke all ... from public, anon, authenticated`; explicit grants; `grant all ... to service_role`. Policies use `to authenticated` with `(select auth.uid()) = user_id`.
 - Privileged writes go through `scholar_private.*` functions: `security definer`, `set search_path = ''`, fully qualified names, an explicit ownership check, every input validated. Each has a `scholar.*` `security invoker` wrapper.
 - Server auth uses `supabase.auth.getClaims()`, never `getSession()`. Never authorize from `user_metadata`.
