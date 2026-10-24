@@ -7,7 +7,8 @@ type User = { client: Client; userId: string };
 let A: User;
 let B: User;
 const created: string[] = [];
-const content = `${'First paragraph words. '.repeat(15)}\n\n${'Second paragraph words. '.repeat(15)}`;
+// Three English words per sentence: 90 words, and it passes the English-only check.
+const content = `${'The first paragraph. '.repeat(15)}\n\n${'The second paragraph. '.repeat(15)}`;
 const input = { title: '  Climate  ', essayType: 'argumentative' as const, gradeLevel: 'college', assignmentPrompt: null, citationStyle: 'APA', content };
 
 beforeAll(async () => {
@@ -40,7 +41,7 @@ test('createEssay returns the essay length errors and rejects bad input without 
   expect(data).toHaveLength(1);
 });
 
-const edited = content.replace('Second paragraph', 'Revised paragraph');
+const edited = content.replace('second paragraph', 'revised paragraph');
 
 test('saveDraft with unchanged text returns the existing draft', async () => {
   const r = await insertEssay(A.client, A.userId, input);
