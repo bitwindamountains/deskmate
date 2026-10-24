@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, CardImprove, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
+import { CardGenerate, CardHelp, CardImprove, CardRephrase, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
 
 export interface RubricCriterion {
@@ -287,6 +287,19 @@ export function cardImprovePrompt(i: { type: CardType; front: string; back: stri
       `Return only JSON with this shape: ${compactSchema(CardImprove)}`,
     ].join('\n'),
     user: [wrapData('card', [`Type: ${i.type}`, `Question: ${i.front}`, `Answer: ${i.back}`].join('\n')), wrapData('source', i.chunk)].join('\n\n'),
+  };
+}
+
+export function cardRephrasePrompt(i: { type: CardType; front: string; back: string }): Prompt {
+  return {
+    system: [
+      'Reword the flashcard question below so the student recalls the idea, not the wording.',
+      'The same answer must stay correct and complete. Keep the meaning, the difficulty and the subject terms; do not add facts.',
+      'Never include the answer in the question. A cloze card becomes a plain question whose answer is the hidden text.',
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(CardRephrase)}`,
+    ].join('\n'),
+    user: wrapData('card', [`Type: ${i.type}`, `Question: ${i.front}`, `Answer: ${i.back}`].join('\n')),
   };
 }
 
