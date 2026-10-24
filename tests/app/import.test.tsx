@@ -69,3 +69,40 @@ test('an unreadable Word file or another file type says so', async () => {
   fireEvent.change(input, { target: { files: [file('notes.pages')] } });
   expect((await screen.findByRole('alert')).textContent).toBe('Choose a PDF or Word (.docx) file.');
 });
+
+test('emptying the box after a Word file drops its name, so new pasted notes are not titled after it', async () => {
+  extractEssayFile.mockResolvedValue({ ok: true, text: 'Old notes. '.repeat(10).trim() });
+  createSource.mockResolvedValue({ ok: false, error: 'x' });
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('PDF or Word file'), { target: { files: [file('Cell notes.docx')] } });
+  const box = screen.getByLabelText('Paste text') as HTMLTextAreaElement;
+  await waitFor(() => expect(box.value).toContain('Old notes.'));
+  fireEvent.change(box, { target: { value: '' } });
+  fireEvent.change(box, { target: { value: 'Mitochondria make ATP. '.repeat(10).trim() } });
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect(createSource.mock.calls[0][0]).toMatchObject({ kind: 'text', title: 'Pasted text' });
+});
+
+test('a Word file adds to notes already in the box instead of replacing them', async () => {
+  extractEssayFile.mockResolvedValue({ ok: true, text: 'From the file.' });
+  render(<ImportForm decks={[]} />);
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'My own notes.' } });
+  fireEvent.change(screen.getByLabelText('PDF or Word file'), { target: { files: [file('more.docx')] } });
+  await waitFor(() => expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('My own notes.\n\nFrom the file.'));
+  expect(screen.getByRole('status').textContent).toContain('more.docx');
+});
+
+test('a slow file that finishes after a newer pick is ignored', async () => {
+  let finish!: (v: unknown) => void;
+  extractEssayFile.mockReturnValueOnce(new Promise((r) => { finish = r; }));
+  extractEssayFile.mockResolvedValueOnce({ ok: true, text: 'Second file.' });
+  render(<ImportForm decks={[]} />);
+  const input = screen.getByLabelText('PDF or Word file');
+  fireEvent.change(input, { target: { files: [file('slow.docx')] } });
+  fireEvent.change(input, { target: { files: [file('fast.docx')] } });
+  await waitFor(() => expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('Second file.'));
+  finish({ ok: true, text: 'First file.' });
+  await new Promise((r) => setTimeout(r, 0));
+  expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('Second file.');
+});
