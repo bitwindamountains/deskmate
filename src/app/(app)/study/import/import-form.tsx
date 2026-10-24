@@ -3,12 +3,16 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import type { PageText } from '@/chunk';
+import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
 import { extractEssayFile } from '@/lib/essay/extract';
 import { DAILY_GENERATIONS } from '@/lib/generate/limits';
 import { MAX_PAGES, validateImport } from '@/lib/import/validate';
 import { createSource } from './actions';
 
 const NEW = '__new';
+// B2.3: the MVP three are ticked by default; the Phase 2 types are opt-in, so a standard import is unchanged.
+const IMPORT_TYPES: [CardType, string][] = [['basic', 'Q&A'], ['cloze', 'Fill in the blank'], ['why', 'Explain why'],
+  ['application', 'Apply it (a short scenario)'], ['compare', 'Compare two ideas'], ['sequence', 'Put steps in order']];
 
 /**
  * generationsLeft: null when it couldn't load, so no note is shown rather than a wrong one. resetText comes from the server
@@ -30,7 +34,7 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
   const [newTitle, setNewTitle] = useState('');
   const [examDate, setExamDate] = useState('');
   const [density, setDensity] = useState<'fewer' | 'standard' | 'more'>('standard');
-  const [types, setTypes] = useState<('basic' | 'cloze' | 'why')[]>(['basic', 'cloze', 'why']);
+  const [types, setTypes] = useState<CardType[]>(DEFAULT_CARD_TYPES);
   const [from, setFrom] = useState(1);
   const [to, setTo] = useState(MAX_PAGES);
 
@@ -173,10 +177,10 @@ export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { 
 
       <fieldset {...(errField === 'types' ? { 'aria-describedby': 'import-err' } : {})}>
         <legend className="mb-1">Card types</legend>
-        {([['basic', 'Q&A'], ['cloze', 'Fill in the blank'], ['why', 'Explain why']] as const).map(([v, label]) => (
+        {IMPORT_TYPES.map(([v, label]) => (
           <label key={v} className="flex min-h-11 items-center gap-2">
             <input type="checkbox" checked={types.includes(v)}
-              onChange={() => setTypes((t) => (t.includes(v) ? t.filter((x) => x !== v) : (['basic', 'cloze', 'why'] as const).filter((x) => x === v || t.includes(x))))} /> {label}
+              onChange={() => setTypes((t) => (t.includes(v) ? t.filter((x) => x !== v) : CARD_TYPES.filter((x) => x === v || t.includes(x))))} /> {label}
           </label>
         ))}
       </fieldset>

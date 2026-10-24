@@ -87,3 +87,11 @@ test("the student's recurring patterns are one user-message line, only when ther
   expect(known.user).toContain("Recurring in this student's earlier essays: Comma splices; Evidence. Mention one only if this essay shows it.");
   expect(essayGlobalPrompt({ ...input, recurring: [] }).user).toBe(plain.user);
 });
+
+test('a Phase 2 card type is named and described only when picked (B2.3)', () => {
+  const base = { chunk: 'Mitochondria make ATP.', subject: 'biology', level: 'college' };
+  const p = cardGeneratePrompt({ ...base, types: ['basic', 'compare'] });
+  expect(p.system).toBe(cardGeneratePrompt(base).system);
+  expect(p.user).toContain('Card types: make only basic and compare cards. compare: how two related ideas differ, or what they share.');
+  expect(p.user).not.toContain('sequence:');
+});

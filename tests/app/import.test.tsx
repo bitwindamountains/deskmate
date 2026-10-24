@@ -145,3 +145,14 @@ test('the import page says how many card generations are left today (spec 6.5)',
   rerender(<ImportForm decks={[]} generationsLeft={0} resetText="in about 7 hours" />);
   expect(screen.getByText("You've used today's 3 card generations. They reset in about 7 hours. You can still save material now.")).toBeTruthy();
 });
+
+test('Phase 2 card types are offered but off by default (B2.3)', () => {
+  createSource.mockResolvedValue({ ok: false, error: 'x' });
+  render(<ImportForm decks={[]} />);
+  for (const name of ['Apply it (a short scenario)', 'Compare two ideas', 'Put steps in order']) expect((screen.getByLabelText(name) as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(screen.getByLabelText('Compare two ideas'));
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'the cell makes energy '.repeat(10) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect(createSource.mock.calls[0][0]).toMatchObject({ cardTypes: ['basic', 'cloze', 'why', 'compare'] });
+});

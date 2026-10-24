@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Db } from '@/lib/llm-calls';
 import { type CsvCard, parseCards } from './csv';
+import { CARD_TYPES } from '@/lib/cards/types';
 
 const NO_DECK = { ok: false, message: "We couldn't find that deck." } as const;
 const FAILED = { ok: false, message: "We couldn't import those cards. Try again." } as const;
@@ -35,7 +36,7 @@ export async function importCards(db: Db, userId: string, deckId: string, text: 
 }
 
 const Side = z.string().trim().min(1).max(500);
-const AnkiCards = z.array(z.object({ front: Side, back: Side, concept: z.string().trim().max(120), type: z.enum(['basic', 'cloze', 'why']) }))
+const AnkiCards = z.array(z.object({ front: Side, back: Side, concept: z.string().trim().max(120), type: z.enum(CARD_TYPES) }))
   .min(1).max(2000);
 
 /** Cards an .apkg file gave on the device (see apkg.ts). They come from the client, so they are checked again here. */

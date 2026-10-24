@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CardGenerate, CardHelp, CardImprove, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
+import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
 
 export interface RubricCriterion {
   name: string;
@@ -232,8 +233,6 @@ export type CardDensity = 'fewer' | 'standard' | 'more';
 /** Discard reasons that say something about how cards are written. 'duplicate' is left out: triage's on-device dedupe
  *  records it automatically, and duplicates usually span imports this prompt can't see. */
 export type DiscardReason = 'trivial' | 'wrong' | 'unclear';
-export type CardType = 'basic' | 'cloze' | 'why';
-const ALL_TYPES: CardType[] = ['basic', 'cloze', 'why'];
 const DENSITY_LINE: Record<CardDensity, string | null> = {
   fewer: 'Card count: fewer than usual, about half as many. Keep only the ideas most likely to be on an exam.',
   standard: null,
@@ -245,10 +244,19 @@ const AVOID_LINE: Record<DiscardReason, string> = {
   unclear: 'This student usually discards cards as unclear: make every question answerable without the source.',
 };
 
+// B2.3 Phase 2 types, described only when the student picks them (still question-and-answer shaped).
+const NEW_TYPE_LINE: Partial<Record<CardType, string>> = {
+  application: 'application: a short, realistic scenario the student solves by applying the idea.',
+  compare: 'compare: how two related ideas differ, or what they share.',
+  sequence: 'sequence: put steps or stages in order; back lists them in order.',
+};
+
 /** density, avoid and types add one user-message line each, only when they apply (B2.2 density, B2.5 discards, B-S2 types). */
 export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string; density?: CardDensity; avoid?: DiscardReason;
   types?: CardType[] }): Prompt {
-  const types = i.types && ALL_TYPES.some((t) => !i.types!.includes(t)) ? ALL_TYPES.filter((t) => i.types!.includes(t)) : null;
+  // Only when the choice differs from the default three, so standard imports send the same prompt as before.
+  const differs = i.types && (i.types.length !== DEFAULT_CARD_TYPES.length || DEFAULT_CARD_TYPES.some((t) => !i.types!.includes(t)));
+  const types = differs ? CARD_TYPES.filter((t) => i.types!.includes(t)) : null;
   return {
     system: [
       'You create flashcards from the source text, for the subject and level given with it.',
@@ -262,12 +270,13 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
     ].join('\n'),
     // subject comes from the student's deck, so it rides in the user message, never the system prompt
     user: [`Subject: ${i.subject}`, `Level: ${i.level}`, DENSITY_LINE[i.density ?? 'standard'], i.avoid && AVOID_LINE[i.avoid],
-      types && `Card types: make only ${types.join(' and ')} cards.`,
+      types && [`Card types: make only ${types.join(' and ')} cards.`, ...types.flatMap((t) => (NEW_TYPE_LINE[t] ? [NEW_TYPE_LINE[t]!] : [])),
+        ...(types.some((t) => NEW_TYPE_LINE[t]) ? ['Every card, scenario and compare cards too, quotes one exact sentence of the source that supports it.'] : [])].join(' '),
       wrapData('source', i.chunk)].filter(Boolean).join('\n\n'),
   };
 }
 
-export function cardImprovePrompt(i: { type: 'basic' | 'cloze' | 'why'; front: string; back: string; chunk: string }): Prompt {
+export function cardImprovePrompt(i: { type: CardType; front: string; back: string; chunk: string }): Prompt {
   return {
     system: [
       'Rewrite the flashcard below so it follows the card rules. Keep the same idea and the same card type; do not add facts.',
