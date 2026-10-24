@@ -54,3 +54,9 @@ test('initial error also ties to the email input', () => {
   render(<LoginForm next="/today" initialError="Bad code" />);
   expect(screen.getByLabelText('Email').getAttribute('aria-describedby')).toBe(screen.getByRole('alert').id);
 });
+
+test('after deleting their data the student sees a plain notice, not an error', () => {
+  render(<LoginForm next="/today" notice="Your Scholar data was deleted." />);
+  expect(screen.getByRole('status').textContent).toBe('Your Scholar data was deleted.');
+  expect(screen.queryByRole('alert')).toBeNull();
+});
