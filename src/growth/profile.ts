@@ -34,3 +34,18 @@ export function trendCopy(trend: number | null): string | null {
   if (pct <= 10) return 'About the same as your first essay';
   return `${trend < 0 ? 'Down' : 'Up'} ${pct}% since your first essay`;
 }
+
+/**
+ * A-S1 growth snapshot: the rubric criterion with the best average score (seen at least twice, scored 1-4),
+ * and the most recurring writing pattern. Null parts are left out of the card.
+ */
+export function growthSnapshot(scores: { criterion: string; score: number }[][], recurring: { label: string }[]):
+  { strength: string | null; workingOn: string | null } {
+  const sums = new Map<string, { total: number; n: number }>();
+  for (const s of scores.flat()) {
+    const t = sums.get(s.criterion) ?? { total: 0, n: 0 };
+    sums.set(s.criterion, { total: t.total + s.score, n: t.n + 1 });
+  }
+  const best = [...sums].filter(([, t]) => t.n >= 2).sort((a, b) => b[1].total / b[1].n - a[1].total / a[1].n)[0];
+  return { strength: best?.[0] ?? null, workingOn: recurring[0]?.label ?? null };
+}

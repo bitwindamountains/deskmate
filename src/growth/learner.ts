@@ -33,3 +33,20 @@ export function hintReliance(levels: number[]): number | null {
 export function leechRate(leeches: number, total: number): number | null {
   return total ? Math.round((100 * leeches) / total) : null;
 }
+
+/**
+ * Spec J7: categories where, across at least 3 essays, the student has needed hint 4 or more on average.
+ * Their items open at hint 2, so the student isn't made to click through hints that rarely help them.
+ */
+export function headStartCategories(items: { category: string; essay_id: string; highest_level: number }[]): string[] {
+  const by = new Map<string, { essays: Set<string>; total: number; n: number }>();
+  for (const i of items) {
+    if (i.highest_level < 1) continue; // never opened
+    const c = by.get(i.category) ?? { essays: new Set<string>(), total: 0, n: 0 };
+    c.essays.add(i.essay_id);
+    c.total += i.highest_level;
+    c.n += 1;
+    by.set(i.category, c);
+  }
+  return [...by].filter(([, c]) => c.essays.size >= 3 && c.total / c.n >= 4).map(([category]) => category);
+}

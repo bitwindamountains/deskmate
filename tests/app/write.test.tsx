@@ -192,3 +192,15 @@ test('a stop can be undone: Resume keeps counting from the original start and re
     vi.useRealTimers();
   }
 });
+
+test('the essay list opens with the growth snapshot when there is one (A-S1)', () => {
+  render(<EssayList essays={[{ id: 'e1', title: 'Climate', status: 'Feedback ready' }]} snapshot={{ strength: 'Organization', workingOn: 'Comma splices' }} />);
+  const card = screen.getByRole('region', { name: 'Your writing so far' });
+  expect(card.textContent).toContain('Your strongest area: Organization.');
+  expect(card.textContent).toContain('Working on: Comma splices.');
+});
+
+test('no snapshot card without data', () => {
+  render(<EssayList essays={[{ id: 'e1', title: 'Climate', status: 'Feedback ready' }]} snapshot={{ strength: null, workingOn: null }} />);
+  expect(screen.queryByRole('region', { name: 'Your writing so far' })).toBeNull();
+});
