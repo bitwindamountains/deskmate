@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CARD_TYPES } from '@/lib/cards/types';
 
 export const FeedbackItem = z.object({
   layer: z.enum(['global', 'paragraph', 'sentence']),
@@ -54,7 +55,7 @@ export const EssayParagraphs = z.object({
 export type EssayParagraphs = z.infer<typeof EssayParagraphs>;
 
 export const Card = z.object({
-  type: z.enum(['basic', 'cloze', 'why']),
+  type: z.enum(CARD_TYPES),
   front: z.string(),
   back: z.string(),
   key_points: z.array(z.string()),

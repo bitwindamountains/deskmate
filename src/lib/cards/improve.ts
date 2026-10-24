@@ -4,6 +4,7 @@ import { resetsIn } from '@/lib/time/reset';
 import { cardImprovePrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardImprove } from '@/llm/schemas';
+import type { CardType } from '@/lib/cards/types';
 
 export type CardImproveResult = { ok: true; suggestion: { front: string; back: string } }
   | { ok: false; status: 404 | 409 | 422 | 429 | 503; message: string };
@@ -23,7 +24,7 @@ export async function requestCardImprove(db: Db, userId: string, cardId: string,
   const { data, error } = await db.from('cards').select('type,front,back,source_chunks(text)').eq('id', cardId).maybeSingle();
   if (error) return BUSY;
   if (!data) return NOT_FOUND;
-  const card = data as unknown as { type: 'basic' | 'cloze' | 'why'; front: string; back: string; source_chunks: { text: string } | null };
+  const card = data as unknown as { type: CardType; front: string; back: string; source_chunks: { text: string } | null };
   const chunk = card.source_chunks?.text;
   if (!chunk) return NO_SOURCE;
 

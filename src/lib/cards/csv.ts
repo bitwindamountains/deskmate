@@ -1,8 +1,9 @@
-export type CsvCard = { front: string; back: string; concept: string; type: 'basic' | 'cloze' | 'why' };
+import { CARD_TYPES, type CardType } from '@/lib/cards/types';
+export type CsvCard = { front: string; back: string; concept: string; type: CardType };
 
 const MAX_ROWS = 2000;
 const MAX_FIELD = 500; // the deck editor's limit for front and back
-const TYPES = new Set(['basic', 'cloze', 'why']);
+const TYPES = new Set<string>(CARD_TYPES);
 
 type Row = { fields: string[]; n: number }; // n: the row number a spreadsheet shows, blank rows included
 

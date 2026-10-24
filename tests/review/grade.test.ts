@@ -72,3 +72,11 @@ test('scoreToRating Easy needs 0.9 and <=10s', () => {
   expect(scoreToRating(0.9, 10000)).toBe(Rating.Easy);
   expect(scoreToRating(0.9, 10001)).toBe(Rating.Good);
 });
+
+test('explanation card types always go to the AI grader; order questions use the cascade (B2.3)', async () => {
+  const { gradeLocally } = await import('@/review/grade');
+  const input = (type: 'compare' | 'application' | 'sequence') => ({ type, reference: 'Mitosis makes two cells', keyPoints: ['two cells'], answer: 'it makes two daughter cells', responseMs: 3000 });
+  const embed = async (texts: string[]) => texts.map(() => [1, 0, 0]);
+  expect((await gradeLocally(input('compare'), embed)).needsLlm).toBe(true);
+  expect((await gradeLocally(input('application'), embed)).needsLlm).toBe(true);
+});

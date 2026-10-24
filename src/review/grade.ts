@@ -2,6 +2,7 @@ import { Rating } from 'ts-fsrs';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { cosine } from '@/lib/embed/duplicates';
 import type { Grade } from './schedule';
+import { EXPLAIN_TYPES, type CardType } from '@/lib/cards/types';
 
 export function normalizeAnswer(s: string): string {
   return s.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu, (c, i, str) => (/[.,\-+%/]/.test(c) && !(/[.,]/.test(c) && /^\s*$/.test(str[i + 1] ?? '')) && (/\d/.test(str[i - 1] ?? '') || /\d/.test(str[i + 1] ?? '')) ? c : ''))
@@ -30,7 +31,7 @@ export function scoreToRating(score: number, responseMs: number): Grade {
   return score >= 0.9 && responseMs <= 10000 ? Rating.Easy : Rating.Good;
 }
 
-export interface CascadeInput { type: 'basic' | 'cloze' | 'why'; reference: string; keyPoints: string[]; answer: string; responseMs: number }
+export interface CascadeInput { type: CardType; reference: string; keyPoints: string[]; answer: string; responseMs: number }
 export interface CascadeResult { score: number; source: 'exact' | 'fuzzy' | 'embedding'; hit: string[]; missed: string[]; suggested: Grade; needsLlm: boolean }
 
 const KP_HIT = 0.75;
@@ -38,7 +39,7 @@ const KP_HIT = 0.75;
 export async function gradeLocally(i: CascadeInput, embed: EmbedFn | null): Promise<CascadeResult> {
   const done = (score: number, source: CascadeResult['source'], hit: string[], missed: string[], settled: boolean): CascadeResult => ({
     score, source, hit, missed, suggested: scoreToRating(score, i.responseMs),
-    needsLlm: !settled && (i.type === 'why' || (score >= 0.45 && score <= 0.85)),
+    needsLlm: !settled && (EXPLAIN_TYPES.includes(i.type) || (score >= 0.45 && score <= 0.85)),
   });
   const ans = normalizeAnswer(i.answer);
   if (!ans) return { ...done(0, 'fuzzy', [], i.keyPoints, true), needsLlm: false };
