@@ -4,6 +4,7 @@ import { generateChunk } from '@/lib/generate/generate-chunk';
 import { insertSource } from '@/lib/import/create-source';
 import { AllProvidersFailedError, type complete } from '@/llm/router';
 import { adminClient, createTestUser, deleteTestUsers, type Client } from './helpers';
+import { DAILY_GENERATIONS } from '@/lib/generate/limits';
 
 const session = vi.hoisted(() => ({ client: null as unknown }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => session.client }));
@@ -84,9 +85,9 @@ test('another user sourceId gives 404 and no completeFn call', async () => {
   expect(src!.quota_consumed_at).toBeNull();
 });
 
-test('fourth source of the day gives 429 with the quota message', async () => {
+test('the daily limit in code matches the database: one source past DAILY_GENERATIONS gives 429', async () => {
   const U = await createTestUser(); created.push(U.userId);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < DAILY_GENERATIONS; i++) {
     const r = await generateChunk(U.client, U.userId, await newSource(U, `D${i}`), 0, {}, okComplete());
     expect(r.ok).toBe(true);
   }

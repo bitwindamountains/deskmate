@@ -8,6 +8,8 @@ import { checkSentences } from './languagetool';
 import { anchorQuote, paragraphs } from './text';
 import { resetsIn } from '@/lib/time/reset';
 import { matchScores, rubricOf } from './rubric';
+import { recurringFor } from '@/growth/recurring';
+import { loadGrowth } from '@/lib/growth/load';
 
 export type Layer = 'global' | 'paragraphs' | 'sentences';
 export type ItemRow = { id: string; layer: 'global' | 'paragraph' | 'sentence'; category: string; rubric_criterion: string | null;
@@ -118,6 +120,9 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
   };
 
   // Re-check: plan which earlier items carry over and which paragraphs changed (spec §8.1, A2.8).
+  // D3.1 step 2: the big-picture pass knows the student's top recurring patterns. Started now so it overlaps the re-check reads;
+  // a failed read just leaves them out.
+  const growth = layer === 'global' ? loadGrowth(db).catch(() => []) : null;
   let plan: CarryPlan | null = null;
   let prevItems: ItemRow[] = [];
   let prevOutline: OutlineLine[] = [];
@@ -143,7 +148,8 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
 
   if (layer === 'global') {
     const judge = plan?.judge ?? [];
-    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
+    const recurring = recurringFor((await growth) ?? [], draft.essay_id);
+    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, recurring, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
     await logCalls(db, userId, r.log);
     const { rows, dropped } = anchorItems(paras, r.data.items, 'global');
     const strengths = r.data.strengths.flatMap((s) => {

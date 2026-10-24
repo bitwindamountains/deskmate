@@ -1,14 +1,7 @@
 import type { Db } from '@/lib/llm-calls';
 
-const DAILY_ESSAY_CHECKS = 5; // matches c_daily_limit in scholar_private.consume_essay_quota
-
-/** Essay checks the user has left today (UTC day, like the quota function). RLS scopes the row to the user. */
-export async function essayChecksLeft(db: Db): Promise<number> {
-  const day = new Date().toISOString().slice(0, 10);
-  const { data, error } = await db.from('quota_usage').select('essays').eq('day', day).maybeSingle();
-  if (error) throw new Error("We couldn't load your essay checks.");
-  return Math.max(0, DAILY_ESSAY_CHECKS - ((data?.essays as number | undefined) ?? 0));
-}
+// Re-exported so existing imports keep working; the quota readers live in @/lib/quota.
+export { essayChecksLeft } from '@/lib/quota';
 
 type EssayRow = { id: string; title: string; drafts: { id: string; version: number }[] };
 

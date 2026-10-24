@@ -33,6 +33,8 @@ export interface EssayInput {
   onlyParagraphs?: number[];
   /** Timed writing (A4.5): the limit the essay was written under, in minutes. */
   timedMinutes?: number;
+  /** D3.1 step 2: labels of the student's recurring patterns from earlier essays (Scholar's own names, not student text). */
+  recurring?: string[];
 }
 
 type Prompt = { system: string; user: string };
@@ -107,6 +109,7 @@ function essayContext(i: EssayInput): string {
     i.assignmentPrompt ? `Assignment prompt:\n${wrapData('assignment', i.assignmentPrompt)}` : 'Assignment prompt: none given',
     // It varies per essay, so it rides in the user message and the system prompt stays static.
     ...(i.timedMinutes ? [`Written under a ${i.timedMinutes}-minute time limit; weigh structure and planning over polish.`] : []),
+    ...(i.recurring?.length ? [`Recurring in this student's earlier essays: ${i.recurring.join('; ')}. Mention one only if this essay shows it.`] : []),
     // A student's own rubric (A2.1) is their text, so it is wrapped as data; the default rubric prompt is unchanged.
     `Rubric:\n${i.rubric && i.rubric !== DEFAULT_RUBRIC ? wrapData('rubric', rubric) : rubric}`,
     `Essay (paragraphs numbered [P0], [P1], ...):\n${wrapData('essay', paragraphs)}`,

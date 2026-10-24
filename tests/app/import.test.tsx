@@ -138,3 +138,10 @@ test('with no card type picked, nothing is sent', () => {
   expect(screen.getByRole('alert').textContent).toBe('Pick at least one card type.');
   expect(createSource).not.toHaveBeenCalled();
 });
+
+test('the import page says how many card generations are left today (spec 6.5)', () => {
+  const { rerender } = render(<ImportForm decks={[]} generationsLeft={2} />);
+  expect(screen.getByText('2 card generations left today')).toBeTruthy();
+  rerender(<ImportForm decks={[]} generationsLeft={0} resetText="in about 7 hours" />);
+  expect(screen.getByText("You've used today's 3 card generations. They reset in about 7 hours. You can still save material now.")).toBeTruthy();
+});
