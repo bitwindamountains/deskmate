@@ -101,8 +101,7 @@ test('createEssay saves timed_minutes and minutes_used; invalid durations are re
 });
 
 test("createEssay stores the student's rubric, refuses a malformed one, and rates the self-assessment against it (A2.1)", async () => {
-  const r = await insertEssay(A.client, A.userId, { ...input, rubric: 'Use of sources: cites two
-Voice: sounds like you',
+  const r = await insertEssay(A.client, A.userId, { ...input, rubric: 'Use of sources: cites two\nVoice: sounds like you',
     selfAssessment: { scores: [{ criterion: 'Voice', score: 3 }], weakness: null } });
   expect(r.ok).toBe(true);
   if (!r.ok) return;
@@ -110,7 +109,6 @@ Voice: sounds like you',
   expect((data!.rubric as { name: string }[]).map((c) => c.name)).toEqual(['Use of sources', 'Voice']);
   expect(await insertEssay(A.client, A.userId, { ...input, rubric: 'Only one' })).toMatchObject({ ok: false, error: expect.stringContaining('Write 2 to 8 criteria') });
   // A default-rubric criterion isn't on this rubric, so the self-rating is refused
-  expect((await insertEssay(A.client, A.userId, { ...input, rubric: 'Use of sources: a
-Voice: b',
+  expect((await insertEssay(A.client, A.userId, { ...input, rubric: 'Use of sources: a\nVoice: b',
     selfAssessment: { scores: [{ criterion: 'Thesis', score: 3 }], weakness: null } })).ok).toBe(false);
 });
