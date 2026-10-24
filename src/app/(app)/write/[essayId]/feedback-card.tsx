@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ReportProblem } from '@/components/report-problem';
 import type { ItemRow } from '@/lib/essay/analyze';
 import { ItemDialogue, type DialogueKind, type ThreadMessage } from './item-dialogue';
 
@@ -99,6 +100,7 @@ export function FeedbackCard({ item: it, api, heading = 'h3', children }:
 
       <ItemDialogue key={talking ?? 'closed'} itemId={it.id} messages={api.thread(it)}
         kind={talking === 'dispute' && !canDispute ? null : talking} onSend={(k, m) => api.send(it, k, m)} />
+      <ReportProblem target="feedback_item" targetId={it.id} />
     </article>
   );
 }
