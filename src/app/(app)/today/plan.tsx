@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Deck, ReviewCard } from '@/lib/review/load';
-import { buildSession, daysUntil, nextReview, parseDay, readiness } from '@/review/schedule';
+import { buildSession, daysUntil, NEW_CARD_LIMIT, nextReview, parseDay, readiness } from '@/review/schedule';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const when = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`);
@@ -35,6 +35,10 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
   // Spec §8.3 order: reviews, essays with open priorities, exams. Essays have no deadline yet, so due reviews stay primary.
   const { queue, estMinutes } = buildSession(cards, { now, minutes, newIntroducedToday, examDate: exams.find((e) => e.days > 0)?.date ?? null, zone, newLimit });
   const next = nextReview(cards, now, zone);
+  // B7: new cards beyond today's limit (not the minutes cap) start on later days; say so, and why.
+  const limit = newLimit ?? NEW_CARD_LIMIT;
+  const later = cards.filter((c) => !c.state).length - Math.max(0, limit - newIntroducedToday);
+  const limitNote = `${later} more new ${later === 1 ? 'card starts' : 'cards start'} on later days. Up to ${limit} new cards a day keeps your reviews manageable.`;
   const noExam = decks.filter((d) => !exams.some((e) => e.deck.id === d.id));
   const essayFirst = !queue.length && essays.length > 0;
   const essayLines = essayFirst ? essays.slice(1) : essays;
@@ -55,6 +59,9 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
         {queue.length ? (
           <>
             <p className="mt-2 text-[1.2rem]">{plural(queue.length, 'card')} · ~{estMinutes} min</p>
+            {later > 0 && (
+              <p className="mt-2 text-ink-muted">{limitNote}</p>
+            )}
             <Link href="/study/review" className="btn btn-primary mt-6">Start</Link>
           </>
         ) : (
@@ -62,6 +69,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
             You&apos;re all caught up.{next && ` Next review: ${next.label}, about ${plural(next.count, 'card')}.`}
           </p>
         )}
+        {!queue.length && later > 0 && <p className="mt-2 text-ink-muted">{limitNote}</p>}
       </section>}
 
       {essayLines.length > 0 && (

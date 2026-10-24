@@ -256,6 +256,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
             else if (dx < -SWIPE_PX) { if (mode === 'reason') discard(); else openReason(); }
           }}>
           <p className="text-sm font-bold text-ink-muted">{TYPE_LABEL[current.type]}</p>
+          {/* E2: every card here was made by AI from the student's notes. */}
+          <p className="text-sm text-ink-muted">Made by AI from your notes</p>
           {mode === 'edit' ? (
             <form onSubmit={saveEdit} className="space-y-4">
               {suggested && <p className="text-ink-muted">Suggested rewrite. Change anything, then Save. Cancel keeps your card as it was.</p>}

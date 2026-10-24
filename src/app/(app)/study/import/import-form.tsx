@@ -4,12 +4,18 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import type { PageText } from '@/chunk';
 import { extractEssayFile } from '@/lib/essay/extract';
+import { DAILY_GENERATIONS } from '@/lib/generate/limits';
 import { MAX_PAGES, validateImport } from '@/lib/import/validate';
 import { createSource } from './actions';
 
 const NEW = '__new';
 
-export function ImportForm({ decks }: { decks: { id: string; title: string }[] }) {
+/**
+ * generationsLeft: null when it couldn't load, so no note is shown rather than a wrong one. resetText comes from the server
+ * (resetsIn reads the clock), so the server and browser render the same words.
+ */
+export function ImportForm({ decks, generationsLeft = null, resetText = '' }: { decks: { id: string; title: string }[];
+  generationsLeft?: number | null; resetText?: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setErrorMsg] = useState('');
@@ -94,6 +100,12 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   return (
     <form onSubmit={submit} className="max-w-md space-y-5">
       {error && <p id="import-err" role="alert" className="error">{error}</p>}
+      {/* Spec §6.5: the quota in plain words, before the student hits it. */}
+      {generationsLeft !== null && (
+        <p className="text-ink-muted">{generationsLeft > 0
+          ? `${generationsLeft} card ${generationsLeft === 1 ? 'generation' : 'generations'} left today`
+          : `You've used today's ${DAILY_GENERATIONS} card generations. They reset ${resetText}. You can still save material now.`}</p>
+      )}
 
       <div>
         <label htmlFor="pdf" className="mb-1 block">PDF or Word file</label>
