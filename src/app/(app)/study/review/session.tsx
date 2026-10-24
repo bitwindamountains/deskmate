@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
+import { MicButton } from '@/components/mic-button';
 import { ReportProblem } from '@/components/report-problem';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { getEmbedder } from '@/lib/embed/embed';
@@ -343,6 +344,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
                 aria-describedby="answer-hint" onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void check(); } }} />
               <p id="answer-hint" className="mt-1 text-sm text-ink-muted">Enter to check. Shift+Enter for a new line.</p>
+              {/* B3.6: spoken words are added to what's typed, for the student to check before checking. */}
+              <div className="mt-2"><MicButton key={current.id} onText={(t) => setText((x) => (x.trim() ? `${x.trimEnd()} ${t}` : t))} /></div>
             </div>
             <div className="flex flex-wrap gap-3">
               <button type="submit" className="btn btn-primary" disabled={phase === 'checking'}>Check</button>
