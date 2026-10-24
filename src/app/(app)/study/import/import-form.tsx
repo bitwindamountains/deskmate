@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import type { PageText } from '@/chunk';
+import { extractEssayFile } from '@/lib/essay/extract';
 import { MAX_PAGES, validateImport } from '@/lib/import/validate';
 import { createSource } from './actions';
 
@@ -17,6 +18,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   const setError = (msg: string, field = '') => { setErrorMsg(msg); setErrField(msg ? field : ''); };
   const [pdf, setPdf] = useState<{ name: string; pages: PageText[] } | null>(null);
   const [text, setText] = useState('');
+  const [docName, setDocName] = useState(''); // a Word file's name, once its text is in the box
   const [deck, setDeck] = useState(decks[0]?.id ?? NEW);
   const [newTitle, setNewTitle] = useState('');
   const [examDate, setExamDate] = useState('');
@@ -26,7 +28,16 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
   async function pick(file?: File) {
     setError('');
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.pdf')) return setError('Choose a PDF file.', 'pdf');
+    if (file.name.toLowerCase().endsWith('.docx')) {
+      // A Word file has no pages to pick from, so its text goes in the box like pasted notes.
+      const r = await extractEssayFile(file);
+      if (!r.ok) return setError(r.error, 'pdf');
+      setPdf(null);
+      setText(r.text);
+      setDocName(file.name);
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith('.pdf')) return setError('Choose a PDF or Word (.docx) file.', 'pdf');
     try {
       const { extractPdfPages } = await import('@/lib/import/pdf');
       const pages = await extractPdfPages(file);
@@ -48,7 +59,7 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
     } else pages = [{ page: 1, text }];
     const input = {
       ...(deck === NEW ? { newDeckTitle: newTitle, examDate: examDate || undefined } : { deckId: deck }),
-      title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : '').slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
+      title: (pdf ? pdf.name.replace(/\.pdf$/i, '') : docName.replace(/\.docx$/i, '')).slice(0, 120) || (pdf ? 'PDF' : 'Pasted text'),
       kind: pdf ? ('pdf' as const) : ('text' as const),
       pages,
     };
@@ -75,10 +86,12 @@ export function ImportForm({ decks }: { decks: { id: string; title: string }[] }
       {error && <p id="import-err" role="alert" className="error">{error}</p>}
 
       <div>
-        <label htmlFor="pdf" className="mb-1 block">PDF file</label>
-        <input ref={fileRef} id="pdf" type="file" accept=".pdf,application/pdf" className="field" {...bad('pdf')} onChange={(e) => pick(e.target.files?.[0])}
+        <label htmlFor="pdf" className="mb-1 block">PDF or Word file</label>
+        <input ref={fileRef} id="pdf" type="file"
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="field" {...bad('pdf')} onChange={(e) => pick(e.target.files?.[0])}
           onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files[0]); }} onDragOver={(e) => e.preventDefault()} />
         {pdf && <p className="mt-1">{pdf.name}: {pdf.pages.length} pages</p>}
+        {!pdf && docName && <p className="mt-1">{docName}: its text is in the box below, where you can edit it.</p>}
       </div>
 
       {pdf && pdf.pages.length > MAX_PAGES && (
