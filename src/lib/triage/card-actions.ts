@@ -33,7 +33,8 @@ export async function deleteCards(db: Db, userId: string, ids: string[]) {
 export async function updateCard(db: Db, userId: string, id: string, patch: { front?: string; back?: string }) {
   const v = Edit.safeParse({ id, patch });
   if (!v.success) fail();
-  const { error } = await db.from('cards').update(v.data.patch).eq('id', id).eq('user_id', userId);
+  // A saved rewording (B3.1) belongs to the old question and answer, so an edit drops it.
+  const { error } = await db.from('cards').update({ ...v.data.patch, variants: [] }).eq('id', id).eq('user_id', userId);
   if (error) fail();
 }
 

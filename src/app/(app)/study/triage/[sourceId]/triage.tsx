@@ -7,6 +7,7 @@ import { getEmbedder } from '@/lib/embed/embed';
 import type { CardRow } from '@/lib/generate/generate-chunk';
 import { editCard, saveEmbeddings, setCardStatus } from '../actions';
 import { MathText } from '@/components/math-text';
+import { CARD_TYPE_LABEL as TYPE_LABEL } from '@/lib/cards/types';
 
 const SWIPE_PX = 80; // a drag shorter than this is a tap or a scroll, not a swipe
 
@@ -14,7 +15,6 @@ type Reason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
 export type KnownCard = { id: string; front: string; back: string; embedding: number[] | null };
 type Problem = { kind: 'quota' | 'session' | 'retry'; message: string; at: number };
 
-const TYPE_LABEL: Record<CardRow['type'], string> = { basic: 'Q&A', cloze: 'Fill in the blank', why: 'Why' };
 const REASONS: [Reason, string][] = [['trivial', 'Too trivial'], ['wrong', 'Wrong'], ['duplicate', 'Duplicate'], ['unclear', 'Unclear']];
 const BUSY = 'The AI service is busy. Your material is saved; try again in a few minutes.';
 const SAVE_FAILED = "We couldn't save that change. Try again.";

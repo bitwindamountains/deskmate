@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { z } from 'zod';
-import { cardGeneratePrompt, cardImprovePrompt, compactSchema, essayGlobalPrompt, essayParagraphsPrompt, gradeAnswerPrompt, hintLadderPrompt, hintRewritePrompt } from '@/llm/prompts';
-import { CardGenerate, CardImprove, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite } from '@/llm/schemas';
+import { cardGeneratePrompt, cardImprovePrompt, cardRephrasePrompt, compactSchema, feynmanPrompt, essayGlobalPrompt, essayParagraphsPrompt, gradeAnswerPrompt, hintLadderPrompt, hintRewritePrompt } from '@/llm/prompts';
+import { CardGenerate, CardImprove, CardRephrase, EssayGlobal, Feynman, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite } from '@/llm/schemas';
 
 test('compactSchema prints the GradeAnswer contract as one short line', () => {
   expect(compactSchema(GradeAnswer)).toBe(
@@ -38,8 +38,10 @@ test('every prompt states its output as the compact shape, never the raw JSON Sc
     [essayGlobalPrompt({ ...essay, assignmentPrompt: 'Argue.' }).system, EssayGlobal],
     [essayGlobalPrompt(essay).system, EssayGlobal.omit({ prompt_alignment: true })], [essayParagraphsPrompt(essay).system, EssayParagraphs],
     [hintLadderPrompt(hint).system, HintLadder], [hintRewritePrompt(hint).system, HintRewrite],
-    [cardGeneratePrompt({ chunk: 'c', subject: 's', level: 'l' }).system, CardGenerate],
+    [cardGeneratePrompt({ chunk: 'c', subject: 's', level: 'l', types: ['basic', 'sequence'] }).system, CardGenerate],
     [cardImprovePrompt({ type: 'basic', front: 'f', back: 'b', chunk: 'c' }).system, CardImprove],
+    [cardRephrasePrompt({ type: 'basic', front: 'f', back: 'b' }).system, CardRephrase],
+    [feynmanPrompt({ concept: 'c', reference: [], passages: [], explanation: 'e' }).system, Feynman],
     [gradeAnswerPrompt({ question: 'q', reference: 'r', keyPoints: [], answer: 'a' }).system, GradeAnswer],
   ];
   for (const [system, schema] of cases) {

@@ -1,12 +1,13 @@
 import { isGrounded } from '@/grounding';
 import { logCalls, type Db } from '@/lib/llm-calls';
-import { cardGeneratePrompt, type CardDensity, type CardType, type DiscardReason } from '@/llm/prompts';
+import { cardGeneratePrompt, type CardDensity, type DiscardReason } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardGenerate } from '@/llm/schemas';
 import { resetsIn } from '@/lib/time/reset';
 import { DAILY_GENERATIONS } from './limits';
+import type { CardType } from '@/lib/cards/types';
 
-export type CardRow = { id: string; deck_id: string; source_chunk_id: string | null; type: 'basic' | 'cloze' | 'why'; front: string;
+export type CardRow = { id: string; deck_id: string; source_chunk_id: string | null; type: CardType; front: string;
   back: string; key_points: string[]; source_quote: string; concept: string; bloom_level: string; importance: 1 | 2 | 3;
   status: 'pending' | 'kept' | 'discarded'; page_start: number | null };
 export type GenerateResult =

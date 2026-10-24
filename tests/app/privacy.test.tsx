@@ -13,7 +13,7 @@ test('it names every service that receives student text, what stays, and how to 
   render(<PrivacyPage />);
   expect(screen.getByRole('heading', { level: 1, name: 'Privacy notice' })).toBeTruthy();
   const text = document.body.textContent!;
-  for (const s of ['Groq', 'LanguageTool', 'Supabase', 'Vercel', 'does not train', 'until you delete it', 'Download my data', 'Delete my data', '18']) {
+  for (const s of ['photos, voice and text never leave it', "Voice recordings aren't kept", 'Groq', 'LanguageTool', 'Supabase', 'Vercel', 'does not train', 'until you delete it', 'Download my data', 'Delete my data', '18']) {
     expect(text).toContain(s);
   }
   expect(screen.getByRole('link', { name: 'Back to Scholar' }).getAttribute('href')).toBe('/');

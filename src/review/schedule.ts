@@ -1,10 +1,11 @@
 import { localMidnight, startOfLocalDay } from '@/lib/time/zone';
 import { createEmptyCard, fsrs, generatorParameters, Rating, type Card as FsrsCard, type FSRS, type ReviewLog } from 'ts-fsrs';
+import type { CardType } from '@/lib/cards/types';
 
 export type Grade = Rating.Again | Rating.Hard | Rating.Good | Rating.Easy;
 export interface StateRow { card_id: string; due: string; stability: number; difficulty: number; scheduled_days: number;
   learning_steps: number; reps: number; lapses: number; state: number; last_review: string | null }
-export interface StudyCard { id: string; deckId: string; type: 'basic' | 'cloze' | 'why'; importance: 1 | 2 | 3; state: StateRow | null;
+export interface StudyCard { id: string; deckId: string; type: CardType; importance: 1 | 2 | 3; state: StateRow | null;
   /** Matched to the deck's course goals (B4.3). */
   goalMatch?: boolean }
 

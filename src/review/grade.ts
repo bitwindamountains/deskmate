@@ -2,6 +2,7 @@ import { Rating } from 'ts-fsrs';
 import type { EmbedFn } from '@/lib/embed/embed';
 import { cosine } from '@/lib/embed/duplicates';
 import type { Grade } from './schedule';
+import { EXPLAIN_TYPES, type CardType } from '@/lib/cards/types';
 
 export function normalizeAnswer(s: string): string {
   return s.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu, (c, i, str) => (/[.,\-+%/]/.test(c) && !(/[.,]/.test(c) && /^\s*$/.test(str[i + 1] ?? '')) && (/\d/.test(str[i - 1] ?? '') || /\d/.test(str[i + 1] ?? '')) ? c : ''))
@@ -30,15 +31,29 @@ export function scoreToRating(score: number, responseMs: number): Grade {
   return score >= 0.9 && responseMs <= 10000 ? Rating.Easy : Rating.Good;
 }
 
-export interface CascadeInput { type: 'basic' | 'cloze' | 'why'; reference: string; keyPoints: string[]; answer: string; responseMs: number }
+export interface CascadeInput { type: CardType; reference: string; keyPoints: string[]; answer: string; responseMs: number }
 export interface CascadeResult { score: number; source: 'exact' | 'fuzzy' | 'embedding'; hit: string[]; missed: string[]; suggested: Grade; needsLlm: boolean }
 
 const KP_HIT = 0.75;
 
+/**
+ * B2.3 "Put in order": matching key points says nothing about order. When every step appears word for word, their order
+ * in the answer is checked on the device (wrong order scores 0.4: Hard). When it can't be checked, the AI grader decides.
+ */
+function checkOrder(i: CascadeInput, ans: string, r: CascadeResult): CascadeResult {
+  if (i.keyPoints.length < 2 || r.score === 0) return r;
+  const at = i.keyPoints.map((k) => ans.indexOf(normalizeAnswer(k)));
+  if (at.some((p) => p < 0)) return { ...r, needsLlm: true };
+  if (at.some((p, k) => k > 0 && p < at[k - 1])) {
+    return { ...r, score: 0.4, hit: [], missed: ['The order of the steps'], suggested: scoreToRating(0.4, i.responseMs), needsLlm: false };
+  }
+  return r;
+}
+
 export async function gradeLocally(i: CascadeInput, embed: EmbedFn | null): Promise<CascadeResult> {
   const done = (score: number, source: CascadeResult['source'], hit: string[], missed: string[], settled: boolean): CascadeResult => ({
     score, source, hit, missed, suggested: scoreToRating(score, i.responseMs),
-    needsLlm: !settled && (i.type === 'why' || (score >= 0.45 && score <= 0.85)),
+    needsLlm: !settled && (EXPLAIN_TYPES.includes(i.type) || (score >= 0.45 && score <= 0.85)),
   });
   const ans = normalizeAnswer(i.answer);
   if (!ans) return { ...done(0, 'fuzzy', [], i.keyPoints, true), needsLlm: false };
@@ -50,5 +65,6 @@ export async function gradeLocally(i: CascadeInput, embed: EmbedFn | null): Prom
   try { v = await embed([i.answer, i.reference, ...i.keyPoints]); } catch { return done(sim, 'fuzzy', [], i.keyPoints, false); }
   if (!i.keyPoints.length) return done(Math.min(1, Math.max(0, cosine(v[0], v[1]))), 'embedding', [], [], false);
   const hit = i.keyPoints.filter((_, k) => cosine(v[0], v[2 + k]) >= KP_HIT);
-  return done(hit.length / i.keyPoints.length, 'embedding', hit, i.keyPoints.filter((k) => !hit.includes(k)), false);
+  const result = done(hit.length / i.keyPoints.length, 'embedding', hit, i.keyPoints.filter((k) => !hit.includes(k)), false);
+  return i.type === 'sequence' ? checkOrder(i, ans, result) : result;
 }
