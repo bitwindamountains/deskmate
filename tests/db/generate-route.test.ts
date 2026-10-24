@@ -92,7 +92,7 @@ test('fourth source of the day gives 429 with the quota message', async () => {
   }
   const fn = okComplete();
   const r = await generateChunk(U.client, U.userId, await newSource(U, 'D3'), 0, {}, fn);
-  expect(r).toEqual({ ok: false, status: 429, error: 'quota', message: "You've used today's 3 card generations. They reset at midnight UTC." });
+  expect(r).toEqual({ ok: false, status: 429, error: 'quota', message: expect.stringMatching(/^You've used today's 3 card generations\. They reset in (about \d+ hours?|under an hour)\.$/) });
   expect(fn).not.toHaveBeenCalled();
 });
 

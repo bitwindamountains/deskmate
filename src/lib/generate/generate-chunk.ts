@@ -3,6 +3,7 @@ import { logCalls, type Db } from '@/lib/llm-calls';
 import { cardGeneratePrompt } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardGenerate } from '@/llm/schemas';
+import { resetsIn } from '@/lib/time/reset';
 
 export type CardRow = { id: string; deck_id: string; source_chunk_id: string | null; type: 'basic' | 'cloze' | 'why'; front: string;
   back: string; key_points: string[]; source_quote: string; concept: string; bloom_level: string; importance: 1 | 2 | 3;
@@ -13,7 +14,7 @@ export type GenerateResult =
 
 const CARD_COLS = 'id,deck_id,source_chunk_id,type,front,back,key_points,source_quote,concept,bloom_level,importance,status';
 const NOT_FOUND = { ok: false, status: 404, error: 'not_found', message: "We couldn't find that part of your material." } as const;
-const QUOTA = { ok: false, status: 429, error: 'quota', message: "You've used today's 3 card generations. They reset at midnight UTC." } as const;
+const QUOTA = () => ({ ok: false, status: 429, error: 'quota', message: `You've used today's 3 card generations. They reset ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, error: 'busy', message: 'The AI service is busy. Your material is saved; try again in a few minutes.' } as const;
 
 type ChunkRow = { id: string; text: string; page_start: number | null; generated_at: string | null; sources: { deck_id: string; decks: { subject: string | null } | null } };
@@ -46,7 +47,7 @@ export async function generateChunk(db: Db, userId: string, sourceId: string, po
 
   const { data: allowed, error: quotaErr } = await db.rpc('consume_generation_quota', { p_source_id: sourceId });
   if (quotaErr) return quotaErr.code === '42501' ? NOT_FOUND : BUSY;
-  if (!allowed) return QUOTA;
+  if (!allowed) return QUOTA();
 
   let generated: CardGenerate;
   try {

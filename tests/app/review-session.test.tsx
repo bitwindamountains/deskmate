@@ -211,11 +211,11 @@ test('Make a mnemonic asks for help on the current card', async () => {
 });
 
 test('a help limit or failure shows the route message', async () => {
-  fetchMock.mockResolvedValueOnce(json(429, { error: 'help_limit', message: "You've asked for a lot of help today. More unlocks at midnight UTC." }));
+  fetchMock.mockResolvedValueOnce(json(429, { error: 'help_limit', message: "You've asked for a lot of help today. More unlocks in about 7 hours." }));
   await start([card('a')]);
   fireEvent.click(screen.getByRole('button', { name: 'Show answer' }));
   fireEvent.click(screen.getByRole('button', { name: 'Make a mnemonic' }));
-  expect(await screen.findByText("You've asked for a lot of help today. More unlocks at midnight UTC.")).toBeTruthy();
+  expect(await screen.findByText("You've asked for a lot of help today. More unlocks in about 7 hours.")).toBeTruthy();
 });
 
 test('Mix topics takes one card from each concept in turn and is remembered', async () => {

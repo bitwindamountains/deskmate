@@ -73,7 +73,7 @@ test('daily helper limit reached is 429 with no LLM call', async () => {
   await adminClient().from('quota_usage').insert({ user_id: U.userId, day: new Date().toISOString().slice(0, 10), hints: 60 });
   const fn = fake();
   expect(await requestCardHelp(U.client, U.userId, card.id, {}, fn))
-    .toEqual({ ok: false, status: 429, message: "You've asked for a lot of help today. More unlocks at midnight UTC." });
+    .toEqual({ ok: false, status: 429, message: expect.stringMatching(/^You've asked for a lot of help today\. More unlocks in (about \d+ hours?|under an hour)\.$/) });
   expect(fn).not.toHaveBeenCalled();
 });
 
