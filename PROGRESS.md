@@ -4,7 +4,8 @@ Handoff for the next session. Update it at the end of each session. Last updated
 
 ## State
 - `main` has everything through PR #24. PR #18 removed feedback translation and the first-language question (English only), and PR #20 dropped their schema (`scholar.item_translations` and `profiles.first_language`; both were empty). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 480/480 unit tests, 173/173 DB tests, typecheck and the production build pass.
-- All migrations through `20261024130000_scholar_anon_ping.sql` are applied (including PR #20's `20261023100000_scholar_drop_translation.sql`, on 2026-10-24), and the advisors show nothing for `scholar`. No PRs are open.
+- **Branch `small-gaps`** (plan and rulings: `docs/superpowers/plans/2026-10-24-small-gaps.md`): limit messages say how long until they reset instead of "midnight UTC"; Recall imports Word (.docx) files; problem reports keep a copy of the reported text (`problem_reports.snapshot`, filled in by a database trigger so it can't be faked). Reviewed with `/code-review high --fix`; findings fixed or ruled on in the plan. On the branch: 489/489 unit tests, 174/174 DB tests, typecheck and the production build pass.
+- All migrations through `20261024142000_scholar_report_snapshot_trigger.sql` are applied (2026-10-24), and the advisors show nothing for `scholar`.
 - `20261024130000_scholar_anon_ping.sql` grants anon `usage` on schema `scholar` so the keep-alive cron can call `ping()`. Anon has no table or column grants there and `ping` is its only executable function, so **every new scholar function must keep revoking execute from public**.
 - `graphify-out/` (local, gitignored) was rebuilt on 2026-10-24, and git hooks rebuild it after each commit (code only).
 
@@ -18,7 +19,7 @@ Handoff for the next session. Update it at the end of each session. Last updated
   - cards from PDFs, from the AI, or written by hand; AI grading and card help;
   - FSRS reviews with confidence ratings;
   - a mastery map, exam mode and a Today plan in the student's own time zone;
-  - CSV and Anki (.apkg) import, CSV export;
+  - Word (.docx) import, CSV and Anki (.apkg) import, CSV export;
   - course goals (matched on the device) and prerequisites with suggestions when a concept keeps being missed.
 - **Shared**:
   - Profile → "Your data": download everything as one JSON file (built in the browser through RLS), or delete all Scholar data (typed confirmation, clears the device, signs out);
@@ -34,15 +35,12 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - The owner merges PRs. After a merge, delete the branch locally and on GitHub.
 
 ## Next steps
-1. **Small gaps:**
-   - a magic link opened in a different browser than the one used to sign in still lands on `/today` without the time zone cookie, so the `(app)` layout's one refresh covers it;
-   - the goal-match threshold `GOAL_MATCH = 0.5` in `src/review/goals.ts` hasn't been tuned on real courses;
-   - a report doesn't snapshot the card's text, so a report on a card the student later deletes points at nothing;
-   - left from the completeness review: failed AI calls ask the student to retry instead of queueing (spec §6.1, record as a ruling), quotas reset at midnight UTC while everything else is local, and Recall can't import DOCX although Draft Coach can.
+1. **Small gaps:** none open. Ruled on in `docs/superpowers/plans/2026-10-24-small-gaps.md`: daily limits stay on the UTC day (a local day could be gamed by changing time zone), failed AI calls are not queued (nothing is lost; a queue needs a worker that Hobby can't run often enough), and a magic link opened in another browser keeps the layout's one refresh.
 2. **Waiting on the owner:**
+   - tune `GOAL_MATCH = 0.5` (`src/review/goals.ts`) once real course material exists;
    - import a real deck exported from current Anki (WAL mode and multi-frame zstd are unverified);
    - deploy per `docs/deploy.md`, including custom SMTP for sign-in emails; after deploying, check `/api/keep-alive` answers `{"ok":true}` and the cron shows in Vercel;
-   - try "Your data" and "Report a problem" in a browser (not checked yet);
+   - try "Your data", "Report a problem" and the Word import in a browser (not checked yet);
    - get feedback from beta students before new features.
 
 ## Gotchas

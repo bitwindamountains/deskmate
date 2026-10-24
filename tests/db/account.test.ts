@@ -43,15 +43,30 @@ test('reports: own card or feedback item only, known reasons, notes up to 500 ch
   expect((await A.client.from('problem_reports').select('reason').order('created_at')).data!.map((r) => r.reason)).toEqual(['grading', 'unfair']);
 });
 
-test('a report keeps a copy of the reported text, even after the card is deleted', async () => {
-  const card = (await adminClient().from('cards').insert({ user_id: A.userId, deck_id: a.deck, source_chunk_id: null, type: 'basic',
-    front: 'What makes ATP?', back: 'Mitochondria', key_points: [], source_quote: '', concept: 'Cells', bloom_level: 'remember',
-    importance: 2, status: 'kept' }).select('id').single()).data!.id;
+test('the database copies the reported text into the report: it survives deletion, cannot be faked, and fits long cards', async () => {
+  const newCard = async (front: string) => (await adminClient().from('cards').insert({ user_id: A.userId, deck_id: a.deck,
+    source_chunk_id: null, type: 'basic', front, back: 'Mitochondria', key_points: [], source_quote: '', concept: 'Cells',
+    bloom_level: 'remember', importance: 2, status: 'kept' }).select('id').single()).data!.id;
+  const latest = async (id: string) => (await A.client.from('problem_reports').select('snapshot').eq('target_id', id)
+    .order('created_at', { ascending: false }).limit(1).single()).data!.snapshot;
+
+  const card = await newCard('What makes ATP?');
   await reportProblem(A.client, A.userId, { target: 'card', targetId: card, reason: 'wrong', note: '' });
   await A.client.from('cards').delete().eq('id', card);
-  const snap = async (id: string) => (await A.client.from('problem_reports').select('snapshot').eq('target_id', id).single()).data!.snapshot;
-  expect(await snap(card)).toEqual({ front: 'What makes ATP?', back: 'Mitochondria' });
-  expect(await snap(a.item)).toEqual({ summary: 'Claim lacks evidence', revised_summary: null, quote: null });
+  expect(await latest(card)).toEqual({ front: 'What makes ATP?', back: 'Mitochondria' });
+
+  await reportProblem(A.client, A.userId, { target: 'feedback_item', targetId: a.item, reason: 'unclear', note: '' });
+  expect(await latest(a.item)).toEqual({ summary: 'Claim lacks evidence', revised_summary: null, quote: null });
+
+  // A client-sent snapshot is refused (no column grant); without it the trigger still fills the real text.
+  const forged = await A.client.from('problem_reports')
+    .insert({ user_id: A.userId, target: 'feedback_item', target_id: a.item, reason: 'other', snapshot: { summary: 'made up' } });
+  expect(forged.error).not.toBeNull();
+
+  const long = await newCard('x'.repeat(20_000));
+  await reportProblem(A.client, A.userId, { target: 'card', targetId: long, reason: 'unclear', note: '' });
+  expect(((await latest(long)) as { front: string }).front).toHaveLength(1000);
+  await A.client.from('cards').delete().eq('id', long);
 });
 
 test('export has every own row, nobody else rows, and no embeddings', async () => {
