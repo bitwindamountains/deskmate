@@ -4,6 +4,7 @@ import { cardGeneratePrompt, type CardDensity, type CardType, type DiscardReason
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardGenerate } from '@/llm/schemas';
 import { resetsIn } from '@/lib/time/reset';
+import { DAILY_GENERATIONS } from './limits';
 
 export type CardRow = { id: string; deck_id: string; source_chunk_id: string | null; type: 'basic' | 'cloze' | 'why'; front: string;
   back: string; key_points: string[]; source_quote: string; concept: string; bloom_level: string; importance: 1 | 2 | 3;
@@ -14,7 +15,7 @@ export type GenerateResult =
 
 const CARD_COLS = 'id,deck_id,source_chunk_id,type,front,back,key_points,source_quote,concept,bloom_level,importance,status';
 const NOT_FOUND = { ok: false, status: 404, error: 'not_found', message: "We couldn't find that part of your material." } as const;
-const QUOTA = () => ({ ok: false, status: 429, error: 'quota', message: `You've used today's 3 card generations. They reset ${resetsIn()}.` }) as const;
+const QUOTA = () => ({ ok: false, status: 429, error: 'quota', message: `You've used today's ${DAILY_GENERATIONS} card generations. They reset ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, error: 'busy', message: 'The AI service is busy. Your material is saved; try again in a few minutes.' } as const;
 
 type ChunkRow = { id: string; text: string; page_start: number | null; generated_at: string | null;
@@ -89,4 +90,12 @@ export async function generateChunk(db: Db, userId: string, sourceId: string, po
   const { error: markErr } = await markGenerated();
   if (markErr) return BUSY;
   return { ok: true, cards: withPage(inserted), droppedUngrounded: generated.cards.length - kept.length, alreadyGenerated: false };
+}
+
+/** Spec §6.5: card generations left today (UTC day, like the quota function). RLS scopes the row to the student. */
+export async function generationsLeft(db: Db): Promise<number> {
+  const day = new Date().toISOString().slice(0, 10);
+  const { data, error } = await db.from('quota_usage').select('generations').eq('day', day).maybeSingle();
+  if (error) throw new Error("We couldn't load your card generations.");
+  return Math.max(0, DAILY_GENERATIONS - ((data?.generations as number | undefined) ?? 0));
 }
