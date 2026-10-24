@@ -33,9 +33,10 @@ Target: Vercel Hobby (free), with the existing shared Supabase project. The owne
 - Run one essay check and one card review to confirm the LLM keys work.
 - Check that the PWA installs and that the time zone counts match your local day.
 - Run the Supabase advisors (security and performance) once more.
+- Open `https://<your-domain>/api/keep-alive`: it should answer `{"ok":true}`.
 
 ## Known free-tier limits
 
 - Groq free tier: per-minute and per-day token limits; the app's own limit is 60 helper calls a day per student, plus the daily essay checks.
 - LanguageTool public API: rate-limited per IP. Vercel functions share IPs, so heavy use may hit it; the sentence-level check then fails and the student is asked to try again (no LLM call is spent).
-- Supabase free tier: the project pauses after a week with no activity.
+- Supabase free tier: the project pauses after a week with no activity. `vercel.json` has Vercel call `/api/keep-alive` once a day to prevent that; it needs no setup. Check it under Settings → Cron Jobs after the first deploy.
