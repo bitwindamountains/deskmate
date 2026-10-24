@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
+import { CardGenerate, CardHelp, CardImprove, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 
 export interface RubricCriterion {
   name: string;
@@ -224,7 +224,22 @@ export function itemDialoguePrompt(i: DialogueInput): Prompt {
   };
 }
 
-export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string }): Prompt {
+export type CardDensity = 'fewer' | 'standard' | 'more';
+export type DiscardReason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
+const DENSITY_LINE: Record<CardDensity, string | null> = {
+  fewer: 'Card count: fewer than usual, about half as many. Keep only the ideas most likely to be on an exam.',
+  standard: null,
+  more: 'Card count: more than usual. Also make cards for supporting ideas (importance 2).',
+};
+const AVOID_LINE: Record<DiscardReason, string> = {
+  trivial: 'This student usually discards cards as too trivial: leave out minor details, and when unsure, make no card.',
+  wrong: 'This student usually discards cards as wrong: only make cards the source states plainly.',
+  duplicate: 'This student usually discards cards as duplicates: never cover one idea in two cards.',
+  unclear: 'This student usually discards cards as unclear: make every question answerable without the source.',
+};
+
+/** density and avoid add one user-message line each, only when they apply (B2.2 density, B2.5 discards as a signal). */
+export function cardGeneratePrompt(i: { chunk: string; subject: string; level: string; density?: CardDensity; avoid?: DiscardReason }): Prompt {
   return {
     system: [
       'You create flashcards from the source text, for the subject and level given with it.',
@@ -237,7 +252,22 @@ export function cardGeneratePrompt(i: { chunk: string; subject: string; level: s
       `Return only JSON with this shape: ${compactSchema(CardGenerate)}`,
     ].join('\n'),
     // subject comes from the student's deck, so it rides in the user message, never the system prompt
-    user: [`Subject: ${i.subject}`, `Level: ${i.level}`, wrapData('source', i.chunk)].join('\n\n'),
+    user: [`Subject: ${i.subject}`, `Level: ${i.level}`, DENSITY_LINE[i.density ?? 'standard'], i.avoid && AVOID_LINE[i.avoid],
+      wrapData('source', i.chunk)].filter(Boolean).join('\n\n'),
+  };
+}
+
+export function cardImprovePrompt(i: { type: 'basic' | 'cloze' | 'why'; front: string; back: string; chunk: string }): Prompt {
+  return {
+    system: [
+      'Rewrite the flashcard below so it follows the card rules. Keep the same idea and the same card type; do not add facts.',
+      'Rules: atomic (one idea), unambiguous (one correct answer), self-contained (clear without the source), answer under 15 words.',
+      'Only a cloze card uses {{c1::text}}: the hidden part in front, the hidden text as back. Basic and why cards are a plain question and answer.',
+      'source_quote must be copied exactly from the source text and must support the rewritten card.',
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(CardImprove)}`,
+    ].join('\n'),
+    user: [wrapData('card', [`Type: ${i.type}`, `Question: ${i.front}`, `Answer: ${i.back}`].join('\n')), wrapData('source', i.chunk)].join('\n\n'),
   };
 }
 

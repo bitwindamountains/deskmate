@@ -106,3 +106,14 @@ test('a slow file that finishes after a newer pick is ignored', async () => {
   await new Promise((r) => setTimeout(r, 0));
   expect((screen.getByLabelText('Paste text') as HTMLTextAreaElement).value).toBe('Second file.');
 });
+
+test('the student picks how many cards; Standard is the default (B2.2)', () => {
+  createSource.mockResolvedValue({ ok: false, error: 'x' });
+  render(<ImportForm decks={[]} />);
+  expect((screen.getByLabelText('Standard') as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(screen.getByLabelText('Fewer: core ideas only'));
+  fireEvent.change(screen.getByLabelText('New deck name'), { target: { value: 'Bio' } });
+  fireEvent.change(screen.getByLabelText('Paste text'), { target: { value: 'the cell makes energy '.repeat(10) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Make flashcards' }));
+  expect(createSource.mock.calls[0][0]).toMatchObject({ cardDensity: 'fewer' });
+});
