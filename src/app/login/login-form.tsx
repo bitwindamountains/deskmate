@@ -6,7 +6,7 @@ import { sendEmailCode, signInWithGoogle, verifyEmailCode, type LoginState } fro
 const input = 'field';
 const button = 'btn';
 
-export function LoginForm({ next, initialError }: { next: string; initialError?: string }) {
+export function LoginForm({ next, initialError, notice }: { next: string; initialError?: string; notice?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(
     (prev, fd) => (prev.step === 'code' && fd.get('intent') !== 'resend' ? verifyEmailCode(prev, fd) : sendEmailCode(prev, fd)),
     { step: 'email', error: initialError },
@@ -17,6 +17,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Sign in to Scholar</h1>
+      {notice && <p role="status">{notice}</p>}
       {state.error && <p id="login-err" role="alert" className="error">{state.error}</p>}
 
       <form action={signInWithGoogle}>
