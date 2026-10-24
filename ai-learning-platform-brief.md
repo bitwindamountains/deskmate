@@ -1008,9 +1008,24 @@ Categories to research:
 
 # Part K: Decision Log
 
+Filled from `PROGRESS.md` (owner decisions) and the plans in `docs/superpowers/plans/` (builder rulings, each with its full reasoning). New decisions are added here and there.
+
 | # | Date | Decision | Reason | Alternatives considered |
 |---|---|---|---|---|
-| 1 | | | | |
+| 1 | 2026-10-20 | Free, open-source or free-tier services only. | No budget yet; costs should be real before paying. | Paid LLM and hosting tiers. |
+| 2 | 2026-10-20 | The beta is for adults (18+) only. | Free LLM tiers have weaker privacy terms, and minors need consent flows and a legal review (E4). | Minors with parental consent. |
+| 3 | 2026-10-20 | Build order: evaluation harness, then Recall, then Draft Coach. | Recall's daily cost is lowest after generation and it builds the daily habit. | Draft Coach first. |
+| 4 | 2026-10-20 | Sentence-level feedback comes from LanguageTool, not an LLM. | Deterministic and costs no LLM calls on a scarce free tier. | An LLM sentence pass. |
+| 5 | 2026-10 | Students only: no teacher, class or school features. | Owner focus for the beta. | Phase 3 teacher review queue, class insights, class decks. |
+| 6 | 2026-10 | Free-tier AI only; heavy AI features (Phase 2d) wait for a capacity decision. | They need several calls per essay or card, plus speech and OCR models. | A paid tier or a second provider. |
+| 7 | 2026-10 | Hosting is prepared for Vercel Hobby; the owner deploys (`docs/deploy.md`). | Fits a free, non-commercial beta. | Cloudflare Pages/Workers (the spec's recommendation, for commercial use). |
+| 8 | 2026-10-23 | English only: no translation and no other essay or card languages. | Owner decision; first-language explanations (A3.9) were removed. | Filipino and Spanish feedback. |
+| 9 | 2026-10-24 | Deleting data removes the student's Scholar data but keeps the shared sign-in; daily usage counters survive. | The Supabase project is shared with other apps; counters stop a delete from resetting limits. | Deleting the `auth.users` row. |
+| 10 | 2026-10-24 | Daily limits stay on the UTC day; messages say how long until they reset. | A local day comes from the browser's time zone and could be gamed. | A per-student local day. |
+| 11 | 2026-10-24 | Essays stay capped at 2,000 words. | Groq's free tier allows 8,000 tokens a minute; one long check would block other students. | Chunking up to 5,000 words (A7). |
+| 12 | 2026-10-24 | Failed AI calls are not queued; the student retries. | Nothing is lost and no quota is charged twice; a queue needs a worker Vercel Hobby can't run often enough. | A job queue (spec §6.1). |
+| 13 | 2026-10-24 | No separate tone and quality pass. | A second call per essay doesn't fit the free tier; prompt rules, quote anchoring and schema checks cover it. | A second LLM pass (D3.1 step 8). |
+| 14 | 2026-10-24 | Claude may merge its own PRs, delete branches and do routine follow-ups without asking. | Owner granted full permission for this project. | The owner merges each PR. |
 
 ---
 
