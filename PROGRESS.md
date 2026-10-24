@@ -3,9 +3,8 @@
 Handoff for the next session. Update it at the end of each session. Last updated 2026-10-24.
 
 ## State
-- `main` has everything through PR #23. PR #18 removed feedback translation and the first-language question (English only). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 480/480 unit tests, 175/175 DB tests, typecheck and the production build pass.
-- **Open PR #20 `drop-translation-schema`**: the migration `20261023100000_scholar_drop_translation.sql` drops `scholar.item_translations` and `profiles.first_language`. It is **not applied**: the owner reviews it, applies it, then runs the advisors. The data export already skips `item_translations`, so applying it breaks nothing.
-- All other migrations through `20261024130000_scholar_anon_ping.sql` are applied, and the advisors show nothing for `scholar`.
+- `main` has everything through PR #24. PR #18 removed feedback translation and the first-language question (English only), and PR #20 dropped their schema (`scholar.item_translations` and `profiles.first_language`; both were empty). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 480/480 unit tests, 173/173 DB tests, typecheck and the production build pass.
+- All migrations through `20261024130000_scholar_anon_ping.sql` are applied (including PR #20's `20261023100000_scholar_drop_translation.sql`, on 2026-10-24), and the advisors show nothing for `scholar`. No PRs are open.
 - `20261024130000_scholar_anon_ping.sql` grants anon `usage` on schema `scholar` so the keep-alive cron can call `ping()`. Anon has no table or column grants there and `ping` is its only executable function, so **every new scholar function must keep revoking execute from public**.
 - `graphify-out/` (local, gitignored) was rebuilt on 2026-10-24, and git hooks rebuild it after each commit (code only).
 
@@ -35,13 +34,12 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - The owner merges PRs. After a merge, delete the branch locally and on GitHub.
 
 ## Next steps
-1. **The owner reviews, applies and merges PR #20** (drop the translation schema), then runs the advisors.
-2. **Small gaps:**
+1. **Small gaps:**
    - a magic link opened in a different browser than the one used to sign in still lands on `/today` without the time zone cookie, so the `(app)` layout's one refresh covers it;
    - the goal-match threshold `GOAL_MATCH = 0.5` in `src/review/goals.ts` hasn't been tuned on real courses;
    - a report doesn't snapshot the card's text, so a report on a card the student later deletes points at nothing;
    - left from the completeness review: failed AI calls ask the student to retry instead of queueing (spec §6.1, record as a ruling), quotas reset at midnight UTC while everything else is local, and Recall can't import DOCX although Draft Coach can.
-3. **Waiting on the owner:**
+2. **Waiting on the owner:**
    - import a real deck exported from current Anki (WAL mode and multi-frame zstd are unverified);
    - deploy per `docs/deploy.md`, including custom SMTP for sign-in emails; after deploying, check `/api/keep-alive` answers `{"ok":true}` and the cron shows in Vercel;
    - try "Your data" and "Report a problem" in a browser (not checked yet);
