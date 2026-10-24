@@ -21,7 +21,19 @@ function ChecksLeft({ n }: { n: number }) {
   );
 }
 
-export function EssayList({ essays, checksLeft = 5 }: { essays: EssaySummary[]; checksLeft?: number }) {
+/** A-S1 growth snapshot; either part may be missing until there is enough writing to say. */
+function Snapshot({ strength, workingOn }: { strength: string | null; workingOn: string | null }) {
+  if (!strength && !workingOn) return null;
+  return (
+    <section aria-label="Your writing so far" className="mb-8 max-w-xl rounded-xl border border-line bg-surface p-5">
+      {strength && <p>Your strongest area: <strong>{strength}</strong>.</p>}
+      {workingOn && <p>Working on: <strong>{workingOn}</strong>. <Link href="/progress" className="underline">See your progress</Link></p>}
+    </section>
+  );
+}
+
+export function EssayList({ essays, checksLeft = 5, snapshot }: { essays: EssaySummary[]; checksLeft?: number;
+  snapshot?: { strength: string | null; workingOn: string | null } }) {
   if (!essays.length) {
     return (
       <>
@@ -38,6 +50,7 @@ export function EssayList({ essays, checksLeft = 5 }: { essays: EssaySummary[]; 
     <>
       <ChecksLeft n={checksLeft} />
       <NewEssay className="mb-8" />
+      {snapshot && <Snapshot {...snapshot} />}
       <ul className="max-w-xl space-y-3">
         {essays.map((e) => (
           <li key={e.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
