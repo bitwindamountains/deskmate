@@ -5,13 +5,13 @@ Handoff for the next session. Update it at the end of each session. Last updated
 ## State
 - `main` has everything through PR #21. PR #18 removed feedback translation and the first-language question (English only). PR #19 writes the time zone cookie on every page, so the first day-based page no longer renders in UTC and then refreshes. PR #21 lets a stopped timer be resumed. On `main`: 466/466 unit tests and the production build pass.
 - **Open PR #20 `drop-translation-schema`**: the migration `20261023100000_scholar_drop_translation.sql` drops `scholar.item_translations` and `profiles.first_language`. It is **not applied**: the owner reviews it, applies it, then runs the advisors.
-- **Branch `data-rights-reports-keepalive`** (not pushed yet), from the 2026-10-24 completeness review. Plan: `docs/superpowers/plans/2026-10-24-data-rights-reports-keepalive.md`.
+- **Branch `data-rights-reports-keepalive`** (open PR), from the 2026-10-24 completeness review. Plan: `docs/superpowers/plans/2026-10-24-data-rights-reports-keepalive.md`.
   - Profile → "Your data": download everything as JSON (built in the browser through RLS), and delete my data (typed confirmation, clears the device, signs out).
   - Delete removes the student's **Scholar** data only. The `auth.users` row stays because the sign-in is shared with the other apps on this project. `quota_usage` and `llm_calls` stay too, so a delete can't reset the day's limits.
   - "Report a problem" in the review session and on each feedback card, stored in `scholar.problem_reports`.
   - `vercel.json` cron calls `/api/keep-alive` daily (`scholar.ping()`), so the free project doesn't pause.
-  - Migration `20261024120000_scholar_reports_delete_ping.sql` is **not applied**. The owner reviews it, applies it, runs the advisors, then runs `npm run test:db` (new: `tests/db/account.test.ts`). Until then the three features fail at runtime.
-  - On the branch: 480/480 unit tests, typecheck and the production build pass.
+  - Migrations `20261024120000_scholar_reports_delete_ping.sql` and `20261024130000_scholar_anon_ping.sql` are **applied** (2026-10-24). The second grants anon `usage` on schema `scholar` so the cron can call `ping`; anon has no table or column grants there and `ping` is its only executable function, so every new scholar function must keep revoking execute from public. The advisors show nothing for scholar.
+  - On the branch: 480/480 unit tests, 175/175 DB tests, typecheck and the production build pass.
 - `graphify-out/` (local, gitignored) was rebuilt on 2026-10-23, and git hooks now rebuild it after each commit (code only).
 - All migrations through `20261022170000_scholar_goals_prereqs.sql` are applied and the advisors were checked.
 
@@ -38,7 +38,7 @@ Handoff for the next session. Update it at the end of each session. Last updated
 
 ## Next steps
 1. **The owner reviews, applies and merges PR #20** (drop the translation schema), then runs the advisors.
-2. **Apply `20261024120000_scholar_reports_delete_ping.sql`, run the advisors and `npm run test:db`, then push the branch and open a PR.**
+2. **The owner reviews and merges the data rights / reports / keep-alive PR.**
 3. **Small gaps:**
    - a magic link opened in a different browser than the one used to sign in still lands on `/today` without the time zone cookie, so the `(app)` layout's one refresh covers it;
    - the goal-match threshold `GOAL_MATCH = 0.5` in `src/review/goals.ts` hasn't been tuned on real courses.
