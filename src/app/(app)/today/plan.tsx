@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { EmptyStudy } from '@/components/empty-study';
 import type { Deck, ReviewCard } from '@/lib/review/load';
 import { buildSession, daysUntil, nextReview, parseDay, readiness } from '@/review/schedule';
 
@@ -10,9 +9,22 @@ const when = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorrow' :
 export type TodayEssay = { id: string; title: string; openTop3: number };
 
 /** zone: the student's time zone, since this renders on the server (whose clock is UTC). */
-export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essays = [], zone = 'UTC' }:
-  { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date; essays?: TodayEssay[]; zone?: string }) {
-  if (!cards.length && !essays.length) return <EmptyStudy />;
+export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essays = [], zone = 'UTC', newLimit }:
+  { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date; essays?: TodayEssay[]; zone?: string;
+    newLimit?: number }) {
+  // C4: a new student picks their first action here, in either tool.
+  if (!cards.length && !essays.length) {
+    return (
+      <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+        <h2 className="text-xl font-bold text-balance">Where would you like to start?</h2>
+        <p className="mt-2 text-ink-muted">Get coaching on a draft, or turn your notes into a few good flashcards.</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/write/new" className="btn btn-primary">Get feedback on an essay</Link>
+          <Link href="/study/import" className="btn">Turn notes into flashcards</Link>
+        </div>
+      </section>
+    );
+  }
 
   const exams = decks.flatMap((d) => {
     if (!d.exam_date) return [];
@@ -21,7 +33,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
     return days < 0 ? [] : [{ deck: d, date, days, ready: Math.round(readiness(cards.filter((c) => c.deckId === d.id), date) * 100) }];
   }).sort((a, b) => a.days - b.days);
   // Spec §8.3 order: reviews, essays with open priorities, exams. Essays have no deadline yet, so due reviews stay primary.
-  const { queue, estMinutes } = buildSession(cards, { now, minutes, newIntroducedToday, examDate: exams.find((e) => e.days > 0)?.date ?? null, zone });
+  const { queue, estMinutes } = buildSession(cards, { now, minutes, newIntroducedToday, examDate: exams.find((e) => e.days > 0)?.date ?? null, zone, newLimit });
   const next = nextReview(cards, now, zone);
   const noExam = decks.filter((d) => !exams.some((e) => e.deck.id === d.id));
   const essayFirst = !queue.length && essays.length > 0;

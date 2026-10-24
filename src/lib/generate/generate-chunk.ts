@@ -1,6 +1,6 @@
 import { isGrounded } from '@/grounding';
 import { logCalls, type Db } from '@/lib/llm-calls';
-import { cardGeneratePrompt } from '@/llm/prompts';
+import { cardGeneratePrompt, type CardDensity, type DiscardReason } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { CardGenerate } from '@/llm/schemas';
 import { resetsIn } from '@/lib/time/reset';
@@ -17,7 +17,20 @@ const NOT_FOUND = { ok: false, status: 404, error: 'not_found', message: "We cou
 const QUOTA = () => ({ ok: false, status: 429, error: 'quota', message: `You've used today's 3 card generations. They reset ${resetsIn()}.` }) as const;
 const BUSY = { ok: false, status: 503, error: 'busy', message: 'The AI service is busy. Your material is saved; try again in a few minutes.' } as const;
 
-type ChunkRow = { id: string; text: string; page_start: number | null; generated_at: string | null; sources: { deck_id: string; decks: { subject: string | null } | null } };
+type ChunkRow = { id: string; text: string; page_start: number | null; generated_at: string | null;
+  sources: { deck_id: string; card_density?: CardDensity; decks: { subject: string | null } | null } };
+
+/** The reason the student gives for most of their recent discards, when there are enough to call it a pattern. */
+async function discardPattern(db: Db): Promise<DiscardReason | undefined> {
+  const { data } = await db.from('cards').select('discard_reason').eq('status', 'discarded').in('discard_reason', ['trivial', 'wrong', 'unclear'])
+    .order('created_at', { ascending: false }).limit(100);
+  const reasons = ((data ?? []) as { discard_reason: DiscardReason | null }[]).flatMap((r) => (r.discard_reason ? [r.discard_reason] : []));
+  if (reasons.length < 5) return undefined;
+  const counts = new Map<DiscardReason, number>();
+  for (const r of reasons) counts.set(r, (counts.get(r) ?? 0) + 1);
+  const [top, n] = [...counts].sort((a, b) => b[1] - a[1])[0];
+  return n / reasons.length >= 0.5 ? top : undefined;
+}
 
 /**
  * Ordering: cards are inserted before generated_at is set. A crash in between leaves cards with generated_at null;
@@ -27,7 +40,7 @@ type ChunkRow = { id: string; text: string; page_start: number | null; generated
 export async function generateChunk(db: Db, userId: string, sourceId: string, position: number,
   env: Record<string, string | undefined>, completeFn: typeof complete = complete): Promise<GenerateResult> {
   const { data, error } = await db.from('source_chunks')
-    .select('id,text,page_start,generated_at,sources(deck_id,decks(subject))')
+    .select('id,text,page_start,generated_at,sources(deck_id,card_density,decks(subject))')
     .eq('source_id', sourceId).eq('position', position).maybeSingle();
   if (error) return BUSY;
   if (!data) return NOT_FOUND;
@@ -52,7 +65,9 @@ export async function generateChunk(db: Db, userId: string, sourceId: string, po
   let generated: CardGenerate;
   try {
     const subject = chunk.sources?.decks?.subject ?? 'general';
-    const r = await completeFn('card_generate', cardGeneratePrompt({ chunk: chunk.text, subject, level: 'college' }), CardGenerate, { env });
+    const prompt = cardGeneratePrompt({ chunk: chunk.text, subject, level: 'college', density: chunk.sources?.card_density,
+      avoid: await discardPattern(db) });
+    const r = await completeFn('card_generate', prompt, CardGenerate, { env });
     await logCalls(db, userId, r.log);
     generated = r.data;
   } catch (e) {

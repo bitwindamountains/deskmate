@@ -51,6 +51,8 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
           </button>
         )}
       </form>
+
+      <p className="text-sm text-ink-muted"><a href="/privacy" className="underline">How Scholar handles your data</a></p>
     </main>
   );
 }

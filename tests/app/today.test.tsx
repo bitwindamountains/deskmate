@@ -22,12 +22,12 @@ const base: Profile = {
 };
 afterEach(cleanup);
 
-test('Today shows the empty state with an Import material link to /study/import', async () => {
+test('Today with nothing yet offers both tools', async () => {
   profile = base;
   render(await TodayPage());
-  expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
-  expect(screen.getByText('Turn your notes into a few good flashcards.')).toBeTruthy();
-  expect(screen.getByRole('link', { name: 'Import material' }).getAttribute('href')).toBe('/study/import');
+  expect(screen.getByRole('heading', { name: 'Where would you like to start?' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Get feedback on an essay' }).getAttribute('href')).toBe('/write/new');
+  expect(screen.getByRole('link', { name: 'Turn notes into flashcards' }).getAttribute('href')).toBe('/study/import');
   expect(screen.getByRole('link', { name: 'Today' }).getAttribute('aria-current')).toBe('page');
   expect(screen.getByRole('main')).toBeTruthy();
 });

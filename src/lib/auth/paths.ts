@@ -1,4 +1,4 @@
-export const PUBLIC_PATHS: readonly string[] = ['/', '/login', '/auth/callback', '/manifest.webmanifest', '/sw.js'];
+export const PUBLIC_PATHS: readonly string[] = ['/', '/login', '/privacy', '/auth/callback', '/manifest.webmanifest', '/sw.js'];
 
 export function isPublicPath(pathname: string): boolean {
   // /api/* route handlers answer 401 JSON themselves; a login redirect would hand fetch callers an HTML page.

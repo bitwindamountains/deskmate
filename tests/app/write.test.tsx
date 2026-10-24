@@ -52,12 +52,12 @@ test('a valid essay calls createEssay with the assignment details', () => {
   createEssay.mockResolvedValue({ ok: false, error: 'x' });
   render(<NewEssayForm />);
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: ' Climate ' } });
-  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'word '.repeat(60) } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'the word '.repeat(30) } });
   expect(screen.getByText('Assignment details (optional)').closest('details')).toBeTruthy();
   fireEvent.change(screen.getByLabelText('Essay type'), { target: { value: 'research' } });
   fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
   expect(createEssay).toHaveBeenCalledWith({
-    title: 'Climate', essayType: 'research', gradeLevel: 'college', assignmentPrompt: null, citationStyle: null, content: 'word '.repeat(60),
+    title: 'Climate', essayType: 'research', gradeLevel: 'college', assignmentPrompt: null, citationStyle: null, content: 'the word '.repeat(30),
   });
 });
 
@@ -81,7 +81,7 @@ test('rating it yourself first sends the scores and weakness; untouched criteria
   createEssay.mockResolvedValue({ ok: false, error: 'x' });
   render(<NewEssayForm />);
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Climate' } });
-  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'word '.repeat(60) } });
+  fireEvent.change(screen.getByLabelText('Your essay'), { target: { value: 'the word '.repeat(30) } });
   expect(screen.getByText('Rate it yourself first (optional)').closest('details')).toBeTruthy();
   fireEvent.change(screen.getByLabelText('Thesis'), { target: { value: '3' } });
   fireEvent.change(screen.getByLabelText('Evidence'), { target: { value: '2' } });
@@ -119,7 +119,7 @@ test('the timer counts down, announces at 5 and 1 minutes, and at zero shows Tim
     const essay = screen.getByLabelText('Your essay', { exact: true }) as HTMLTextAreaElement;
     expect(essay.disabled).toBe(false);
     fireEvent.change(screen.getByLabelText('Title', { exact: true }), { target: { value: 'Timed' } });
-    fireEvent.change(essay, { target: { value: 'word '.repeat(60) } });
+    fireEvent.change(essay, { target: { value: 'the word '.repeat(30) } });
     fireEvent.click(screen.getByRole('button', { name: 'Get feedback' }));
     expect(createEssay.mock.calls[0][0]).toMatchObject({ timedMinutes: 20, minutesUsed: 20 });
   } finally {
@@ -133,7 +133,7 @@ test('Stop the timer freezes the minutes used; a timer left running is capped at
     createEssay.mockResolvedValue({ ok: false, error: 'x' });
     const fill = () => {
       fireEvent.change(screen.getByLabelText('Title', { exact: true }), { target: { value: 'Timed' } });
-      fireEvent.change(screen.getByLabelText('Your essay', { exact: true }), { target: { value: 'word '.repeat(60) } });
+      fireEvent.change(screen.getByLabelText('Your essay', { exact: true }), { target: { value: 'the word '.repeat(30) } });
     };
     render(<NewEssayForm />);
     fireEvent.change(screen.getByLabelText('Timed practice'), { target: { value: '20' } });

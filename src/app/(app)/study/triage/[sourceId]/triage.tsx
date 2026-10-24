@@ -6,6 +6,7 @@ import { findDuplicates } from '@/lib/embed/duplicates';
 import { getEmbedder } from '@/lib/embed/embed';
 import type { CardRow } from '@/lib/generate/generate-chunk';
 import { editCard, saveEmbeddings, setCardStatus } from '../actions';
+import { MathText } from '@/components/math-text';
 
 type Reason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
 export type KnownCard = { id: string; front: string; back: string; embedding: number[] | null };
@@ -30,11 +31,16 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   const [problem, setProblem] = useState<Problem | null>(null);
   const [actionError, setActionError] = useState('');
   const [say, setSay] = useState('');
+  const [improving, setImproving] = useState(false);
+  const [improveError, setImproveError] = useState('');
+  const [suggested, setSuggested] = useState(false); // the edit form holds the AI's rewrite, not the student's text
   const [mode, setMode] = useState<'view' | 'reason' | 'edit'>('view');
   const [draft, setDraft] = useState({ front: '', back: '', error: '' });
 
   const cardsRef = useRef(cards);
   useEffect(() => { cardsRef.current = cards; }, [cards]);
+  const modeRef = useRef(mode);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
   const [known] = useState(() => existing.map((k) => ({ ...k })));
   const dedupeChain = useRef(Promise.resolve());
   const loop = useRef<AbortController | null>(null);
@@ -48,6 +54,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   useEffect(() => { focusNext.current?.current?.focus(); focusNext.current = null; });
 
   const current = cards.find((c) => c.status === 'pending');
+  useEffect(() => setImproveError(''), [current?.id]); // an error about one card shouldn't follow the student to the next
   const left = cards.filter((c) => c.status === 'pending').length;
   const path = `/study/triage/${sourceId}`;
 
@@ -85,11 +92,35 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   }
 
   function openReason() { setMode('reason'); focusNext.current = firstChip; }
-  function closeTo(ref: React.RefObject<HTMLElement | null>) { setMode('view'); focusNext.current = ref; }
+  function closeTo(ref: React.RefObject<HTMLElement | null>) { setMode('view'); setSuggested(false); focusNext.current = ref; }
+
+  // B2.5: the rewrite opens in the edit form, so the student checks and changes it before anything is saved.
+  async function improve() {
+    if (!current) return;
+    const id = current.id;
+    setImproving(true);
+    setImproveError('');
+    try {
+      const res = await fetch('/api/cards/improve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId: id }) });
+      const body = await res.json().catch(() => ({}));
+      // The student moved on (kept, discarded, dedupe) or started editing while this ran: Save would put the rewrite on the wrong card or drop their typing.
+      if (cardsRef.current.find((c) => c.status === 'pending')?.id !== id || modeRef.current === 'edit') return;
+      if (!res.ok || !body.suggestion) return setImproveError(body.message ?? 'Help is busy right now. Try again in a minute.');
+      setDraft({ front: body.suggestion.front, back: body.suggestion.back, error: '' });
+      setSuggested(true);
+      setMode('edit');
+      focusNext.current = frontField;
+    } catch {
+      setImproveError("We couldn't reach Scholar. Check your connection and try again.");
+    } finally {
+      setImproving(false);
+    }
+  }
 
   function openEdit() {
     if (!current) return;
     setDraft({ front: current.front, back: current.back, error: '' });
+    setSuggested(false);
     setMode('edit');
     focusNext.current = frontField;
   }
@@ -212,6 +243,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
           <p className="text-sm font-bold text-ink-muted">{TYPE_LABEL[current.type]}</p>
           {mode === 'edit' ? (
             <form onSubmit={saveEdit} className="space-y-4">
+              {suggested && <p className="text-ink-muted">Suggested rewrite. Change anything, then Save. Cancel keeps your card as it was.</p>}
               {draft.error && <p id="edit-err" role="alert" className="error">{draft.error}</p>}
               <div>
                 <label htmlFor="edit-front" className="mb-1 block">Front</label>
@@ -230,8 +262,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
             </form>
           ) : (
             <>
-              <h2 className="text-xl font-bold text-balance">{current.front}</h2>
-              <p className="max-w-prose">{current.back}</p>
+              <h2 className="text-xl font-bold text-balance"><MathText text={current.front} /></h2>
+              <p className="max-w-prose"><MathText text={current.back} /></p>
               <p className="text-sm text-ink-muted">{snippet(current)}</p>
             </>
           )}
@@ -248,6 +280,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
             <button type="button" className="btn btn-primary" aria-keyshortcuts="ArrowRight" onClick={keep}>Keep</button>
           </div>
           <p className="text-sm text-ink-muted">Keys: → keep, ← discard, E edit.</p>
+          <button type="button" className="text-sm underline" disabled={improving} onClick={improve}>{improving ? 'Improving…' : 'Improve this card'}</button>
+          {improveError && <p role="alert" className="error">{improveError}</p>}
           {mode === 'reason' && (
             <div role="group" aria-labelledby="reason-label" className="space-y-3">
               <p id="reason-label" className="font-bold">Why discard it? (optional)</p>

@@ -45,9 +45,11 @@ test('Today shows all caught up when nothing is due', () => {
   expect(screen.queryByRole('link', { name: 'Start' })).toBeNull();
 });
 
-test('with no cards, Today keeps the empty state', () => {
+test('a new student with nothing yet can start either tool (C4)', () => {
   plan([], []);
-  expect(screen.getByRole('heading', { name: 'Nothing to study yet' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Where would you like to start?' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Get feedback on an essay' }).getAttribute('href')).toBe('/write/new');
+  expect(screen.getByRole('link', { name: 'Turn notes into flashcards' }).getAttribute('href')).toBe('/study/import');
 });
 
 test('Today lists an essay with open priorities after reviews and before exams', () => {

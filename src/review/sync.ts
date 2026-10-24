@@ -1,4 +1,4 @@
-import { applyRating, type Grade, type StateRow } from './schedule';
+import { applyRating, schedulerFor, type Grade, type StateRow } from './schedule';
 import { db, type OutboxRow, type ReviewPayload } from './store';
 
 export interface SyncDeps {
@@ -19,7 +19,7 @@ async function regrade(row: OutboxRow, deps: SyncDeps): Promise<'held' | 'kept' 
   if (Math.abs(r.suggested - row.review.final_rating) <= 1) return 'kept';
   const reviewedAt = new Date(row.review.reviewed_at);
   const { state } = applyRating({ id: row.review.card_id, deckId: '', type: 'basic', importance: 2, state: row.prevState },
-    r.suggested, reviewedAt, row.examDate ? new Date(row.examDate) : null);
+    r.suggested, reviewedAt, row.examDate ? new Date(row.examDate) : null, schedulerFor(row.retention));
   row.review = { ...row.review, final_rating: r.suggested, suggested_rating: r.suggested, ai_score: r.score, grade_source: 'llm' };
   row.state = state;
   await db.transaction('rw', db.states, async () => {

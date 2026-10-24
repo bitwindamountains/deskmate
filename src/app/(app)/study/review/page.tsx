@@ -4,6 +4,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 import { loadStudy } from '@/lib/review/load';
 import { createClient } from '@/lib/supabase/server';
 import { ReviewSession } from './session';
+import { studySettings } from '@/review/schedule';
 
 const conceptKey = (c: string) => c.trim().toLowerCase(); // same grouping as the mastery map
 
@@ -18,7 +19,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const label = focus ? shown[0]?.concept.trim() ?? concept!.trim() : null;
   return (
     <AppPage current="study" title={label ? `Review: ${label}` : 'Review'}>
-      <ReviewSession cards={shown} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} examDates={examDates} />
+      <ReviewSession cards={shown} minutes={profile.study_minutes_per_day} newIntroducedToday={newIntroducedToday} examDates={examDates}
+        {...studySettings(profile.preferences)} />
     </AppPage>
   );
 }

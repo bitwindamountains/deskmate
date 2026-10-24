@@ -1,6 +1,7 @@
 import { wordCount } from '@/chunk';
 import { findAnchor, normalizeText } from '@/grounding';
 import { numberParagraphs } from '@/llm/prompts';
+import { looksEnglish } from './english';
 
 export const ESSAY_TYPES = ['argumentative', 'expository', 'narrative', 'compare-contrast', 'research', 'personal-statement'] as const;
 export type EssayType = (typeof ESSAY_TYPES)[number];
@@ -28,6 +29,9 @@ export function validateEssay(content: string): { ok: true; words: number } | { 
   }
   if (paragraphs(content).length > MAX_PARAGRAPHS) {
     return { ok: false, error: "That's a lot of paragraphs. Join short ones and try again." };
+  }
+  if (!looksEnglish(content)) {
+    return { ok: false, error: "This doesn't look like English. Draft Coach gives feedback on essays written in English only." };
   }
   return { ok: true, words };
 }

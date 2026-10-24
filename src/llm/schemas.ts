@@ -88,6 +88,10 @@ export const CardHelp = z.object({
 });
 export type CardHelp = z.infer<typeof CardHelp>;
 
+/** B2.5 "Improve this card": the same card rewritten under the card rules, still quoting the source exactly. */
+export const CardImprove = Card.pick({ front: true, back: true, source_quote: true });
+export type CardImprove = z.infer<typeof CardImprove>;
+
 /** A coach reply on one feedback item (A2.9 questions, A3.10 disputes). verdict and revised_summary are for disputes only. */
 export const ItemDialogue = z.object({
   reply: z.string().min(1),
