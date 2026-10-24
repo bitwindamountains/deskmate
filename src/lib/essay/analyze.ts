@@ -8,6 +8,8 @@ import { checkSentences } from './languagetool';
 import { anchorQuote, paragraphs } from './text';
 import { resetsIn } from '@/lib/time/reset';
 import { matchScores, rubricOf } from './rubric';
+import { growthProfile } from '@/growth/profile';
+import { loadGrowth } from '@/lib/growth/load';
 
 export type Layer = 'global' | 'paragraphs' | 'sentences';
 export type ItemRow = { id: string; layer: 'global' | 'paragraph' | 'sentence'; category: string; rubric_criterion: string | null;
@@ -143,7 +145,9 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
 
   if (layer === 'global') {
     const judge = plan?.judge ?? [];
-    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
+    // D3.1 step 2: the big-picture pass knows the student's top recurring patterns. A failed read just leaves them out.
+    const recurring = growthProfile(await loadGrowth(db).catch(() => [])).recurring.slice(0, 3).map((p) => p.label);
+    const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, recurring, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
     await logCalls(db, userId, r.log);
     const { rows, dropped } = anchorItems(paras, r.data.items, 'global');
     const strengths = r.data.strengths.flatMap((s) => {
