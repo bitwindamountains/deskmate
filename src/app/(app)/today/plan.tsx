@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { EmptyStudy } from '@/components/empty-study';
 import type { Deck, ReviewCard } from '@/lib/review/load';
 import { buildSession, daysUntil, nextReview, parseDay, readiness } from '@/review/schedule';
 
@@ -12,7 +11,19 @@ export type TodayEssay = { id: string; title: string; openTop3: number };
 /** zone: the student's time zone, since this renders on the server (whose clock is UTC). */
 export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essays = [], zone = 'UTC' }:
   { decks: Deck[]; cards: ReviewCard[]; minutes: number; newIntroducedToday: number; now: Date; essays?: TodayEssay[]; zone?: string }) {
-  if (!cards.length && !essays.length) return <EmptyStudy />;
+  // C4: a new student picks their first action here, in either tool.
+  if (!cards.length && !essays.length) {
+    return (
+      <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+        <h2 className="text-xl font-bold text-balance">Where would you like to start?</h2>
+        <p className="mt-2 text-ink-muted">Get coaching on a draft, or turn your notes into a few good flashcards.</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/write/new" className="btn btn-primary">Get feedback on an essay</Link>
+          <Link href="/study/import" className="btn">Turn notes into flashcards</Link>
+        </div>
+      </section>
+    );
+  }
 
   const exams = decks.flatMap((d) => {
     if (!d.exam_date) return [];
