@@ -5,6 +5,7 @@ import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import { conceptKey } from '@/review/prereqs';
 import { FeynmanForm } from './feynman-form';
+import { allRows } from '@/lib/cards/transfer';
 
 /** ?deck=&concept= (from the mastery map): B3.7 Feynman mode for one concept of one deck. */
 export default async function FeynmanPage({ searchParams }: { searchParams: Promise<{ deck?: string; concept?: string }> }) {
@@ -12,11 +13,13 @@ export default async function FeynmanPage({ searchParams }: { searchParams: Prom
   const { deck, concept } = await searchParams;
   if (!z.uuid().safeParse(deck).success || typeof concept !== 'string' || !concept.trim()) notFound();
   const db = await createClient();
-  const { data, error } = await db.from('cards').select('concept').eq('deck_id', deck!).eq('status', 'kept').limit(500);
-  if (error) throw new Error("We couldn't load that concept.");
-  const match = (data ?? []).find((c) => conceptKey(c.concept as string) === conceptKey(concept));
+  // Paged, so a concept in a deck past 1,000 cards is still found (the mastery map links here for every concept).
+  const data = await allRows<{ concept: string }>((from, to) => db.from('cards').select('concept')
+    .eq('deck_id', deck!).eq('status', 'kept').order('id').range(from, to));
+  if (!data) throw new Error("We couldn't load that concept.");
+  const match = data.find((c) => conceptKey(c.concept) === conceptKey(concept));
   if (!match) notFound();
-  const label = (match.concept as string).trim();
+  const label = match.concept.trim();
   return (
     <AppPage current="study" title={`Explain: ${label}`}>
       <FeynmanForm deckId={deck!} concept={conceptKey(concept)} label={label} />
