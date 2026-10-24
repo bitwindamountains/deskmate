@@ -1026,6 +1026,7 @@ Filled from `PROGRESS.md` (owner decisions) and the plans in `docs/superpowers/p
 | 12 | 2026-10-24 | Failed AI calls are not queued; the student retries. | Nothing is lost and no quota is charged twice; a queue needs a worker Vercel Hobby can't run often enough. | A job queue (spec §6.1). |
 | 13 | 2026-10-24 | No separate tone and quality pass. | A second call per essay doesn't fit the free tier; prompt rules, quote anchoring and schema checks cover it. | A second LLM pass (D3.1 step 8). |
 | 14 | 2026-10-24 | Claude may merge its own PRs, delete branches and do routine follow-ups without asking. | Owner granted full permission for this project. | The owner merges each PR. |
+| 15 | 2026-10-24 | Claude may apply migrations, then run the DB tests and advisors and name each migration in its PR; destructive ones (drops, deleting data) still wait for the owner. | Owner granted full permission for this project. | The owner sees every migration before it is applied. |
 
 ---
 
