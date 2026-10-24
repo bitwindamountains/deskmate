@@ -8,6 +8,8 @@ import type { CardRow } from '@/lib/generate/generate-chunk';
 import { editCard, saveEmbeddings, setCardStatus } from '../actions';
 import { MathText } from '@/components/math-text';
 
+const SWIPE_PX = 80; // a drag shorter than this is a tap or a scroll, not a swipe
+
 type Reason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
 export type KnownCard = { id: string; front: string; back: string; embedding: number[] | null };
 type Problem = { kind: 'quota' | 'session' | 'retry'; message: string; at: number };
@@ -33,7 +35,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   const [say, setSay] = useState('');
   const [improving, setImproving] = useState(false);
   const [improveError, setImproveError] = useState('');
-  const [suggested, setSuggested] = useState(false); // the edit form holds the AI's rewrite, not the student's text
+  const [suggested, setSuggested] = useState(false);
+  const swipeFrom = useRef<number | null>(null); // B2.5 swipe: x where the press started // the edit form holds the AI's rewrite, not the student's text
   const [mode, setMode] = useState<'view' | 'reason' | 'edit'>('view');
   const [draft, setDraft] = useState({ front: '', back: '', error: '' });
 
@@ -239,7 +242,18 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
       {cards.length > 0 && <p className="font-bold">{plural(left, 'card')} to review</p>}
 
       {current ? (
-        <section aria-label="Current card" className="space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+        <section aria-label="Current card" className="touch-pan-y space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]"
+          // B2.5: swipe right keeps, left discards, the same as the arrow keys. touch-pan-y leaves vertical scrolling to the page.
+          onPointerDown={(e) => { swipeFrom.current = mode !== 'edit' && e.isPrimary ? e.clientX : null; }}
+          onPointerCancel={() => { swipeFrom.current = null; }}
+          onPointerUp={(e) => {
+            const from = swipeFrom.current;
+            swipeFrom.current = null;
+            if (from === null || mode === 'edit') return;
+            const dx = e.clientX - from;
+            if (dx > SWIPE_PX) keep();
+            else if (dx < -SWIPE_PX) { if (mode === 'reason') discard(); else openReason(); }
+          }}>
           <p className="text-sm font-bold text-ink-muted">{TYPE_LABEL[current.type]}</p>
           {mode === 'edit' ? (
             <form onSubmit={saveEdit} className="space-y-4">
@@ -279,7 +293,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
             <button ref={editBtn} type="button" className="btn" aria-keyshortcuts="E" onClick={openEdit}>Edit</button>
             <button type="button" className="btn btn-primary" aria-keyshortcuts="ArrowRight" onClick={keep}>Keep</button>
           </div>
-          <p className="text-sm text-ink-muted">Keys: → keep, ← discard, E edit.</p>
+          <p className="text-sm text-ink-muted">Swipe the card right to keep or left to discard. Keys: → keep, ← discard, E edit.</p>
           <button type="button" className="text-sm underline" disabled={improving} onClick={improve}>{improving ? 'Improving…' : 'Improve this card'}</button>
           {improveError && <p role="alert" className="error">{improveError}</p>}
           {mode === 'reason' && (

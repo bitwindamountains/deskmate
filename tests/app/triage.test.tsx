@@ -202,3 +202,19 @@ test('a rewrite that arrives after the student moved on is dropped, not opened o
   expect(screen.queryByLabelText('Front')).toBeNull();
   expect(front()).toBe('Front b');
 });
+
+test('swiping the card right keeps it, left opens the discard reasons, a short drag does nothing (B2.5)', async () => {
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a'), card('b')]} existing={[]} />);
+  const cardEl = screen.getByRole('region', { name: 'Current card' });
+  const swipe = (from: number, to: number) => {
+    fireEvent.pointerDown(cardEl, { clientX: from, isPrimary: true });
+    fireEvent.pointerUp(cardEl, { clientX: to, isPrimary: true });
+  };
+  swipe(200, 230);
+  expect(setCardStatus).not.toHaveBeenCalled();
+  swipe(100, 260);
+  expect(setCardStatus).toHaveBeenCalledWith(['a'], 'kept', undefined);
+  await waitFor(() => expect(front()).toBe('Front b'));
+  swipe(260, 100);
+  expect(screen.getByText('Why discard it? (optional)')).toBeTruthy();
+});
