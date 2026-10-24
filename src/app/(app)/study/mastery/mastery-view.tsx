@@ -57,6 +57,9 @@ export function MasteryView({ sections }: { sections: MasterySection[] }) {
                     {STRENGTH[c.strength].text}
                   </span>
                 </Link>
+                {/* B3.7 Feynman mode: a separate link, since links can't nest. */}
+                <Link href={`/study/feynman?deck=${encodeURIComponent(c.deckId)}&concept=${encodeURIComponent(c.key)}`}
+                  className="mt-1 inline-flex min-h-11 items-center text-sm underline">Explain it in your own words</Link>
               </li>
             ))}
           </ul>

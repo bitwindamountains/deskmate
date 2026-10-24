@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CardGenerate, CardHelp, CardImprove, CardRephrase, EssayGlobal, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
+import { CardGenerate, CardHelp, CardImprove, CardRephrase, EssayGlobal, Feynman, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
 
 export interface RubricCriterion {
@@ -300,6 +300,27 @@ export function cardRephrasePrompt(i: { type: CardType; front: string; back: str
       `Return only JSON with this shape: ${compactSchema(CardRephrase)}`,
     ].join('\n'),
     user: wrapData('card', [`Type: ${i.type}`, `Question: ${i.front}`, `Answer: ${i.back}`].join('\n')),
+  };
+}
+
+export function feynmanPrompt(i: { concept: string; reference: { question: string; answer: string; keyPoints: string[] }[];
+  passages: string[]; explanation: string }): Prompt {
+  return {
+    system: [
+      'A student explains a concept in their own words. Judge the explanation only against the reference cards and source passages given.',
+      'covered: the reference points the explanation gets right, in a few words each. missed: important reference points it leaves out.',
+      'misconception: one thing the explanation gets wrong, in one sentence, or null. Never invent points beyond the references.',
+      'cards: up to 3 flashcards for missed points only. Each source_quote is one exact sentence from the passages that supports the card.',
+      'Speak to the student kindly and plainly. Never write a better explanation for them.',
+      DATA_RULE,
+      `Return only JSON with this shape: ${compactSchema(Feynman)}`,
+    ].join('\n'),
+    user: [
+      `Concept: ${i.concept}`,
+      wrapData('reference', i.reference.map((r) => `Q: ${r.question}\nA: ${r.answer}${r.keyPoints.length ? `\nKey points: ${r.keyPoints.join('; ')}` : ''}`).join('\n\n')),
+      wrapData('passages', i.passages.join('\n\n') || 'none'),
+      wrapData('explanation', i.explanation),
+    ].join('\n\n'),
   };
 }
 
