@@ -64,8 +64,8 @@ test('a valid essay calls createEssay with the assignment details', () => {
 test('a .txt upload is refused with the file-type message', async () => {
   render(<NewEssayForm />);
   const file = new File(['hello'], 'essay.txt', { type: 'text/plain' });
-  fireEvent.change(screen.getByLabelText('Or upload a .pdf or .docx file'), { target: { files: [file] } });
-  expect((await screen.findByRole('alert')).textContent).toContain('We can only read .pdf and .docx files.');
+  fireEvent.change(screen.getByLabelText('Or upload a .pdf, a .docx, or a photo of handwriting'), { target: { files: [file] } });
+  expect((await screen.findByRole('alert')).textContent).toContain('We can only read .pdf, .docx and photo (.png, .jpg, .webp) files.');
 });
 
 test('Write list shows essay checks left today', () => {
