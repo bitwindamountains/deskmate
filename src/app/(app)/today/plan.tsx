@@ -5,19 +5,6 @@ import { buildSession, daysUntil, NEW_CARD_LIMIT, nextReview, parseDay, readines
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const when = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`);
 
-/** A cassette hub at each end of the tape: it turns while the tape spools on load, then stops. */
-function Reel() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-ink" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="10.25" />
-      <g className="reel">
-        <circle cx="12" cy="12" r="3.5" />
-        <path d="M12 1.75v4.75M12 17.5v4.75M3.1 6.9l4.1 2.4M16.8 14.7l4.1 2.4M3.1 17.1l4.1-2.4M16.8 9.3l4.1-2.4" />
-      </g>
-    </svg>
-  );
-}
-
 /** An essay whose latest draft still has open Top 3 priorities. */
 export type TodayEssay = { id: string; title: string; openTop3: number };
 
@@ -58,14 +45,14 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
   const priorities = (n: number) => `${n} of 3 priorities open`;
 
   const day = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: zone }).format(now);
-  // Side B has no estimate of its own: it gets what review leaves of the daily minutes, labelled as left, not as a forecast.
+  // Writing has no estimate of its own: it gets what review leaves of the daily minutes, labelled as left, not as a forecast.
   const reviewMin = queue.length ? Math.min(estMinutes, minutes) : 0;
   const writeMin = essays.length ? Math.max(0, minutes - reviewMin) : 0;
   const pct = (m: number) => (minutes > 0 ? `${Math.round((m / minutes) * 100)}%` : '0%');
 
   return (
     <div className="space-y-8">
-      {/* Today as a J-card: side A review, side B writing, the tape at the foot timed against the daily minutes. */}
+      {/* Today's index card: reviews, then writing, and the day's minutes at the foot. */}
       <section aria-label={`Today's plan, ${day}`} className="inlay overflow-hidden [overflow-wrap:anywhere]">
         <div className="flex items-center justify-between gap-3 border-b-[1.5px] border-ink bg-surface px-5 py-2">
           <p className="hand text-xl">{day}</p>
@@ -73,7 +60,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
         </div>
 
         {cards.length > 0 && <div className="px-5 pt-4 pb-5">
-          <h2 id="reviews-h" className="hand flex items-baseline gap-3 text-2xl"><span aria-hidden="true" className="stamp text-accent">A</span><span className="underline decoration-[1.5px] underline-offset-4">Reviews</span></h2>
+          <h2 id="reviews-h" className="hand text-2xl"><span className="underline decoration-[1.5px] underline-offset-4">Reviews</span></h2>
           {queue.length ? (
             <>
               <p className="ruled mt-2 flex items-baseline justify-between gap-4 pb-1 text-[1.2rem]"><span>{plural(queue.length, 'card')}</span><span className="font-bold tabular-nums">~{estMinutes} min</span></p>
@@ -92,7 +79,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
 
         {essays.length > 0 && <div className={`px-5 pt-4 pb-5 ${cards.length > 0 ? 'border-t-[1.5px] border-ink' : ''}`}>
           <div className="flex items-baseline justify-between gap-4">
-            <h2 id="essays-h" className="hand flex items-baseline gap-3 text-2xl"><span aria-hidden="true" className="stamp stamp-b text-accent">B</span><span className="underline decoration-[1.5px] underline-offset-4">Essays</span></h2>
+            <h2 id="essays-h" className="hand text-2xl"><span className="underline decoration-[1.5px] underline-offset-4">Essays</span></h2>
             {minutes > 0 && <p className="text-sm font-bold tabular-nums">~{writeMin} min left</p>}
           </div>
           {essayFirst && (
@@ -115,16 +102,12 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
 
         {(reviewMin > 0 || writeMin > 0) && minutes > 0 && (
           <div className="border-t-[1.5px] border-ink px-5 py-3">
-            <p className="flex justify-between gap-4 text-sm"><span>Today&apos;s tape</span>
-              <span className="font-bold tabular-nums">{[reviewMin > 0 && `A ~${reviewMin}`, writeMin > 0 && `B ~${writeMin}`].filter(Boolean).join(' · ')} of {minutes} min</span></p>
-            {/* The tape: side A solid ink, side B hatched. The sentence above carries the same facts. */}
-            <div aria-hidden="true" className="tape-deck mt-2 flex items-center gap-2">
-              <Reel />
-              <div className="flex h-2.5 flex-1 border border-ink">
-                {reviewMin > 0 && <div className="tape-fill h-full bg-ink" style={{ width: pct(reviewMin) }} />}
-                {writeMin > 0 && <div className="tape-fill-b h-full bg-[repeating-linear-gradient(135deg,var(--ink)_0_1.5px,transparent_1.5px_5px)]" style={{ width: pct(writeMin) }} />}
-              </div>
-              <Reel />
+            <p className="flex justify-between gap-4 text-sm"><span>Today&apos;s time</span>
+              <span className="font-bold tabular-nums">{[reviewMin > 0 && `Reviews ~${reviewMin}`, writeMin > 0 && `Writing ~${writeMin}`].filter(Boolean).join(' · ')} of {minutes} min</span></p>
+            {/* Highlighter strokes along a ruled line: reviews, then a paler stroke for writing. The sentence above carries the same facts. */}
+            <div aria-hidden="true" className="mt-2 flex h-3 border-b border-line">
+              {reviewMin > 0 && <div className="hl h-full" style={{ width: pct(reviewMin) }} />}
+              {writeMin > 0 && <div className="hl hl-2 ml-0.5 h-full" style={{ width: pct(writeMin) }} />}
             </div>
           </div>
         )}

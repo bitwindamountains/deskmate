@@ -10,7 +10,7 @@ const ITEMS = [
 
 export type NavKey = (typeof ITEMS)[number]['key'];
 
-// Bottom tab bar on phones, the J-card's spine from 768px. The current item is red, bold and marked by the brand
+// Bottom tab bar on phones, a side rail from 768px. The current item is red, bold and marked by the brand
 // stripe (shape, weight and aria-current, so colour is never the only signal; DESIGN.md).
 export function Nav({ current }: { current: NavKey }) {
   return (
@@ -39,11 +39,6 @@ export function Nav({ current }: { current: NavKey }) {
           );
         })}
       </ul>
-      {/* The J-card spine's label block, as on a real inlay: side letters boxed above the label. Decoration only. */}
-      <div aria-hidden="true" className="absolute inset-x-3 bottom-6 hidden border-[1.5px] border-ink text-center md:block">
-        <p className="hand grid grid-cols-2 border-b-[1.5px] border-ink text-lg text-accent"><span className="border-r-[1.5px] border-ink">A</span><span>B</span></p>
-        <p className="hand py-1 text-sm text-rail-ink">Scholar · Side A / B</p>
-      </div>
     </nav>
   );
 }

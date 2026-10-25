@@ -203,6 +203,18 @@ test('a rewrite that arrives after the student moved on is dropped, not opened o
   expect(front()).toBe('Front b');
 });
 
+test('a dragged card follows the finger and settles back when let go short of a swipe', () => {
+  render(<Triage sourceId={SRC} todo={[]} pending={[card('a')]} existing={[]} />);
+  const el = screen.getByRole('region', { name: 'Current card' });
+  el.animate = vi.fn() as unknown as typeof el.animate; // jsdom has no Web Animations; the drag only needs it to exist
+  fireEvent.pointerDown(el, { clientX: 100, isPrimary: true });
+  fireEvent.pointerMove(el, { clientX: 148, isPrimary: true });
+  expect(el.style.transform).toBe('translateX(48px) rotate(2deg)');
+  fireEvent.pointerUp(el, { clientX: 148, isPrimary: true });
+  expect(el.style.transform).toBe('');
+  expect(setCardStatus).not.toHaveBeenCalled();
+});
+
 test('swiping the card right keeps it, left opens the discard reasons, a short drag does nothing (B2.5)', async () => {
   render(<Triage sourceId={SRC} todo={[]} pending={[card('a'), card('b')]} existing={[]} />);
   // Looked up each time: each new card is a fresh element (it slides in).
