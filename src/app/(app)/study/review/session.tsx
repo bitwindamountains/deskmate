@@ -346,7 +346,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
       {explain && <ExplainNote front={explain} />}
 
-      <section aria-label="Current card" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+      <section aria-label="Current card" className="inlay space-y-5 p-5 [overflow-wrap:anywhere]">
         {/* E2: a card made from the student's notes says so. Only an explicit false (set by loadStudy) counts, so a card without the field isn't labelled. */}
         {current.quoteIsExample === false && <p className="text-sm text-ink-muted">Made by AI from your notes</p>}
         {(() => {
