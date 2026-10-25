@@ -53,7 +53,7 @@ export function MasteryView({ sections }: { sections: MasterySection[] }) {
                   <span className="font-bold">{c.label}</span>
                   <span className="text-ink-muted">{plural(c.cards, 'card')}</span>
                   <span className="flex items-center gap-2">
-                    <span aria-hidden className={`h-3 w-6 rounded-sm ${STRENGTH[c.strength].bar}`} />
+                    <span aria-hidden className={`h-3 w-6 ${c.strength === 'not started' ? 'rounded-sm' : 'hl'} ${STRENGTH[c.strength].bar}`} />
                     {STRENGTH[c.strength].text}
                   </span>
                 </Link>

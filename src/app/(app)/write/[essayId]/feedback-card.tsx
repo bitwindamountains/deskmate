@@ -42,9 +42,17 @@ export function FeedbackCard({ item: it, api, heading = 'h3', children }:
 
   const canDispute = isOpen(status) || status === 'disputed';
   const toggle = (k: DialogueKind) => setTalking((t) => (t === k ? null : k));
+  const link = (on: boolean) => {
+    const id = api.markId(it);
+    const mark = id ? document.getElementById(id) : null;
+    if (mark) mark.toggleAttribute('data-linked', on);
+  };
 
   return (
     <article id={`card-${it.id}`} tabIndex={-1} aria-labelledby={`card-${it.id}-t`}
+      // Pointing at (or tabbing into) the card lays a highlighter stroke over its passage in the essay.
+      onMouseEnter={() => link(true)} onMouseLeave={() => link(false)}
+      onFocus={() => link(true)} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) link(false); }}
       className="space-y-3 inlay p-4 [overflow-wrap:anywhere]">
       <p className="flex flex-wrap items-center gap-2 text-sm font-bold">
         <span className={`rounded-md px-2 py-0.5 ${LAYER_BG[it.layer]}`}>{LAYER_LABEL[it.layer]}</span>

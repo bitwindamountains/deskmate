@@ -11,7 +11,10 @@ export function Summary({ ratings, confidences = [], concepts, ms, cards, onDoMo
   const selfCheck = calibration(confidences);
   return (
     <section aria-labelledby="summary-h" className="max-w-prose space-y-4 inlay p-6">
-      <h2 id="summary-h" className="text-xl font-bold text-balance">Session done</h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 id="summary-h" className="text-xl font-bold text-balance">Session done</h2>
+        <Pile n={ratings.length} />
+      </div>
       <ul className="space-y-1">
         <li>{ratings.length} {ratings.length === 1 ? 'card' : 'cards'} reviewed</li>
         <li>Accuracy: {Math.round((good / ratings.length) * 100)}%</li>
@@ -25,5 +28,23 @@ export function Summary({ ratings, confidences = [], concepts, ms, cards, onDoMo
       {nothingMore && <p role="status" className="text-ink-muted">Nothing more to review right now.</p>}
       <button type="button" className="btn" onClick={onDoMore}>Do more</button>
     </section>
+  );
+}
+
+/** The cards just reviewed square up into a pile (up to five drawn), then a pen tick is drawn on top. Decoration only. */
+function Pile({ n }: { n: number }) {
+  const shown = Math.min(Math.max(n, 1), 5);
+  const step = 70;
+  return (
+    <svg aria-hidden="true" viewBox="0 0 64 52" className="h-12 w-16 shrink-0 text-ink" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <g className="pile">
+        {Array.from({ length: shown }, (_, i) => (
+          <rect key={i} x={8 - i} y={22 - i * 3} width="48" height="26" rx="2" fill="var(--surface)"
+            style={{ '--from-x': `${(i % 2 ? 1 : -1) * (10 + i * 3)}px`, '--from-r': `${(i % 2 ? 1 : -1) * (8 + i * 2)}deg`, animationDelay: `${i * step}ms` } as React.CSSProperties} />
+        ))}
+      </g>
+      <path className="tick" d={`M${20 - shown} ${30 - shown * 3}l7 7 15-16`} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+        style={{ animationDelay: `${shown * step + 380}ms` }} />
+    </svg>
   );
 }
