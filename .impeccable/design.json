@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T00:00:00Z",
+  "title": "Design System: Scholar",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Ballpoint Blue", "canonical": "#1e3a8a", "tonalRamp": ["#0f1d47", "#142a6b", "#1e3a8a", "#2f4fae", "#4a68c8", "#7f95d9", "#b8c4ea", "#e6ebf8"] },
+      "mark": { "role": "primary", "displayName": "Ballpoint Blue (primary fill)", "canonical": "#1e3a8a", "tonalRamp": ["#0f1d47", "#142a6b", "#1e3a8a", "#2f4fae", "#4a68c8", "#7f95d9", "#b8c4ea", "#e6ebf8"] },
+      "mark-strong": { "role": "primary", "displayName": "Pressed Ballpoint", "canonical": "#142a6b", "tonalRamp": ["#0f1d47", "#142a6b", "#1e3a8a", "#2f4fae", "#4a68c8", "#7f95d9", "#b8c4ea", "#e6ebf8"] },
+      "dark-mark": { "role": "primary", "displayName": "Night Ballpoint", "canonical": "#3f63d4", "tonalRamp": ["#142154", "#1f3383", "#2c47ad", "#3457c4", "#3f63d4", "#6f8be0", "#a6b7ec", "#dde4f8"] },
+      "accent": { "role": "secondary", "displayName": "Brand-Stripe Red", "canonical": "#c0282d", "tonalRamp": ["#4a0d10", "#7a1519", "#a32126", "#c0282d", "#d9494d", "#e67e80", "#f2b5b6", "#fbe6e6"] },
+      "dark-accent": { "role": "secondary", "displayName": "Brand-Stripe Red (night)", "canonical": "#ff7a7a", "tonalRamp": ["#4a0d10", "#7a1519", "#a32126", "#c0282d", "#d9494d", "#ff7a7a", "#f2b5b6", "#fbe6e6"] },
+      "ground": { "role": "neutral", "displayName": "Desk Ground", "canonical": "#f6f7fb", "tonalRamp": ["#1a1d26", "#33384a", "#555c74", "#7c849e", "#a5acc4", "#cdd2e2", "#e8ebf4", "#f6f7fb"] },
+      "surface": { "role": "neutral", "displayName": "Inlay Stock", "canonical": "#ffffff" },
+      "ink-muted": { "role": "neutral", "displayName": "Faded Ballpoint", "canonical": "#4a5a8c", "tonalRamp": ["#1f2741", "#2f3b62", "#3d4b78", "#4a5a8c", "#6c7bb0", "#929fc6", "#bcc5de", "#e7eaf3"] },
+      "line": { "role": "neutral", "displayName": "Rule Line", "canonical": "#6c7bb0" },
+      "rule": { "role": "neutral", "displayName": "Printed Ruling", "canonical": "#eaeef8" },
+      "selection": { "role": "neutral", "displayName": "Ballpoint Wash", "canonical": "#d5ddf0" },
+      "danger": { "role": "neutral", "displayName": "Error Red", "canonical": "#9b1c1c", "tonalRamp": ["#3f0b0b", "#6b1414", "#9b1c1c", "#c03535", "#dc6262", "#ec9595", "#f6c6c6", "#fdeeee"] },
+      "dark-ground": { "role": "neutral", "displayName": "Night Desk", "canonical": "#0e1430" },
+      "dark-surface": { "role": "neutral", "displayName": "Night Stock", "canonical": "#151c3d" },
+      "dark-ink": { "role": "neutral", "displayName": "Pale Ink", "canonical": "#e6eaf8" },
+      "layer-global": { "role": "tertiary", "displayName": "Draft Coach: whole essay", "canonical": "#dbe7ff" },
+      "layer-paragraph": { "role": "tertiary", "displayName": "Draft Coach: paragraph", "canonical": "#f6e3c4" },
+      "layer-sentence": { "role": "tertiary", "displayName": "Draft Coach: sentence", "canonical": "#f3dcf0" },
+      "layer-strength": { "role": "tertiary", "displayName": "Draft Coach: strength", "canonical": "#cdeed8" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Hand Display", "purpose": "The page h1 in hand-lettered caps with a 3px ink rule under it." },
+      "headline": { "displayName": "Hand Headline", "purpose": "Section h2s and the tape's side heads. Headings only." },
+      "title": { "displayName": "Lead Line", "purpose": "Atkinson bold lead lines: card counts, the open essay title." },
+      "body": { "displayName": "Body", "purpose": "All running text, max-w-prose." },
+      "label": { "displayName": "Label", "purpose": "Meta lines, nav tabs on phones, the tape figure." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Colour transitions (150ms) and the tape fill." },
+      { "name": "tape-fill", "value": "900ms scaleX(0) to 1 from the left, once on load", "purpose": "The Today tape bar. Cut by reduced motion (OS or profile)." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ballpoint fill, white text. One per area.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Start review</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.5rem 1.25rem; border: 1.5px solid var(--ink); border-radius: 0.25rem; font-weight: 700; color: var(--ink); background: transparent; font-family: var(--font-atkinson), system-ui, sans-serif; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--mark); } .ds-btn-primary:hover { background: var(--mark-strong); border-color: var(--mark-strong); } .ds-btn:focus-visible { outline: 4px double var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Plain Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Ink border, no fill; hover fills with printed ruling.",
+      "html": "<button class=\"ds-btn-plain\">Turn notes into flashcards</button>",
+      "css": ".ds-btn-plain { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.5rem 1.25rem; border: 1.5px solid var(--ink); border-radius: 0.25rem; font-weight: 700; color: var(--ink); background: transparent; font-family: var(--font-atkinson), system-ui, sans-serif; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-plain:hover { background: var(--rule); } .ds-btn-plain:focus-visible { outline: 4px double var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "White stock, 1.5px line border, 44px tall.",
+      "html": "<input class=\"ds-field\" placeholder=\"Deck title\">",
+      "css": ".ds-field { display: block; width: 100%; min-height: 44px; padding: 0.5rem 0.75rem; background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 0.25rem; font: inherit; } .ds-field::placeholder { color: var(--ink-muted); } .ds-field:focus-visible { outline: 4px double var(--focus); outline-offset: 1px; }"
+    },
+    {
+      "name": "Inlay",
+      "kind": "card",
+      "refersTo": "inlay",
+      "description": "The app-wide panel: white stock in a 1.5px ink frame, no shadow.",
+      "html": "<section class=\"ds-inlay\"><h2 class=\"ds-hand\">Reviews this week</h2><p class=\"ds-muted\">12 reviews in the last 7 days</p></section>",
+      "css": ".ds-inlay { background: var(--surface); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 0.375rem; padding: 1.25rem; max-width: 65ch; } .ds-hand { margin: 0; font-family: var(--font-patrick), var(--font-atkinson), sans-serif; font-size: 1.5rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.03em; -webkit-text-stroke: 0.035em currentColor; } .ds-muted { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }"
+    },
+    {
+      "name": "Bottom Tab Bar",
+      "kind": "nav",
+      "refersTo": "nav-tab-current",
+      "description": "Phones: white rail, ink rule on top, current tab red and bold with a 3px red bar.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main\"><a class=\"ds-tab\" href=\"#\" aria-current=\"page\"><span class=\"ds-tab-bar\" aria-hidden=\"true\"></span>Today</a><a class=\"ds-tab\" href=\"#\">Study</a><a class=\"ds-tab\" href=\"#\">Write</a><a class=\"ds-tab\" href=\"#\">Progress</a><a class=\"ds-tab\" href=\"#\">Profile</a></nav>",
+      "css": ".ds-nav { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--rail); border-top: 1.5px solid var(--ink); } .ds-tab { position: relative; margin: 0.25rem; display: flex; min-height: 44px; align-items: center; justify-content: center; font-size: 0.875rem; color: var(--rail-ink); text-decoration: none; transition: color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: var(--rail-ink-strong); text-decoration: underline; } .ds-tab[aria-current='page'] { color: var(--accent); font-weight: 700; } .ds-tab-bar { position: absolute; left: 0.75rem; right: 0.75rem; top: 0; height: 3px; background: var(--accent); } .ds-tab:focus-visible { outline: 4px double var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Brand Stripe",
+      "kind": "custom",
+      "refersTo": "accent",
+      "description": "Three red bars: the J-card's only printed colour. Beside the wordmark, the current spine tab and the tape header.",
+      "html": "<span class=\"ds-stripe\" aria-hidden=\"true\"></span>",
+      "css": ".ds-stripe { display: inline-block; width: 1.25rem; height: 1rem; background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); }"
+    },
+    {
+      "name": "The Tape",
+      "kind": "custom",
+      "refersTo": "inlay",
+      "description": "Today's plan as a J-card: header, side A review, side B writing, the tape bar at the foot.",
+      "html": "<section class=\"ds-tape\" aria-label=\"Today's plan\"><div class=\"ds-tape-head\"><p class=\"ds-tape-hand ds-tape-date\">Sat 25 Oct</p><p class=\"ds-tape-meta\">30 min a day <span class=\"ds-tape-stripe\" aria-hidden=\"true\"></span></p></div><div class=\"ds-tape-side\"><h2 class=\"ds-tape-hand ds-tape-h\"><span class=\"ds-tape-letter\" aria-hidden=\"true\">A</span><span class=\"ds-tape-u\">Reviews</span></h2><p class=\"ds-tape-row\"><span>18 cards</span><span class=\"ds-tape-num\">~12 min</span></p></div><div class=\"ds-tape-side ds-tape-split\"><div class=\"ds-tape-row2\"><h2 class=\"ds-tape-hand ds-tape-h\"><span class=\"ds-tape-letter\" aria-hidden=\"true\">B</span><span class=\"ds-tape-u\">Essays</span></h2><p class=\"ds-tape-num ds-tape-small\">~18 min left</p></div></div><div class=\"ds-tape-foot\"><p class=\"ds-tape-row2 ds-tape-small\"><span>Today's tape</span><span class=\"ds-tape-num\">A ~12 · B ~18 of 30 min</span></p><div class=\"ds-tape-bar\" aria-hidden=\"true\"><div class=\"ds-tape-a\" style=\"width:40%\"></div><div class=\"ds-tape-b\" style=\"width:60%\"></div></div></div></section>",
+      "css": ".ds-tape { background: var(--surface); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 0.375rem; overflow: hidden; font-family: var(--font-atkinson), system-ui, sans-serif; } .ds-tape p, .ds-tape h2 { margin: 0; } .ds-tape-head { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem; border-bottom: 1.5px solid var(--ink); } .ds-tape-hand { font-family: var(--font-patrick), var(--font-atkinson), sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.03em; -webkit-text-stroke: 0.035em currentColor; } .ds-tape-date { font-size: 1.25rem; } .ds-tape-meta { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: var(--ink-muted); } .ds-tape-stripe { display: inline-block; width: 1.25rem; height: 1rem; background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); } .ds-tape-side { padding: 1rem 1.25rem 1.25rem; } .ds-tape-split { border-top: 1.5px solid var(--ink); } .ds-tape-h { display: flex; align-items: baseline; gap: 0.75rem; font-size: 1.5rem; } .ds-tape-letter { color: var(--accent); } .ds-tape-u { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; } .ds-tape-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-top: 0.5rem; padding-bottom: 0.25rem; font-size: 1.2rem; border-bottom: 1px solid var(--rule); } .ds-tape-row2 { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; } .ds-tape-num { font-weight: 700; font-variant-numeric: tabular-nums; } .ds-tape-small { font-size: 0.875rem; } .ds-tape-foot { border-top: 1.5px solid var(--ink); padding: 0.75rem 1.25rem; } .ds-tape-bar { display: flex; height: 0.625rem; margin-top: 0.5rem; border: 1px solid var(--ink); } .ds-tape-a, .ds-tape-b { height: 100%; transform-origin: left; animation: ds-tape-fill 900ms cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-tape-a { background: var(--ink); } .ds-tape-b { background: repeating-linear-gradient(135deg, var(--ink) 0 1.5px, transparent 1.5px 5px); } @keyframes ds-tape-fill { from { transform: scaleX(0); } } @media (prefers-reduced-motion: reduce) { .ds-tape-a, .ds-tape-b { animation-duration: 0.01ms; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Mixtape J-Card",
+    "overview": "The app is the paper insert of a cassette you made for yourself. Ballpoint blue ink on white inlay stock, framed in ink rules, with one printed colour: the brand-stripe red. Today is the tape: side A review, side B writing, timed to fit the minutes the student set.\n\nHeadings are hand-lettered block caps, like side heads written on a J-card. Everything the student reads stays in Atkinson Hyperlegible. Surfaces are flat: depth comes from ink rules, not shadows. Panels are cut card with near-square corners, not pills.\n\nDark mode is the same card under a desk lamp at night: navy stock, pale ink, the stripe still red. Both schemes are first-class; dark follows the OS.",
+    "keyCharacteristics": [
+      "Ballpoint blue text and rules on white stock; no Tailwind indigo.",
+      "One printed accent, red, for the current place and the A/B side letters only.",
+      "Hand-lettered caps for headings, Atkinson for all reading.",
+      "1.5px ink frames, 4-6px corners, no shadows.",
+      "Ruling drawn per row, never behind text."
+    ],
+    "rules": [
+      { "name": "The One Printed Colour Rule", "body": "Red marks the current tab, the side letters and the stripe. It is never a focus ring, a caret, a button fill, a link or decoration.", "section": "colors" },
+      { "name": "The Never Alone Rule", "body": "Colour is never the only signal. The current tab is also bold, carries aria-current=\"page\" and gets a bar or stripe; errors carry \"Error:\"; layers and chart marks carry text labels.", "section": "colors" },
+      { "name": "The Hand For Heads Rule", "body": ".hand is for headings only, never for running text, labels, buttons or card content.", "section": "typography" },
+      { "name": "The Dyslexia Override Rule", "body": "Under the dyslexia option (OpenDyslexic, line-height 1.6), .hand turns off: OpenDyslexic 700, no caps, no letter spacing, no stroke. Headings keep their size.", "section": "typography" },
+      { "name": "The Running Time Rule", "body": "Tabular figures (tabular-nums) only on running times and the tape figure, where digits line up like a tracklist. Nowhere else.", "section": "typography" },
+      { "name": "The Ruled Row Rule", "body": "Ruling is drawn per row as a 1px rule-colour bottom border (.ruled), like a tracklist. Never paint ruling as a background behind text.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use ink for text, frames and the primary fill; red only for the current tab, side letters and stripe.",
+      "Do draw focus as a 4px double ink outline with a 2px offset.",
+      "Do frame panels as inlays: white stock, 1.5px ink, 0.375rem corner.",
+      "Do draw ruling per row with .ruled.",
+      "Do set headings in .hand and everything read in Atkinson.",
+      "Do pair every colour signal with text, weight, shape or aria-current.",
+      "Do keep motion to state: colour transitions 150ms cubic-bezier(0.16, 1, 0.3, 1), the tape fill once, and honour reduced motion from the OS and the profile."
+    ],
+    "donts": [
+      "Don't use red for focus, carets, links, buttons or decoration.",
+      "Don't use Tailwind indigo; the dark primary is night ballpoint with white text.",
+      "Don't add shadows or soft, pill-round panels.",
+      "Don't paint ruling behind text.",
+      "Don't set running text, labels or card content in the hand face.",
+      "Don't use tabular figures outside running times and the tape figure.",
+      "Don't present Side B time as an estimate."
+    ]
+  }
+}

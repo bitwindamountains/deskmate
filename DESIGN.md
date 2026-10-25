@@ -1,52 +1,268 @@
-# Design
+---
+name: Scholar
+description: AI study app where the AI coaches and the student does the work.
+colors:
+  ground: "#f6f7fb"
+  surface: "#ffffff"
+  ink: "#1e3a8a"
+  ink-muted: "#4a5a8c"
+  line: "#6c7bb0"
+  rule: "#eaeef8"
+  rail: "#ffffff"
+  rail-ink: "#4a5a8c"
+  rail-ink-strong: "#1e3a8a"
+  mark: "#1e3a8a"
+  mark-strong: "#142a6b"
+  on-mark: "#ffffff"
+  accent: "#c0282d"
+  focus: "#1e3a8a"
+  danger: "#9b1c1c"
+  selection: "#d5ddf0"
+  layer-global: "#dbe7ff"
+  layer-paragraph: "#f6e3c4"
+  layer-sentence: "#f3dcf0"
+  layer-strength: "#cdeed8"
+  chart-idle: "#eb6834"
+  chart-review: "#2a78d6"
+  strength-strong: "#184f95"
+  strength-shaky: "#3987e5"
+  strength-weak: "#86b6ef"
+  dark-ground: "#0e1430"
+  dark-surface: "#151c3d"
+  dark-ink: "#e6eaf8"
+  dark-ink-muted: "#a9b3d9"
+  dark-rail: "#0b1027"
+  dark-mark: "#3f63d4"
+  dark-mark-strong: "#3457c4"
+  dark-accent: "#ff7a7a"
+typography:
+  display:
+    fontFamily: "Patrick Hand, Atkinson Hyperlegible, sans-serif"
+    fontSize: "2.25rem"
+    fontWeight: 400
+    lineHeight: 1.25
+    letterSpacing: "0.03em"
+  headline:
+    fontFamily: "Patrick Hand, Atkinson Hyperlegible, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 400
+    lineHeight: 1.33
+    letterSpacing: "0.03em"
+  title:
+    fontFamily: "Atkinson Hyperlegible, system-ui, sans-serif"
+    fontSize: "1.2rem"
+    fontWeight: 700
+    lineHeight: 1.5
+  body:
+    fontFamily: "Atkinson Hyperlegible, system-ui, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: 1.5
+  label:
+    fontFamily: "Atkinson Hyperlegible, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.43
+rounded:
+  control: "0.25rem"
+  panel: "0.375rem"
+  lg: "0.25rem"
+  xl: "0.375rem"
+spacing:
+  gutter-phone: "16px"
+  gutter-wide: "40px"
+  panel-pad: "20px"
+  panel-pad-roomy: "24px"
+  column: "48rem"
+  column-wide: "72rem"
+components:
+  button:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "8px 20px"
+    height: "44px"
+  button-hover:
+    backgroundColor: "{colors.rule}"
+  button-primary:
+    backgroundColor: "{colors.mark}"
+    textColor: "{colors.on-mark}"
+    rounded: "{rounded.control}"
+    padding: "8px 20px"
+    height: "44px"
+  button-primary-hover:
+    backgroundColor: "{colors.mark-strong}"
+  field:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "8px 12px"
+    height: "44px"
+  inlay:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.panel}"
+    padding: "20px"
+  nav-tab:
+    backgroundColor: "{colors.rail}"
+    textColor: "{colors.rail-ink}"
+    height: "44px"
+  nav-tab-current:
+    backgroundColor: "{colors.rail}"
+    textColor: "{colors.accent}"
+---
 
-Mode: **Operate** (app UI). Tokens live in `src/app/globals.css`; this file is the reference later screens follow.
+# Design System: Scholar
 
-## Direction: Highlighter on ink
+Mode: Operate (app UI). Tokens live in `src/app/globals.css`; this file is the reference later screens follow. Dark values in the frontmatter carry a `dark-` prefix; in code they are the same token names under `prefers-color-scheme: dark`.
 
-A student's desk at night: dark ink on a cool page, and one highlighter stroke on the thing that matters right now. The shell is a deep-ink rail (sidebar from 768px, bottom tab bar below). Content sits on a cool, slightly green-grey ground, never cream.
+## Overview
 
-**Signature move:** the highlighter mark. A lime band with an uneven, hand-swiped radius (`rounded-[0.3rem_0.8rem_0.35rem_0.7rem]`) marks the current nav item; the same lime fills the primary action and text selection. It means "this one, now". Never use it for decoration or on inactive states. It never works alone: the current item is also bold and carries `aria-current="page"`.
+**Creative North Star: "Mixtape J-Card"**
 
-Light vs dark: phones in class by day, in bed at night. Both are first-class; dark follows `prefers-color-scheme`. The rail stays dark in both.
+The app is the paper insert of a cassette you made for yourself. Ballpoint blue ink on white inlay stock, framed in ink rules, with one printed colour: the brand-stripe red. Today is the tape: side A review, side B writing, timed to fit the minutes the student set.
 
-## Color roles
+Headings are hand-lettered block caps, like side heads written on a J-card. Everything the student reads stays in Atkinson Hyperlegible. Surfaces are flat: depth comes from ink rules, not shadows. Panels are cut card with near-square corners, not pills.
 
-| Role | Light | Dark | Use |
-|---|---|---|---|
-| `ground` | #f4f6f3 | #10161f | page background |
-| `surface` | #ffffff | #18212d | panels, fields |
-| `ink` | #18263a | #e7ecf2 | text, button borders |
-| `ink-muted` | #475569 | #a9b4c2 | secondary text (≥ 6.9:1) |
-| `line` | #6b7787 | #7d8a9b | field and panel borders (≥ 4.5:1 on surface) |
-| `rail` | #18263a | #0a0f16 | nav background |
-| `rail-ink` / `rail-ink-strong` | #c8d2de / #fff | #aab5c3 / #fff | nav text |
-| `mark` / `on-mark` | #d4f25a / #18263a | #cdeb52 / #10161f | highlighter: current item, primary action, selection (≥ 12:1) |
-| `focus` | #1d4ed8 | #cdeb52 | focus ring; `mark` inside `.rail` |
-| `danger` | #9b1c1c | #fca5a5 | errors; always prefixed "Error:" (`.error`) |
+Dark mode is the same card under a desk lamp at night: navy stock, pale ink, the stripe still red. Both schemes are first-class; dark follows the OS.
 
-All text pairs are ≥ 4.5:1 in both themes (checked numerically). Colour is never the only signal.
+**Key Characteristics:**
+- Ballpoint blue text and rules on white stock; no Tailwind indigo.
+- One printed accent, red, for the current place and the A/B side letters only.
+- Hand-lettered caps for headings, Atkinson for all reading.
+- 1.5px ink frames, 4-6px corners, no shadows.
+- Ruling drawn per row, never behind text.
 
-## Type
+## Colors
 
-One family: Atkinson Hyperlegible (400/700, `next/font`). Dyslexia option: OpenDyslexic (`@fontsource/opendyslexic` 5.3.0, OFL, self-hosted), applied when the `(app)` root has `data-font="dyslexic"` (`body:has(...)` lifts it to body), line-height 1.6.
+Two inks on one stock: ballpoint blue for everything, printed red for "you are here".
 
-Fixed rem scale, ratio 1.2: 0.875 · 1 (body, line-height 1.5) · 1.2 (`text-xl`, section heads) · 1.44 (h2 on list pages) · 1.728 (page h1). Headings `text-balance`, prose `max-w-prose`.
+### Primary
+- **Ballpoint Blue** (ink): all text, panel frames, button borders, the primary fill (mark), the focus outline. 10.3:1 on surface.
+- **Pressed Ballpoint** (mark-strong): primary button hover.
+- **Night Ballpoint** (dark-mark): the dark-scheme primary fill, white text on it (5.3:1).
 
-## Space, shape, targets
+### Secondary
+- **Brand-Stripe Red** (accent): the current nav tab, the A and B side letters, and the three-bar stripe. 5.9:1 on surface. Nothing else.
 
-Tailwind 4px scale. Page gutter 16px on phones, 40px from 768px; main column max 48rem. Bottom padding clears the tab bar (`pb-28`). Radii: 0.5rem controls, 0.75rem panels, the uneven highlighter radius for the mark only. Touch targets ≥ 44px (`min-h-11`, `.btn`, `.field`). The tab bar adds `env(safe-area-inset-bottom)`; the root viewport sets `viewport-fit=cover`.
+### Neutral
+- **Desk Ground** (ground): page background, a cool off-white.
+- **Inlay Stock** (surface): panels and fields.
+- **Faded Ballpoint** (ink-muted): secondary text (6.6:1).
+- **Rule Line** (line): field borders and list dividers (at least 3:1).
+- **Printed Ruling** (rule): the inlay's faint ruling and the plain button hover. Decoration only, never a text colour.
+- **Ballpoint Wash** (selection): text selection.
+- **Error Red** (danger): error messages, always with the "Error:" prefix.
+
+### Kept from before
+Draft Coach layer highlights (layer-global, layer-paragraph, layer-sentence, layer-strength) and chart and strength colours (chart-idle, chart-review, strength-*) carry over unchanged. They were validated earlier: text on layers stays ink (at least 7:1), chart colours are marks only, and every mark and layer has a text label.
+
+### Named Rules
+**The One Printed Colour Rule.** Red marks the current tab, the side letters and the stripe. It is never a focus ring, a caret, a button fill, a link or decoration.
+
+**The Never Alone Rule.** Colour is never the only signal. The current tab is also bold, carries `aria-current="page"` and gets a bar or stripe; errors carry "Error:"; layers and chart marks carry text labels.
+
+## Typography
+
+**Display Font:** Patrick Hand (with Atkinson Hyperlegible, sans-serif)
+**Body Font:** Atkinson Hyperlegible 400/700 (with system-ui, sans-serif)
+
+**Character:** A thin ballpoint hand for the headings you would write on a J-card, set against a face built to be read. Patrick Hand ships one weight, so headings get a 0.035em text stroke to look pressed.
+
+### Hierarchy
+- **Display** (Patrick Hand 400, 2.25rem, line-height 1.25, caps, 0.03em): the page h1, with a 3px ink rule under it.
+- **Headline** (Patrick Hand 400, 1.5rem, caps, 0.03em): section h2s; the tape's date line uses 1.25rem.
+- **Title** (Atkinson 700, 1.2rem): lead lines such as the card count or the open essay title. A review card's question is Atkinson 700 at 1.44rem.
+- **Body** (Atkinson 400, 1rem, line-height 1.5): all running text, max `max-w-prose`.
+- **Label** (Atkinson 400 or 700, 0.875rem): meta lines, nav tabs on phones, the tape figure. 0.75rem for chart axis days.
+
+### Named Rules
+**The Hand For Heads Rule.** `.hand` is for headings only, never for running text, labels, buttons or card content.
+
+**The Dyslexia Override Rule.** Under the dyslexia option (OpenDyslexic, line-height 1.6), `.hand` turns off: OpenDyslexic 700, no caps, no letter spacing, no stroke. Headings keep their size.
+
+**The Running Time Rule.** Tabular figures (`tabular-nums`) only on running times and the tape figure, where digits line up like a tracklist. Nowhere else.
+
+## Layout
+
+Mobile first. Page gutter 16px on phones, 40px from 768px. The main column is 48rem; two-column screens (the essay beside its feedback) widen to 72rem. On phones the bottom padding (7rem) clears the tab bar, which adds `env(safe-area-inset-bottom)`; the root viewport sets `viewport-fit=cover`.
+
+Each page is the nav, then one main landmark with one h1. Sections stack with 2rem between them. Panels pad 20px (24px for empty states). Inside the tape, rows pad 20px across and 16-20px down, and sides are split by 1.5px ink rules.
+
+Touch targets are at least 44px (`min-h-11`, `.btn`, `.field`); list rows at least 44-48px.
+
+## Elevation & Depth
+
+Flat. There are no shadows. Depth comes from 1.5px ink frames around panels, 1.5px ink rules between sides, and the faint per-row ruling. The page ground is a shade off the white stock, so panels read as cards laid on a desk.
+
+### Named Rules
+**The Ruled Row Rule.** Ruling is drawn per row as a 1px rule-colour bottom border (`.ruled`), like a tracklist. Never paint ruling as a background behind text.
+
+## Shapes
+
+Cut card, not pill. Controls and fields have a 0.25rem corner; panels 0.375rem. Tailwind's `rounded-lg` and `rounded-xl` are overridden in `@theme` to those two values, so every existing panel takes the J-card corner. Borders are 1.5px: ink on panels and buttons, line on fields. The page h1 rule is 3px ink.
+
+The brand stripe is the one recurring mark: three red bars, 3px wide with 3px gaps, in a 1.25rem by 1rem box. It sits beside "Scholar" in the spine, beside the current tab from 768px, and in the tape header.
 
 ## Components
 
-- `.btn` (bordered, ink) and `.btn btn-primary` (mark fill). Hover inverts to ink fill. Disabled 60% opacity.
-- `.field` for inputs and selects; checkboxes/radios 1.25rem with `accent-color: ink`, wrapped in 44px labels.
-- `.error` for messages (`role="alert"`, "Error:" prefix).
-- Empty state (`src/components/empty-study.tsx`): heading, one teaching sentence, one primary action. Panels are bordered `surface`, no shadows, no nesting.
-- `AppPage` (`src/components/page.tsx`): `<Nav>` then `<main id="main">` with one h1. Skip link "Skip to content" in the `(app)` layout.
+### Buttons
+Plain, inked, square-ish.
+- **Shape:** near-square corner (0.25rem), 1.5px ink border, at least 44px tall, Atkinson 700.
+- **Plain:** ink text on no fill; hover fills with printed ruling.
+- **Primary:** ballpoint fill (mark), white text; hover to pressed ballpoint. One primary per area.
+- **Focus:** 4px double ink outline, 2px offset. A `.btn` label around a hidden input (confidence chips, answer options) shows the ring when its input has focus; the chosen option becomes primary.
+- **Disabled:** 60% opacity, not-allowed cursor.
 
-## Focus and motion
+### Inputs / Fields
+- **Style:** white stock, 1.5px line border, 0.25rem corner, 44px tall, muted placeholder.
+- **Focus:** the same double ink outline, 1px offset.
+- **Checkboxes and radios:** 1.25rem, `accent-color: ink`, in 44px labels.
+- **Error:** `.error`, danger colour, bold, "Error:" prefix, `role="alert"`.
 
-Focus: `3px solid var(--focus)`, offset 2px, on `:focus-visible` everywhere.
+### Cards / Containers (the inlay)
+- **Corner Style:** 0.375rem.
+- **Background:** surface.
+- **Shadow Strategy:** none (see Elevation & Depth).
+- **Border:** 1.5px ink.
+- **Internal Padding:** 20px, 24px for empty states.
+Used app-wide for panels. Do not nest inlays.
 
-Motion conveys state only: colour transitions 150ms, `cubic-bezier(0.16, 1, 0.3, 1)`. No entrance animations. Reduced motion is honoured from the OS (`prefers-reduced-motion`) and from the profile (`data-reduced-motion="true"`); both cut transitions and animations to ~0.
+### Navigation
+- **Phones:** bottom tab bar on rail white, 1.5px ink rule on top, five tabs. The current tab is red and bold with a 3px red bar along its top.
+- **From 768px:** the J-card spine, a 14rem sticky column with a 1.5px ink rule on its right, "Scholar" in hand caps with the stripe. The current tab is red and bold with the stripe before it.
+- **Other tabs:** faded ballpoint; hover to full ink and underline. Colour transitions 150ms.
+
+### The Tape (signature, Today)
+The day's plan as a J-card inside one inlay.
+- **Header:** the date in hand caps, "N min a day" and the stripe on the right, a 1.5px ink rule below.
+- **Sides:** "A Reviews" and "B Essays" as hand h2s, the red side letter hidden from screen readers and the word underlined at 1.5px. Side A shows the card count and "~N min" right-aligned on a ruled row, then Start review. Side B shows "~N min left".
+- **Side B time** is the daily minutes minus review, labelled "left". Never show it as an estimate.
+- **Foot:** "Today's tape" and "A ~x · B ~y of N min", then a 10px bar framed in 1px ink: side A solid ink, side B ink hatching at 135 degrees. The bar is hidden from screen readers; the sentence carries the facts.
+- **Motion:** the bar fills once on load (900ms scaleX from the left, ease-out). Reduced motion cuts it.
+
+### Progress bars
+Review progress uses the tape's bar language: 10px, 1px ink frame, solid ink fill, hidden from screen readers next to a "Card N of M" line.
+
+### Ruled lists
+Exams and similar lists sit under a 1.5px ink rule, each row at least 48px with a 1px line rule below, actions as underlined links.
+
+## Do's and Don'ts
+
+### Do:
+- **Do** use ink for text, frames and the primary fill; red only for the current tab, side letters and stripe.
+- **Do** draw focus as a 4px double ink outline with a 2px offset.
+- **Do** frame panels as inlays: white stock, 1.5px ink, 0.375rem corner.
+- **Do** draw ruling per row with `.ruled`.
+- **Do** set headings in `.hand` and everything read in Atkinson.
+- **Do** pair every colour signal with text, weight, shape or `aria-current`.
+- **Do** keep motion to state: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`, the tape fill once, and honour reduced motion from the OS and the profile.
+
+### Don't:
+- **Don't** use red for focus, carets, links, buttons or decoration.
+- **Don't** use Tailwind indigo; the dark primary is night ballpoint with white text.
+- **Don't** add shadows or soft, pill-round panels.
+- **Don't** paint ruling behind text.
+- **Don't** set running text, labels or card content in the hand face.
+- **Don't** use tabular figures outside running times and the tape figure.
+- **Don't** present Side B time as an estimate.

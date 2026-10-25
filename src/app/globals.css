@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 
-/* Tokens: see DESIGN.md. Light is the default; dark follows the OS. */
 /* Tokens: see DESIGN.md (Mixtape J-Card). Ballpoint blue on white inlay stock, one printed accent (brand-stripe red).
    Light is the default; dark follows the OS. */
 :root {
