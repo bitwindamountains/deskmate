@@ -21,7 +21,9 @@ afterEach(cleanup);
 
 test('Today shows due count with minutes at 25 s per card and a Start link', () => {
   plan([deck('bio', 'Biology')], Array.from({ length: 18 }, (_, i) => card(`c${i}`, state(`c${i}`, day(-1)))));
-  expect(screen.getByText('18 cards · ~8 min')).toBeTruthy();
+  expect(screen.getByText('18 cards')).toBeTruthy();
+  expect(screen.getAllByText('~8 min').length).toBeGreaterThan(0);
+  expect(screen.getByText('~8 of 20 min')).toBeTruthy(); // the tape: review against the daily minutes
   expect(screen.getByRole('link', { name: 'Start' }).getAttribute('href')).toBe('/study/review');
 });
 

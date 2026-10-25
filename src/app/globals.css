@@ -1,21 +1,27 @@
 @import 'tailwindcss';
 
 /* Tokens: see DESIGN.md. Light is the default; dark follows the OS. */
+/* Tokens: see DESIGN.md (Mixtape J-Card). Ballpoint blue on white inlay stock, one printed accent (brand-stripe red).
+   Light is the default; dark follows the OS. */
 :root {
   color-scheme: light dark;
-  --ground: #f4f6f3;
+  --ground: #f6f7fb;
   --surface: #ffffff;
-  --ink: #18263a;
-  --ink-muted: #475569;
-  --line: #6b7787;
-  --rail: #18263a;
-  --rail-ink: #c8d2de;
-  --rail-ink-strong: #ffffff;
-  --mark: #d4f25a;
-  --on-mark: #18263a;
-  --focus: #1d4ed8;
+  --ink: #1e3a8a;          /* ballpoint blue: all text (10.3:1 on surface) */
+  --ink-muted: #4a5a8c;    /* faded ballpoint (6.6:1) */
+  --line: #6c7bb0;         /* control and panel rules (>= 3:1) */
+  --rule: #eaeef8;         /* the inlay's printed ruling: decoration only */
+  --rail: #ffffff;
+  --rail-ink: #4a5a8c;
+  --rail-ink-strong: #1e3a8a;
+  --mark: #1e3a8a;         /* primary action fill */
+  --mark-strong: #142a6b;
+  --on-mark: #ffffff;
+  --accent: #c0282d;       /* brand stripe: current place and side letters (5.9:1) */
+  --focus: #c0282d;
   --danger: #9b1c1c;
-  /* Draft Coach layer highlights, text is --ink (>= 11.8:1). Each also carries a text label: colour is never the only signal. */
+  --selection: #c7d2fe;
+  /* Draft Coach layer highlights, text is --ink (>= 7:1). Each also carries a text label: colour is never the only signal. */
   --layer-global: #dbe7ff;
   --layer-paragraph: #f6e3c4;
   --layer-sentence: #f3dcf0;
@@ -29,19 +35,24 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 @media (prefers-color-scheme: dark) {
+  /* The same card under a desk lamp at night: navy stock, pale ink, the stripe still red. */
   :root {
-    --ground: #10161f;
-    --surface: #18212d;
-    --ink: #e7ecf2;
-    --ink-muted: #a9b4c2;
-    --line: #7d8a9b;
-    --rail: #0a0f16;
-    --rail-ink: #aab5c3;
+    --ground: #0e1430;
+    --surface: #151c3d;
+    --ink: #e6eaf8;
+    --ink-muted: #a9b3d9;
+    --line: #7381b8;
+    --rule: #1c2450;
+    --rail: #0b1027;
+    --rail-ink: #a9b3d9;
     --rail-ink-strong: #ffffff;
-    --mark: #cdeb52;
-    --on-mark: #10161f;
-    --focus: #cdeb52;
+    --mark: #c7d2fe;
+    --mark-strong: #e0e7ff;
+    --on-mark: #0e1430;
+    --accent: #ff7a7a;
+    --focus: #ff7a7a;
     --danger: #fca5a5;
+    --selection: #34407a;
     --layer-global: #1e3a66;
     --layer-paragraph: #4a3512;
     --layer-sentence: #4d2147;
@@ -52,6 +63,12 @@
     --strength-shaky: #5598e7;
     --strength-weak: #1c5cab;
   }
+}
+
+/* J-card corners: a cut card, not a pill. Every rounded-lg/xl panel in the app takes these. */
+@theme {
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.375rem;
 }
 
 @theme inline {
@@ -65,6 +82,8 @@
   --color-rail-ink-strong: var(--rail-ink-strong);
   --color-mark: var(--mark);
   --color-on-mark: var(--on-mark);
+  --color-accent: var(--accent);
+  --color-rule: var(--rule);
   --color-danger: var(--danger);
   --color-layer-global: var(--layer-global);
   --color-layer-paragraph: var(--layer-paragraph);
@@ -76,6 +95,7 @@
   --color-strength-shaky: var(--strength-shaky);
   --color-strength-weak: var(--strength-weak);
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
+  --font-hand: var(--font-patrick), var(--font-atkinson), sans-serif;
 }
 
 @layer base {
@@ -90,29 +110,45 @@ body:has([data-font='dyslexic']) {
   font-family: 'OpenDyslexic', var(--font-sans);
   line-height: 1.6;
 }
+/* The dyslexia font replaces the hand lettering too: headings keep their size, lose the handwriting and the caps. */
+body:has([data-font='dyslexic']) .hand { font-family: 'OpenDyslexic', var(--font-sans); text-transform: none; letter-spacing: 0; font-weight: 700; }
 
-::selection { background: var(--mark); color: var(--on-mark); }
+::selection { background: var(--selection); color: var(--ink); }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.rail { --focus: var(--mark); }
 a { text-underline-offset: 0.2em; }
+html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
+input, textarea { caret-color: var(--accent); }
+/* Tabular figures everywhere: running times and counts line up like a tracklist. */
+body { font-variant-numeric: tabular-nums; }
 }
 
 @layer components {
   .btn {
     display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
-    padding: 0.5rem 1.25rem; border: 1px solid var(--ink); border-radius: 0.5rem; font-weight: 700;
+    padding: 0.5rem 1.25rem; border: 1.5px solid var(--ink); border-radius: 0.25rem; font-weight: 700; color: var(--ink);
     transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
   }
-  .btn:hover { background: var(--surface); }
+  .btn:hover { background: var(--rule); }
   .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
   /* a .btn label around a visually hidden input (the confidence chips) carries that input's focus ring */
   .btn:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
-  .btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--on-mark); }
-  .btn-primary:hover { background: var(--ink); color: var(--ground); }
+  .btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--mark); }
+  .btn-primary:hover { background: var(--mark-strong); border-color: var(--mark-strong); color: var(--on-mark); }
   .field {
     display: block; width: 100%; min-height: 44px; padding: 0.5rem 0.75rem;
-    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 0.5rem;
+    background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 0.25rem;
   }
+  .field::placeholder { color: var(--ink-muted); }
+  /* Hand-lettered block caps, like the J-card's side heads: headings only, never running text. */
+  .hand { font-family: var(--font-patrick), var(--font-atkinson), sans-serif; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 400; }
+  /* The inlay: white stock with printed ruling on the text baseline grid (1.5rem). */
+  .inlay {
+    background-color: var(--surface); border: 1.5px solid var(--ink); border-radius: 0.375rem;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.5rem - 1px), var(--rule) calc(1.5rem - 1px) 1.5rem);
+  }
+  /* The printed brand stripe: three red bars, the J-card's only printed colour. */
+  .stripe { display: inline-block; width: 1.25rem; height: 1rem; flex-shrink: 0;
+    background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); }
   .error { color: var(--danger); font-weight: 700; }
   .error::before { content: 'Error: '; }
 }
@@ -124,7 +160,7 @@ a { text-underline-offset: 0.2em; }
   transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important;
 }
 
-@layer base { input[type='checkbox'], input[type='radio'] { accent-color: var(--ink); width: 1.25rem; height: 1.25rem; } }
+@layer base { input[type='checkbox'], input[type='radio'], progress { accent-color: var(--ink); } input[type='checkbox'], input[type='radio'] { width: 1.25rem; height: 1.25rem; } }
 
 /* Mastery chart labels are in viewBox units and the chart scales with its column: on a phone the 400-unit chart is
    ~343px wide, so labels need a larger unit size to render at ~12px. */
