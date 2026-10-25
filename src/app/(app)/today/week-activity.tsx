@@ -28,8 +28,8 @@ export function WeekActivity({ days }: { days: DayCount[] }) {
   if (!total) return null;
   const max = Math.max(...days.map((d) => d.count));
   return (
-    <section aria-labelledby="week-h" className="max-w-prose rounded-xl border border-line bg-surface p-5">
-      <h2 id="week-h" className="font-bold">Reviews this week</h2>
+    <section aria-labelledby="week-h" className="max-w-prose inlay p-5">
+      <h2 id="week-h" className="hand text-2xl">Reviews this week</h2>
       <p className="text-sm text-ink-muted">{total} {total === 1 ? 'review' : 'reviews'} in the last 7 days</p>
       <div aria-hidden className="mt-4 flex h-20 items-end gap-2">
         {days.map((d) => (

@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <p className="text-ink-muted">Last updated 24 October 2026 (photos and voice). Scholar is in a closed beta for adults (18 and over).</p>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold">What Scholar keeps</h2>
+        <h2 className="hand text-2xl">What Scholar keeps</h2>
         <ul className="list-disc space-y-1 pl-6">
           <li>Your sign-in email address.</li>
           <li>Your preferences, such as daily study time and reading font.</li>
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold">Who sees your text</h2>
+        <h2 className="hand text-2xl">Who sees your text</h2>
         <ul className="list-disc space-y-1 pl-6">
           <li><strong>Groq</strong> runs the AI that writes feedback, makes and rewords cards, checks your answers and responds to your explanations. Its terms say it does not train its models on what you send.</li>
           <li><strong>LanguageTool</strong> checks the spelling and grammar of your essays.</li>
@@ -33,17 +33,17 @@ export default function PrivacyPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold">On your device</h2>
+        <h2 className="hand text-2xl">On your device</h2>
         <p>To work offline, your browser keeps the cards you are studying, reviews that haven&apos;t been saved yet, and essay edits you haven&apos;t sent. Signing out clears them.</p>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold">How long it is kept</h2>
+        <h2 className="hand text-2xl">How long it is kept</h2>
         <p>Your data is kept until you delete it. Nothing is deleted automatically.</p>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold">Your choices</h2>
+        <h2 className="hand text-2xl">Your choices</h2>
         <p>In Profile, under Your data:</p>
         <ul className="list-disc space-y-1 pl-6">
           <li><strong>Download my data</strong> saves everything above as one file.</li>

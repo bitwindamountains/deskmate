@@ -18,9 +18,9 @@
   --mark-strong: #142a6b;
   --on-mark: #ffffff;
   --accent: #c0282d;       /* brand stripe: current place and side letters (5.9:1) */
-  --focus: #c0282d;
+  --focus: #1e3a8a;        /* focus is ink, drawn as a doubled rule: red stays for the current place */
   --danger: #9b1c1c;
-  --selection: #c7d2fe;
+  --selection: #d5ddf0;    /* a faded-ballpoint wash */
   /* Draft Coach layer highlights, text is --ink (>= 7:1). Each also carries a text label: colour is never the only signal. */
   --layer-global: #dbe7ff;
   --layer-paragraph: #f6e3c4;
@@ -46,13 +46,13 @@
     --rail: #0b1027;
     --rail-ink: #a9b3d9;
     --rail-ink-strong: #ffffff;
-    --mark: #c7d2fe;
-    --mark-strong: #e0e7ff;
-    --on-mark: #0e1430;
+    --mark: #3f63d4;         /* brighter ballpoint, white text (5.3:1) */
+    --mark-strong: #3457c4;
+    --on-mark: #ffffff;
     --accent: #ff7a7a;
-    --focus: #ff7a7a;
+    --focus: #e6eaf8;
     --danger: #fca5a5;
-    --selection: #34407a;
+    --selection: #2b3a7a;
     --layer-global: #1e3a66;
     --layer-paragraph: #4a3512;
     --layer-sentence: #4d2147;
@@ -111,15 +111,13 @@ body:has([data-font='dyslexic']) {
   line-height: 1.6;
 }
 /* The dyslexia font replaces the hand lettering too: headings keep their size, lose the handwriting and the caps. */
-body:has([data-font='dyslexic']) .hand { font-family: 'OpenDyslexic', var(--font-sans); text-transform: none; letter-spacing: 0; font-weight: 700; }
+body:has([data-font='dyslexic']) .hand { font-family: 'OpenDyslexic', var(--font-sans); text-transform: none; letter-spacing: 0; font-weight: 700; -webkit-text-stroke: 0; }
 
 ::selection { background: var(--selection); color: var(--ink); }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+:focus-visible { outline: 4px double var(--focus); outline-offset: 2px; }
 a { text-underline-offset: 0.2em; }
 html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
-input, textarea { caret-color: var(--accent); }
-/* Tabular figures everywhere: running times and counts line up like a tracklist. */
-body { font-variant-numeric: tabular-nums; }
+
 }
 
 @layer components {
@@ -131,7 +129,7 @@ body { font-variant-numeric: tabular-nums; }
   .btn:hover { background: var(--rule); }
   .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
   /* a .btn label around a visually hidden input (the confidence chips) carries that input's focus ring */
-  .btn:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .btn:has(:focus-visible) { outline: 4px double var(--focus); outline-offset: 2px; }
   .btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--mark); }
   .btn-primary:hover { background: var(--mark-strong); border-color: var(--mark-strong); color: var(--on-mark); }
   .field {
@@ -139,13 +137,16 @@ body { font-variant-numeric: tabular-nums; }
     background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 0.25rem;
   }
   .field::placeholder { color: var(--ink-muted); }
+  .field:focus-visible { outline-offset: 1px; }
   /* Hand-lettered block caps, like the J-card's side heads: headings only, never running text. */
-  .hand { font-family: var(--font-patrick), var(--font-atkinson), sans-serif; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 400; }
-  /* The inlay: white stock with printed ruling on the text baseline grid (1.5rem). */
-  .inlay {
-    background-color: var(--surface); border: 1.5px solid var(--ink); border-radius: 0.375rem;
-    background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.5rem - 1px), var(--rule) calc(1.5rem - 1px) 1.5rem);
-  }
+  .hand { font-family: var(--font-patrick), var(--font-atkinson), sans-serif; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 400;
+    -webkit-text-stroke: 0.035em currentColor; } /* a pressed ballpoint: the face ships one thin weight */
+  /* The inlay: white stock in a 1.5px ink frame. Ruling is drawn per row (.ruled), like a tracklist, so it never cuts text. */
+  .inlay { background-color: var(--surface); border: 1.5px solid var(--ink); border-radius: 0.375rem; }
+  .ruled { border-bottom: 1px solid var(--rule); }
+  /* The tape fills once on load, from already-visible empty stock. */
+  .tape-fill { animation: tape-fill 900ms var(--ease-out) both; transform-origin: left; }
+  @keyframes tape-fill { from { transform: scaleX(0); } }
   /* The printed brand stripe: three red bars, the J-card's only printed colour. */
   .stripe { display: inline-block; width: 1.25rem; height: 1rem; flex-shrink: 0;
     background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); }

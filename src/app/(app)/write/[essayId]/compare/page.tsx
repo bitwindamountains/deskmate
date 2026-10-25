@@ -52,13 +52,13 @@ export default async function ComparePage({ params, searchParams }: {
     <AppPage current="write" title={essay.data.title} wide>
       <div className="space-y-8">
         <div className="space-y-3">
-          <h2 className="text-xl font-bold">Draft {from} to draft {to}</h2>
+          <h2 className="hand text-2xl">Draft {from} to draft {to}</h2>
           <p className="text-ink-muted">Underlined words were added. Struck-through words were removed.</p>
           <Link href={`/write/${essayId}`} className="btn">Back to your essay</Link>
         </div>
 
         {/* Screen readers rarely announce ins and del, so each change carries its label as text. */}
-        <div className="max-w-prose rounded-xl border border-line bg-surface p-5 whitespace-pre-wrap [overflow-wrap:anywhere]">
+        <div className="max-w-prose inlay p-5 whitespace-pre-wrap [overflow-wrap:anywhere]">
           {diffWords(a.content, b.content).map((c, i) => (c.added ? (
             <ins key={i} className="font-bold underline decoration-2 underline-offset-2"><span className="sr-only">added </span>{c.value}</ins>
           ) : c.removed ? (
@@ -68,9 +68,9 @@ export default async function ComparePage({ params, searchParams }: {
 
         {showScores && criteria.length > 0 && (
           <section aria-labelledby="scores-h" className="space-y-3">
-            <h2 id="scores-h" className="text-xl font-bold">Rubric scores</h2>
+            <h2 id="scores-h" className="hand text-2xl">Rubric scores</h2>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse rounded-xl border border-line bg-surface text-left">
+              <table className="w-full border-collapse inlay text-left">
                 <thead>
                   <tr className="border-b border-line">
                     <th scope="col" className="p-3">Criterion</th>
@@ -94,8 +94,8 @@ export default async function ComparePage({ params, searchParams }: {
 
         {items.data.length > 0 && (
           <section aria-labelledby="items-h" className="space-y-3">
-            <h2 id="items-h" className="text-xl font-bold">Feedback on draft {from}</h2>
-            <ul className="divide-y divide-line/40 rounded-xl border border-line bg-surface px-4">
+            <h2 id="items-h" className="hand text-2xl">Feedback on draft {from}</h2>
+            <ul className="divide-y divide-line/40 inlay px-4">
               {(items.data as Item[]).map((it) => (
                 <li key={it.id} className="space-y-1 py-3 [overflow-wrap:anywhere]">
                   <p className="text-sm text-ink-muted">{LAYER_LABEL[it.layer]}</p>

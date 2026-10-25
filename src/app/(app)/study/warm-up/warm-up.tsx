@@ -14,7 +14,7 @@ export function WarmUp({ cards, seed }: { cards: FormatCard[]; seed: number }) {
 
   if (!items.length) {
     return (
-      <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+      <section className="max-w-prose inlay p-6">
         <h2 className="text-xl font-bold text-balance">A warm-up needs at least 2 cards.</h2>
         <Link href="/study" className="btn mt-6">Back to Study</Link>
       </section>
@@ -23,7 +23,7 @@ export function WarmUp({ cards, seed }: { cards: FormatCard[]; seed: number }) {
 
   if (i >= items.length) {
     return (
-      <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+      <section className="max-w-prose inlay p-6">
         <h2 className="text-xl font-bold text-balance">Warm-up done: {right} of {total} right.</h2>
         <p className="mt-2 text-ink-muted">The warm-up doesn&apos;t change when your cards come up. Review does.</p>
         <div className="mt-6 flex flex-wrap gap-3">
@@ -48,7 +48,7 @@ function TrueFalseCard({ item, onNext }: { item: TrueFalse; onNext: (right: numb
   const [said, setSaid] = useState<boolean | null>(null);
   const correct = said === item.isTrue;
   return (
-    <section aria-label="True or false" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+    <section aria-label="True or false" className="space-y-5 inlay p-5 [overflow-wrap:anywhere]">
       <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={item.prompt} /></h2>
       <div>
         <h3 className="text-sm font-bold text-ink-muted">Answer</h3>
@@ -96,7 +96,7 @@ function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) =
   }
 
   return (
-    <section aria-label="Match the answers" className="space-y-5 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+    <section aria-label="Match the answers" className="space-y-5 inlay p-5 [overflow-wrap:anywhere]">
       <h2 className="text-[1.44rem] leading-snug font-bold text-balance">Match each question to its answer</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <div role="group" aria-label="Questions" className="grid content-start gap-2">
