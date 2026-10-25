@@ -4,7 +4,7 @@ import type { Grade, StateRow, StudyCard } from './schedule';
 
 /** Mirrors the scholar.reviews row (Task 1). */
 export type ReviewPayload = { client_review_id: string; card_id: string; answer_text: string | null;
-  grade_source: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'self'; ai_score: number | null; suggested_rating: Grade | null;
+  grade_source: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'self' | 'choice' | 'blank' | 'reverse'; ai_score: number | null; suggested_rating: Grade | null;
   final_rating: Grade; response_ms: number | null; reviewed_at: string; confidence?: Confidence };
 export type CachedCard = Omit<StudyCard, 'state'> & { front: string; back: string; keyPoints: string[] };
 export type OutboxRow = { client_review_id: string; reviewedAt: string; review: ReviewPayload; prevState: StateRow | null;

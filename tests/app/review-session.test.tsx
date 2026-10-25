@@ -289,3 +289,91 @@ test('a refused rewording explains why and keeps the card as it is', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Ask it another way' }));
   expect(await screen.findByText("We couldn't find a fair way to reword this one. Try the card as it is.")).toBeTruthy();
 });
+
+// Review formats (plan 2026-10-25-review-formats.md)
+const cell = (id: string, back: string, over: Partial<ReviewCard> = {}) => card(id, { front: `Where is ${id}?`, back, concept: 'cell', ...over });
+const choiceDeck = [cell('m', 'Mitochondria'), cell('n', 'Nucleus'), cell('r', 'Ribosome'), cell('g', 'Golgi body')];
+const startChoice = async (cards: ReviewCard[]) => {
+  render(<ReviewSession cards={cards} minutes={20} newIntroducedToday={0} examDates={{}} />);
+  await screen.findAllByRole('radio', { name: /Mitochondria|Nucleus|Ribosome|Golgi body/ });
+};
+const currentBack = () => {
+  const front = screen.getByRole('heading', { level: 2 }).textContent!;
+  return choiceDeck.find((c) => c.front === front)!.back;
+};
+
+test('a new card is multiple choice: right suggests Hard, hides Good and Easy, and never calls the grader', async () => {
+  await startChoice(choiceDeck);
+  expect(screen.getByText(/Pick from the options first/)).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Show answer' })).toBeNull();
+  fireEvent.click(screen.getByRole('radio', { name: currentBack() }));
+  fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+  expect(await screen.findByText('Right.')).toBeTruthy();
+  expect(rating('Hard').textContent).toContain('Suggested');
+  expect(screen.queryByRole('button', { name: /^Good/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Easy/ })).toBeNull();
+  fireEvent.keyDown(window, { key: '3' }); // Good is above the cap: ignored
+  expect(screen.getByText('Right.')).toBeTruthy();
+  fireEvent.click(rating('Hard'));
+  await waitFor(async () => expect((await outbox()).map((r) => [r.review.grade_source, r.review.final_rating])).toEqual([['choice', 2]]));
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test('a wrong option suggests Again', async () => {
+  await startChoice(choiceDeck);
+  const wrong = choiceDeck.map((c) => c.back).find((b) => b !== currentBack())!;
+  fireEvent.click(screen.getByRole('radio', { name: wrong }));
+  fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+  expect(await screen.findByText('Not quite.')).toBeTruthy();
+  expect(rating('Again').textContent).toContain('Suggested');
+});
+
+test('Type it instead switches the card to typed recall', async () => {
+  await startChoice(choiceDeck);
+  fireEvent.click(screen.getByRole('button', { name: 'Type it instead' }));
+  expect(await screen.findByLabelText('Your answer')).toBeTruthy();
+  expect(screen.queryByRole('radio', { name: 'Nucleus' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Show answer' })).toBeTruthy();
+});
+
+test('typing after seeing the options keeps the multiple-choice cap and never calls the grader', async () => {
+  await startChoice(choiceDeck);
+  const back = currentBack();
+  fireEvent.click(screen.getByRole('button', { name: 'Type it instead' }));
+  await answer((await screen.findByLabelText('Your answer')) as HTMLTextAreaElement, back);
+  await waitFor(() => expect(rating('Hard').textContent).toContain('Suggested'));
+  expect(screen.queryByRole('button', { name: /^Easy/ })).toBeNull();
+  fireEvent.click(rating('Hard'));
+  await waitFor(async () => expect((await outbox()).map((r) => [r.review.grade_source, r.review.final_rating])).toEqual([['choice', 2]]));
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test('a learning card with a key point in its answer is a blank: right suggests Good and hides Easy', async () => {
+  const learning = { card_id: 'k', due: '2026-01-01T00:00:00.000Z', stability: 1, difficulty: 5, scheduled_days: 0, learning_steps: 1,
+    reps: 1, lapses: 0, state: 1, last_review: '2026-01-01T00:00:00.000Z' };
+  render(<ReviewSession cards={[card('k', { back: 'Glycolysis happens in the cytoplasm', keyPoints: ['cytoplasm'], state: learning })]}
+    minutes={20} newIntroducedToday={0} examDates={{}} />);
+  const input = await screen.findByLabelText('Fill in the blank');
+  expect(screen.getByText(/Glycolysis happens in the/)).toBeTruthy();
+  fireEvent.change(input, { target: { value: 'Cytoplasm' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+  expect(await screen.findByText('Right.')).toBeTruthy();
+  expect(rating('Good').textContent).toContain('Suggested');
+  expect(screen.queryByRole('button', { name: /^Easy/ })).toBeNull();
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test('a strong basic card on every third review is reversed and self-rated with all four ratings', async () => {
+  const strong = { card_id: 'v', due: '2026-01-01T00:00:00.000Z', stability: 30, difficulty: 5, scheduled_days: 30, learning_steps: 0,
+    reps: 5, lapses: 0, state: 2, last_review: '2025-12-01T00:00:00.000Z' };
+  render(<ReviewSession cards={[card('v', { front: 'Where does glycolysis happen?', back: 'In the cytoplasm', state: strong })]}
+    minutes={20} newIntroducedToday={0} examDates={{}} />);
+  expect(await screen.findByRole('heading', { name: 'In the cytoplasm' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Show the question' }));
+  expect(await screen.findByText('Where does glycolysis happen?')).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Question' })).toBeTruthy();
+  fireEvent.click(rating('Easy'));
+  await waitFor(async () => expect((await outbox()).map((r) => [r.review.grade_source, r.review.final_rating])).toEqual([['reverse', 4]]));
+  expect(fetchMock).not.toHaveBeenCalled();
+});
