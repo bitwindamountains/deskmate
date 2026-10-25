@@ -72,6 +72,12 @@ select grade_source, count(*) as graded,
   round(100.0 * count(*) filter (where final_rating <> suggested_rating) / nullif(count(*), 0), 1) as override_pct
 from scholar.reviews where suggested_rating is not null group by 1;
 
+-- Review formats (plan 2026-10-25-review-formats.md): how often each format is used and how often it ends in Again.
+-- choice/blank/reverse are the formats; every other source is typed recall or "Show answer".
+select case when grade_source in ('choice', 'blank', 'reverse') then grade_source else 'typed' end as format, count(*) as reviews,
+  round(100.0 * count(*) filter (where final_rating = 1) / nullif(count(*), 0), 1) as again_pct
+from scholar.reviews group by 1 order by 2 desc;
+
 -- Leech rate: reviewed cards forgotten 4+ times (brief B3.3).
 select round(100.0 * count(*) filter (where lapses >= 4) / nullif(count(*), 0), 1) as leech_pct from scholar.card_states where reps > 0;
 
