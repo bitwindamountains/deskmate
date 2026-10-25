@@ -45,7 +45,7 @@ export function MasteryView({ sections }: { sections: MasterySection[] }) {
               </ul>
             </div>
           )}
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="track-in grid grid-cols-1 gap-3 sm:grid-cols-2">
             {concepts.map((c) => (
               <li key={c.key}>
                 <Link href={reviewHref(c.deckId, c.key)}
