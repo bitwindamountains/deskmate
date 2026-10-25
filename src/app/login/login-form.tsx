@@ -1,58 +1,68 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { CassetteHero } from '@/components/cassette';
-import { sendEmailCode, signInWithGoogle, verifyEmailCode, type LoginState } from './actions';
+import { PASSWORD_MAX, PASSWORD_MIN } from '@/lib/auth/password';
+import { sendPasswordReset, signInWithGoogle, signInWithPassword, signUpWithPassword, type LoginMode, type LoginState } from './actions';
 
-const input = 'field';
-const button = 'btn';
+const TITLE: Record<LoginMode, string> = { signin: 'Sign in to Scholar', signup: 'Create your account', forgot: 'Reset your password' };
+const SUBMIT: Record<LoginMode, string> = { signin: 'Sign in', signup: 'Create account', forgot: 'Email me a reset link' };
+const ACTION = { signin: signInWithPassword, signup: signUpWithPassword, forgot: sendPasswordReset };
+const modeOf = (fd: FormData): LoginMode => (fd.get('mode') === 'signup' ? 'signup' : fd.get('mode') === 'forgot' ? 'forgot' : 'signin');
 
 export function LoginForm({ next, initialError, notice }: { next: string; initialError?: string; notice?: string }) {
-  const [state, action, pending] = useActionState<LoginState, FormData>(
-    (prev, fd) => (prev.step === 'code' && fd.get('intent') !== 'resend' ? verifyEmailCode(prev, fd) : sendEmailCode(prev, fd)),
-    { step: 'email', error: initialError },
-  );
-
-  const bad = state.error ? { 'aria-invalid': true, 'aria-describedby': 'login-err' } : {};
+  const [mode, setMode] = useState<LoginMode>('signin');
+  const [state, action, pending] = useActionState<LoginState, FormData>((prev, fd) => ACTION[modeOf(fd)](prev, fd), { mode: 'signin', error: initialError });
+  // A result belongs to the form that produced it; switching forms starts clean.
+  const shown = state.mode === mode ? state : { mode };
+  const bad = shown.error ? { 'aria-invalid': true, 'aria-describedby': 'login-err' } : {};
+  const sent = shown.sent && (mode === 'signup'
+    ? `Check your email: open the link we sent to ${shown.email} to finish creating your account. Then you can sign in with your password.`
+    : `If ${shown.email} has a Scholar account, we sent it a link to set a new password.`);
 
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
       <CassetteHero />
-      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">Sign in to Scholar</span></h1>
+      <h1 key={mode} className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{TITLE[mode]}</span></h1>
       {notice && <p role="status">{notice}</p>}
-      {state.error && <p id="login-err" role="alert" className="error">{state.error}</p>}
+      {shown.error && <p id="login-err" role="alert" className="error">{shown.error}</p>}
 
-      <form action={signInWithGoogle}>
-        <input type="hidden" name="next" value={next} />
-        <button type="submit" className="btn btn-primary w-full">Continue with Google</button>
-      </form>
+      {mode === 'signin' && (
+        <form action={signInWithGoogle}>
+          <input type="hidden" name="next" value={next} />
+          <button type="submit" className="btn btn-primary w-full">Continue with Google</button>
+        </form>
+      )}
 
-      <form action={action} className="space-y-3">
-        <input type="hidden" name="next" value={next} />
-        {state.step === 'email' ? (
+      {sent ? <p role="status" className="inlay card-in p-4">{sent}</p> : (
+        <form action={action} className="space-y-3">
+          <input type="hidden" name="next" value={next} />
+          <input type="hidden" name="mode" value={mode} />
           <div>
             <label htmlFor="email" className="mb-1 block">Email</label>
-            <input id="email" name="email" type="email" autoComplete="email" required defaultValue={state.email} className={input} {...bad} />
+            <input id="email" name="email" type="email" autoComplete={mode === 'signup' ? 'email' : 'username'} required
+              defaultValue={shown.email} className="field" {...bad} />
           </div>
-        ) : (
-          <>
-            <p>We sent a code to {state.email}.</p>
-            <input type="hidden" name="email" value={state.email} />
+          {mode !== 'forgot' && (
             <div>
-              <label htmlFor="token" className="mb-1 block">Code from the email</label>
-              <input id="token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} required className={input} {...bad} />
+              <label htmlFor="password" className="mb-1 block">Password</label>
+              <input id="password" name="password" type="password" required
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                minLength={mode === 'signup' ? PASSWORD_MIN : undefined} maxLength={PASSWORD_MAX}
+                aria-invalid={shown.error ? true : undefined}
+                aria-describedby={[mode === 'signup' && 'password-hint', shown.error && 'login-err'].filter(Boolean).join(' ') || undefined} className="field" />
+              {mode === 'signup' && <p id="password-hint" className="mt-1 text-sm text-ink-muted">{`At least ${PASSWORD_MIN} characters.`}</p>}
             </div>
-          </>
-        )}
-        <button type="submit" disabled={pending} className={`${button} w-full`}>
-          {state.step === 'email' ? 'Email me a code' : 'Verify code'}
-        </button>
-        {state.step === 'code' && (
-          <button type="submit" name="intent" value="resend" formNoValidate disabled={pending} className="min-h-11 underline">
-            Send a new code
-          </button>
-        )}
-      </form>
+          )}
+          <button type="submit" disabled={pending} className={`btn w-full ${mode === 'signin' ? '' : 'btn-primary'}`}>{SUBMIT[mode]}</button>
+        </form>
+      )}
+
+      <p className="flex flex-wrap gap-x-5 gap-y-1">
+        {mode !== 'signin' && <button type="button" className="min-h-11 underline" onClick={() => setMode('signin')}>Back to sign in</button>}
+        {mode === 'signin' && <button type="button" className="min-h-11 underline" onClick={() => setMode('signup')}>Create an account</button>}
+        {mode === 'signin' && <button type="button" className="min-h-11 underline" onClick={() => setMode('forgot')}>Forgot your password?</button>}
+      </p>
 
       <p className="text-sm text-ink-muted"><a href="/privacy" className="underline">How Scholar handles your data</a></p>
     </main>

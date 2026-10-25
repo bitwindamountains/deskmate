@@ -1027,6 +1027,7 @@ Filled from `PROGRESS.md` (owner decisions) and the plans in `docs/superpowers/p
 | 13 | 2026-10-24 | No separate tone and quality pass. | A second call per essay doesn't fit the free tier; prompt rules, quote anchoring and schema checks cover it. | A second LLM pass (D3.1 step 8). |
 | 14 | 2026-10-24 | Claude may merge its own PRs, delete branches and do routine follow-ups without asking. | Owner granted full permission for this project. | The owner merges each PR. |
 | 15 | 2026-10-24 | Claude may apply migrations, then run the DB tests and advisors and name each migration in its PR; destructive ones (drops, deleting data) still wait for the owner. | Owner granted full permission for this project. | The owner sees every migration before it is applied. |
+| 16 | 2026-10-25 | Email sign-in uses a password (at least 8 characters); a new account confirms its email once, and a forgotten password is reset by an emailed link. Google stays. | Emailed codes on every sign-in hit Supabase's shared email limit and "Too many attempts"; a password needs email only twice in an account's life, and confirming once proves the address is the student's. | Emailed codes (the old flow); passwords with no email confirmation (instant, but anyone could register an address they don't own). |
 
 ---
 
