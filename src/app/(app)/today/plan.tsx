@@ -5,6 +5,19 @@ import { buildSession, daysUntil, NEW_CARD_LIMIT, nextReview, parseDay, readines
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const when = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`);
 
+/** A cassette hub at each end of the tape: it turns while the tape spools on load, then stops. */
+function Reel() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-ink" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="10.25" />
+      <g className="reel">
+        <circle cx="12" cy="12" r="3.5" />
+        <path d="M12 1.75v4.75M12 17.5v4.75M3.1 6.9l4.1 2.4M16.8 14.7l4.1 2.4M3.1 17.1l4.1-2.4M16.8 9.3l4.1-2.4" />
+      </g>
+    </svg>
+  );
+}
+
 /** An essay whose latest draft still has open Top 3 priorities. */
 export type TodayEssay = { id: string; title: string; openTop3: number };
 
@@ -60,7 +73,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
         </div>
 
         {cards.length > 0 && <div className="px-5 pt-4 pb-5">
-          <h2 id="reviews-h" className="hand flex items-baseline gap-3 text-2xl"><span aria-hidden="true" className="text-accent">A</span><span className="underline decoration-[1.5px] underline-offset-4">Reviews</span></h2>
+          <h2 id="reviews-h" className="hand flex items-baseline gap-3 text-2xl"><span aria-hidden="true" className="stamp text-accent">A</span><span className="underline decoration-[1.5px] underline-offset-4">Reviews</span></h2>
           {queue.length ? (
             <>
               <p className="ruled mt-2 flex items-baseline justify-between gap-4 pb-1 text-[1.2rem]"><span>{plural(queue.length, 'card')}</span><span className="font-bold tabular-nums">~{estMinutes} min</span></p>
@@ -79,7 +92,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
 
         {essays.length > 0 && <div className={`px-5 pt-4 pb-5 ${cards.length > 0 ? 'border-t-[1.5px] border-ink' : ''}`}>
           <div className="flex items-baseline justify-between gap-4">
-            <h2 id="essays-h" className="hand flex items-baseline gap-3 text-2xl"><span aria-hidden="true" className="text-accent">B</span><span className="underline decoration-[1.5px] underline-offset-4">Essays</span></h2>
+            <h2 id="essays-h" className="hand flex items-baseline gap-3 text-2xl"><span aria-hidden="true" className="stamp stamp-b text-accent">B</span><span className="underline decoration-[1.5px] underline-offset-4">Essays</span></h2>
             {minutes > 0 && <p className="text-sm font-bold tabular-nums">~{writeMin} min left</p>}
           </div>
           {essayFirst && (
@@ -105,9 +118,13 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
             <p className="flex justify-between gap-4 text-sm"><span>Today&apos;s tape</span>
               <span className="font-bold tabular-nums">{[reviewMin > 0 && `A ~${reviewMin}`, writeMin > 0 && `B ~${writeMin}`].filter(Boolean).join(' · ')} of {minutes} min</span></p>
             {/* The tape: side A solid ink, side B hatched. The sentence above carries the same facts. */}
-            <div aria-hidden="true" className="mt-2 flex h-2.5 border border-ink">
-              {reviewMin > 0 && <div className="tape-fill h-full bg-ink" style={{ width: pct(reviewMin) }} />}
-              {writeMin > 0 && <div className="tape-fill h-full bg-[repeating-linear-gradient(135deg,var(--ink)_0_1.5px,transparent_1.5px_5px)]" style={{ width: pct(writeMin) }} />}
+            <div aria-hidden="true" className="mt-2 flex items-center gap-2">
+              <Reel />
+              <div className="flex h-2.5 flex-1 border border-ink">
+                {reviewMin > 0 && <div className="tape-fill h-full bg-ink" style={{ width: pct(reviewMin) }} />}
+                {writeMin > 0 && <div className="tape-fill-b h-full bg-[repeating-linear-gradient(135deg,var(--ink)_0_1.5px,transparent_1.5px_5px)]" style={{ width: pct(writeMin) }} />}
+              </div>
+              <Reel />
             </div>
           </div>
         )}
