@@ -96,3 +96,30 @@ export const checkBlank = (answer: string, expected: string) =>
 export const suggestFor = (format: Format, right: boolean): Grade => (right ? RATING_CAP[format] : Rating.Again);
 export const allowedRatings = (format: Format): Grade[] =>
   [Rating.Again, Rating.Hard, Rating.Good, Rating.Easy].filter((g) => g <= RATING_CAP[format]) as Grade[];
+
+// ---------------------------------------------------------------- warm-up round (never scheduled: no review rows, no FSRS state)
+export type TrueFalse = { kind: 'tf'; cardId: string; prompt: string; shown: string; answer: string; isTrue: boolean };
+export type Matching = { kind: 'match'; pairs: { cardId: string; front: string; back: string }[]; backs: string[] };
+export type WarmUpItem = TrueFalse | Matching;
+
+const WARM_UP_SIZE = 10;
+const MATCH_SIZE = 4;
+
+/** Up to 10 cards: one matching set of 4 when 4 cards have clearly different answers, the rest true or false (about half false). */
+export function buildWarmUp(cards: FormatCard[], seed: number): WarmUpItem[] {
+  if (cards.length < 2) return [];
+  const rnd = random(seed);
+  const picked = shuffle(cards, rnd).slice(0, WARM_UP_SIZE);
+  const match: FormatCard[] = [];
+  for (const c of picked) if (match.length < MATCH_SIZE && !match.some((m) => sameAnswer(m.back, c.back))) match.push(c);
+  const matched = match.length === MATCH_SIZE ? new Set(match.map((m) => m.id)) : new Set<string>();
+  const items: WarmUpItem[] = picked.filter((c) => !matched.has(c.id)).map((c) => {
+    const wrong = rnd() < 0.5 ? distractors(c, cards, rnd)[0] : undefined;
+    return { kind: 'tf', cardId: c.id, prompt: c.front, shown: wrong ?? c.back.trim(), answer: c.back.trim(), isTrue: !wrong };
+  });
+  if (matched.size) {
+    const pairs = match.map((m) => ({ cardId: m.id, front: m.front, back: m.back.trim() }));
+    items.splice(Math.floor(items.length / 2), 0, { kind: 'match', pairs, backs: shuffle(pairs.map((p) => p.back), rnd) });
+  }
+  return items;
+}

@@ -75,3 +75,29 @@ test('easier formats cap the rating; a wrong answer suggests Again', () => {
   expect(allowedRatings('typed')).toEqual([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy]);
   expect(allowedRatings('reverse')).toHaveLength(4);
 });
+
+test('the warm-up holds up to 10 cards: one matching set of 4 and true or false for the rest', async () => {
+  const { buildWarmUp } = await import('@/review/formats');
+  const cards = Array.from({ length: 14 }, (_, n) => card(n));
+  const items = buildWarmUp(cards, 3);
+  const match = items.filter((x) => x.kind === 'match');
+  const tf = items.filter((x) => x.kind === 'tf');
+  expect(match).toHaveLength(1);
+  expect(tf).toHaveLength(6);
+  const m = match[0] as Extract<typeof items[number], { kind: 'match' }>;
+  expect([...m.backs].sort()).toEqual(m.pairs.map((p) => p.back).sort());
+  for (const q of tf as Extract<typeof items[number], { kind: 'tf' }>[]) {
+    expect(q.isTrue).toBe(q.shown === q.answer);
+    expect(cards.find((c) => c.id === q.cardId)!.back).toBe(q.answer);
+  }
+  expect(tf.some((q) => !(q as { isTrue: boolean }).isTrue)).toBe(true);
+  expect(buildWarmUp(cards, 3)).toEqual(items);
+});
+
+test('the warm-up skips matching when answers repeat, and needs 2 cards', async () => {
+  const { buildWarmUp } = await import('@/review/formats');
+  const same = Array.from({ length: 5 }, (_, n) => card(n, { back: 'Mitochondria' }));
+  const items = buildWarmUp(same, 1);
+  expect(items.every((x) => x.kind === 'tf' && x.isTrue)).toBe(true); // no wrong answer to show
+  expect(buildWarmUp([card(1)], 1)).toEqual([]);
+});
