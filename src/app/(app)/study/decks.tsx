@@ -12,7 +12,7 @@ export function DeckList({ decks }: { decks: DeckSummary[] }) {
   if (!decks.length) return <EmptyStudy level={3} />;
   return (
     <>
-      <ul className="max-w-xl space-y-4">
+      <ul className="track-in max-w-xl space-y-4">
         {decks.map((d) => (
           <li key={d.id}>
             <section aria-labelledby={`deck-${d.id}`} className="space-y-3 inlay p-5 [overflow-wrap:anywhere]">
