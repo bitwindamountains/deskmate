@@ -56,11 +56,11 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
     return (
       <section aria-labelledby="result-h" className="max-w-prose space-y-4">
         <h2 id="result-h" ref={heading as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="sr-only">Your result</h2>
-        <p className="text-xl font-bold">{`${right} of ${done.length} right`}</p>
+        <p className="text-xl font-bold"><span className="stamp"><span className="ink-draw">{`${right} of ${done.length} right`}</span></span></p>
         {missed.length > 0 && (
           <>
             <h3 className="font-bold">Worth another look</h3>
-            <ul className="space-y-3 [overflow-wrap:anywhere]">
+            <ul className="track-in space-y-3 [overflow-wrap:anywhere]">
               {missed.map((o) => (
                 <li key={o.q.cardId} className="inlay p-4">
                   <p className="font-bold"><MathText text={o.q.prompt} /></p>
@@ -82,12 +82,12 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
   return (
     <section aria-label="Practice test" className="max-w-xl space-y-5">
       <p ref={heading as React.RefObject<HTMLParagraphElement>} tabIndex={-1} className="text-sm font-bold text-ink-muted outline-none">{`Question ${i + 1} of ${questions.length}`}</p>
-      <form className="space-y-4 inlay p-5 [overflow-wrap:anywhere]" onSubmit={(e) => { e.preventDefault(); void next(); }}>
+      <form key={i} className="card-in space-y-4 inlay p-5 [overflow-wrap:anywhere]" onSubmit={(e) => { e.preventDefault(); void next(); }}>
         {q.kind === 'choice' ? (
           <fieldset className="space-y-2">
             <legend className="mb-2 text-[1.44rem] leading-snug font-bold"><MathText text={q.prompt} /></legend>
             {q.choices!.map((c) => (
-              <label key={c} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3">
+              <label key={c} className={`btn min-h-11 cursor-pointer justify-start gap-3 text-left ${pick === c ? 'btn-primary' : ''}`}>
                 <input type="radio" name={`q-${i}`} value={c} checked={pick === c} onChange={() => setPick(c)} />
                 <span><MathText text={c} /></span>
               </label>

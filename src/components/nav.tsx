@@ -31,8 +31,8 @@ export function Nav({ current }: { current: NavKey }) {
                   here ? 'font-bold text-accent' : 'text-rail-ink hover:text-rail-ink-strong hover:underline'
                 }`}
               >
-                {here && <span className="absolute inset-x-3 top-0 h-[3px] bg-accent md:hidden" aria-hidden="true" />}
-                {here && <span className="stripe hidden md:inline-block" aria-hidden="true" />}
+                {here && <span className="mark-in absolute inset-x-3 top-0 h-[3px] bg-accent md:hidden" aria-hidden="true" />}
+                {here && <span className="stripe mark-in hidden md:inline-block" aria-hidden="true" />}
                 {item.label}
               </Link>
             </li>

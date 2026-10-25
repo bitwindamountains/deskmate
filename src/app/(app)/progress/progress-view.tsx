@@ -40,7 +40,7 @@ export function ProgressView({ growth, calibration, counts, hint, leech }: Props
         <h2 id="patterns-h" className="hand text-2xl">Writing patterns</h2>
         {growth.essays === 0 ? <p className="text-ink-muted">Check an essay to see your writing patterns.</p>
           : growth.recurring.length === 0 ? <p className="text-ink-muted">No pattern has come up in two essays yet.</p> : (
-            <ul className="divide-y divide-line/40 inlay px-4">
+            <ul className="track-in divide-y divide-line/40 inlay px-4">
               {growth.recurring.map((p) => (
                 <li key={p.key} className="space-y-2 py-3">
                   <p className="font-bold">{p.label}</p>
