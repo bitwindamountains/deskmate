@@ -168,6 +168,13 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   @keyframes tape-spool { from { background-position: -40px 0; } }
   .reel { animation: reel-turn 1150ms cubic-bezier(0.3, 0, 0.2, 1) both; transform-box: fill-box; transform-origin: center; }
   @keyframes reel-turn { from { transform: rotate(-540deg); } }
+  /* The background cassette plays as a page opens: hubs turn, tape moves from the left pack to the right. */
+  .cassette-play .hub, .cassette-play .pack-l, .cassette-play .pack-r { transform-box: fill-box; transform-origin: center; }
+  .cassette-play .hub { animation: reel-turn 1600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
+  .cassette-play .pack-l { animation: pack-l 1600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
+  .cassette-play .pack-r { animation: pack-r 1600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
+  @keyframes pack-l { from { transform: scale(1.25); } }
+  @keyframes pack-r { from { transform: scale(0.7); } }
   /* Pointing at Today's tape rewinds the reels; leaving it plays them forward again. */
   .tape-deck:hover .reel { animation-name: reel-rewind; animation-duration: 900ms; }
   @keyframes reel-rewind { from { transform: rotate(540deg); } }
