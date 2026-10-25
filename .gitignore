@@ -9,3 +9,8 @@ graphify-out/
 
 # Playwright MCP snapshots and logs (local QA only)
 .playwright-mcp/
+
+# Impeccable working files (decision rounds, review captures); briefs and config are shared
+.impeccable/mocks/
+.impeccable/questions/
+.impeccable/review/

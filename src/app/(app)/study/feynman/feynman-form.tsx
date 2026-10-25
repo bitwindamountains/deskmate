@@ -43,8 +43,8 @@ export function FeynmanForm({ deckId, concept, label }: { deckId: string; concep
       </form>
 
       {feedback && (
-        <section aria-labelledby="feynman-h" className="space-y-4 rounded-xl border border-line bg-surface p-5">
-          <h2 id="feynman-h" className="text-xl font-bold">How your explanation went</h2>
+        <section aria-labelledby="feynman-h" className="space-y-4 inlay p-5">
+          <h2 id="feynman-h" className="hand text-2xl">How your explanation went</h2>
           {feedback.covered.length > 0 && (
             <div><h3 className="font-bold">You covered</h3><ul className="list-disc pl-6">{feedback.covered.map((c) => <li key={c}>{c}</li>)}</ul></div>
           )}

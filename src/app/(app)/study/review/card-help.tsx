@@ -27,7 +27,7 @@ export function CardHelpPanel({ cardId, deckId }: { cardId: string; deckId: stri
   }, [cardId]);
 
   return (
-    <div role="status" className="space-y-3 rounded-xl border border-line bg-surface p-4">
+    <div role="status" className="space-y-3 inlay p-4">
       {state.kind === 'loading' && <p className="text-ink-muted">Finding another way in…</p>}
       {state.kind === 'error' && <p>{state.message}</p>}
       {state.kind === 'ok' && (

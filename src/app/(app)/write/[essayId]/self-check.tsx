@@ -5,7 +5,7 @@ export function SelfCheck({ self, ai, topSummary, showScores }: { self: SelfAsse
   const { rows, within, of } = compareSelf(self.scores, ai);
   return (
     <section aria-labelledby="self-h" className="space-y-3">
-      <h2 id="self-h" className="text-xl font-bold">Your rating and the coach&apos;s</h2>
+      <h2 id="self-h" className="hand text-2xl">Your rating and the coach&apos;s</h2>
       {showScores && of > 0 && (
         <>
           <table className="w-full border-collapse text-left">

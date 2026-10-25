@@ -15,7 +15,7 @@ export function DeckList({ decks }: { decks: DeckSummary[] }) {
       <ul className="max-w-xl space-y-4">
         {decks.map((d) => (
           <li key={d.id}>
-            <section aria-labelledby={`deck-${d.id}`} className="space-y-3 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+            <section aria-labelledby={`deck-${d.id}`} className="space-y-3 inlay p-5 [overflow-wrap:anywhere]">
               <h3 id={`deck-${d.id}`} className="text-xl font-bold text-balance">
                 <Link href={`/study/deck/${d.id}`} className="underline">{d.title}</Link>
               </h3>

@@ -19,8 +19,8 @@ export default async function ProfilePage() {
   ];
   return (
     <AppPage current="profile" title="Profile">
-      <section aria-labelledby="prefs" className="max-w-prose rounded-xl border border-line bg-surface p-6">
-        <h2 id="prefs" className="text-xl font-bold">Your preferences</h2>
+      <section aria-labelledby="prefs" className="max-w-prose inlay p-6">
+        <h2 id="prefs" className="hand text-2xl">Your preferences</h2>
         <dl className="mt-4 divide-y divide-line/40">
           {rows.map(([k, v]) => (
             <div key={k} className="flex flex-wrap justify-between gap-x-4 py-3">

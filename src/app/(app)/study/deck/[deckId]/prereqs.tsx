@@ -29,7 +29,7 @@ export function Prereqs({ deckId, concepts, edges }: { deckId: string; concepts:
   if (concepts.length < 2 && !edges.length) return null; // needs two concepts to link
   return (
     <section aria-labelledby="prereqs-h" className="mb-8 max-w-prose space-y-3">
-      <h2 id="prereqs-h" className="text-xl font-bold">What builds on what</h2>
+      <h2 id="prereqs-h" className="hand text-2xl">What builds on what</h2>
       <p className="text-ink-muted">When you keep missing a concept, the mastery map suggests reviewing what it builds on.</p>
       {edges.length > 0 && (
         <ul className="space-y-2">

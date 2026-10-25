@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-centre-rail.html"
+        ],
+        "createdAt": "2026-10-25T04:21:48.997Z",
+        "reason": "Claude: decision-round sketch of a catalog challenger whose world specifies bone/cream stock; cream flagged as the card's risk, not a build choice"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r1-lexicon.html"
+        ],
+        "createdAt": "2026-10-25T04:21:49.416Z",
+        "reason": "Claude: decision-round sketch of a catalog challenger whose world specifies bone/cream stock; cream flagged as the card's risk, not a build choice"
+      }
+    ]
+  }
+}

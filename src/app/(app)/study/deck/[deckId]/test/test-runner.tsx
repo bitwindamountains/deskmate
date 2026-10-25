@@ -62,7 +62,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
             <h3 className="font-bold">Worth another look</h3>
             <ul className="space-y-3 [overflow-wrap:anywhere]">
               {missed.map((o) => (
-                <li key={o.q.cardId} className="rounded-xl border border-line bg-surface p-4">
+                <li key={o.q.cardId} className="inlay p-4">
                   <p className="font-bold"><MathText text={o.q.prompt} /></p>
                   <p>Answer: <MathText text={o.q.answer} /></p>
                 </li>
@@ -82,7 +82,7 @@ export function TestRunner({ deckId, deckTitle, questions }: { deckId: string; d
   return (
     <section aria-label="Practice test" className="max-w-xl space-y-5">
       <p ref={heading as React.RefObject<HTMLParagraphElement>} tabIndex={-1} className="text-sm font-bold text-ink-muted outline-none">{`Question ${i + 1} of ${questions.length}`}</p>
-      <form className="space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]" onSubmit={(e) => { e.preventDefault(); void next(); }}>
+      <form className="space-y-4 inlay p-5 [overflow-wrap:anywhere]" onSubmit={(e) => { e.preventDefault(); void next(); }}>
         {q.kind === 'choice' ? (
           <fieldset className="space-y-2">
             <legend className="mb-2 text-[1.44rem] leading-snug font-bold"><MathText text={q.prompt} /></legend>

@@ -162,7 +162,7 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
           <button ref={deleteBtn} type="button" className="btn" disabled={busy || !picked.length} aria-expanded={confirming} onClick={() => setConfirming(true)}>Delete selected</button>
         </div>
         {confirming && picked.length > 0 && (
-          <div role="group" aria-labelledby="confirm-delete" className="space-y-3 rounded-xl border border-line bg-surface p-4">
+          <div role="group" aria-labelledby="confirm-delete" className="space-y-3 inlay p-4">
             <p id="confirm-delete" className="font-bold">Delete {plural(picked.length, 'card')}? Their review history goes too.</p>
             <div className="flex flex-wrap gap-3">
               <button type="button" className="btn" disabled={busy} onClick={remove}>Delete</button>
@@ -177,7 +177,7 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
       {shown.length ? (
         <ul className="space-y-3">
           {shown.map((c) => (
-            <li key={c.id} className="space-y-2 rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+            <li key={c.id} className="space-y-2 inlay p-4 [overflow-wrap:anywhere]">
               {editing?.id === c.id ? (
                 <form onSubmit={saveEdit} className="space-y-4">
                   {editing.suggested && <p className="text-ink-muted">Suggested rewrite. Change anything, then Save. Cancel keeps the card as it was.</p>}

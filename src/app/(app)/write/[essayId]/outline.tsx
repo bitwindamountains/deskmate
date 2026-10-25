@@ -8,7 +8,7 @@ const FLAG: Record<NonNullable<OutlineLine['flag']>, string> = {
 export function Outline({ lines }: { lines: OutlineLine[] }) {
   return (
     <section aria-labelledby="outline-h" className="mt-8 max-w-prose space-y-3">
-      <h2 id="outline-h" className="text-xl font-bold">Paragraph outline</h2>
+      <h2 id="outline-h" className="hand text-2xl">Paragraph outline</h2>
       <ol className="space-y-2 [overflow-wrap:anywhere]">
         {lines.map((l) => (
           <li key={l.paragraph_index}>

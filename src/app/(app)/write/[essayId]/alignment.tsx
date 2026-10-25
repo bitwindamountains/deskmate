@@ -6,8 +6,8 @@ const LABEL: Record<AlignmentPart['status'], string> = { addressed: 'Covered', p
 export function Alignment({ parts }: { parts: AlignmentPart[] }) {
   return (
     <section aria-labelledby="alignment-h" className="space-y-3">
-      <h2 id="alignment-h" className="text-xl font-bold">What the assignment asks</h2>
-      <ul className="divide-y divide-line/40 rounded-xl border border-line bg-surface px-4 [overflow-wrap:anywhere]">
+      <h2 id="alignment-h" className="hand text-2xl">What the assignment asks</h2>
+      <ul className="divide-y divide-line/40 inlay px-4 [overflow-wrap:anywhere]">
         {parts.map((p, k) => (
           <li key={k} className="space-y-1 py-3">
             <p className="flex flex-wrap items-center gap-2">
