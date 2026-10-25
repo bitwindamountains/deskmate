@@ -1,57 +1,77 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 
-const sendEmailCode = vi.fn();
+const signIn = vi.fn();
+const signUp = vi.fn();
+const reset = vi.fn();
 vi.mock('@/app/login/actions', () => ({
   signInWithGoogle: vi.fn(),
-  sendEmailCode: (...a: unknown[]) => sendEmailCode(...a),
-  verifyEmailCode: vi.fn(),
+  signInWithPassword: (...a: unknown[]) => signIn(...a),
+  signUpWithPassword: (...a: unknown[]) => signUp(...a),
+  sendPasswordReset: (...a: unknown[]) => reset(...a),
 }));
 
 import { LoginForm } from '@/app/login/login-form';
 
 afterEach(cleanup);
 
-test('renders Google button and email field with a label', () => {
+const fill = (email: string, password?: string) => {
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } });
+  if (password !== undefined) fireEvent.change(screen.getByLabelText('Password'), { target: { value: password } });
+};
+
+test('sign-in shows Google, labelled email and password fields, and the other two forms', () => {
   render(<LoginForm next="/today" />);
   expect(screen.getByRole('heading', { name: 'Sign in to Scholar' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
-  expect(screen.getByLabelText('Email')).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Email me a code' })).toBeTruthy();
+  expect(screen.getByLabelText('Email').getAttribute('autocomplete')).toBe('username');
+  expect(screen.getByLabelText('Password').getAttribute('autocomplete')).toBe('current-password');
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Create an account' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Forgot your password?' })).toBeTruthy();
 });
 
-test('shows the rate-limit message when sendEmailCode returns it', async () => {
-  sendEmailCode.mockResolvedValue({ step: 'email', error: 'Too many attempts. Wait a minute, then try again.' });
+test('a failed sign-in ties the error to both fields', async () => {
+  signIn.mockResolvedValue({ mode: 'signin', email: 'a@b.co', error: "That email and password don't match." });
   render(<LoginForm next="/today" />);
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }));
+  fill('a@b.co', 'secret123');
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
   const alert = await waitFor(() => screen.getByRole('alert'));
-  expect(alert.textContent).toBe('Too many attempts. Wait a minute, then try again.');
+  expect(screen.getByLabelText('Email').getAttribute('aria-describedby')).toBe(alert.id);
+  expect(screen.getByLabelText('Password').getAttribute('aria-invalid')).toBe('true');
+  expect(screen.getByLabelText('Password').getAttribute('aria-describedby')).toBe(alert.id);
 });
 
-test('moves to the code step with a labelled field', async () => {
-  sendEmailCode.mockResolvedValue({ step: 'code', email: 'a@b.co' });
+test('creating an account asks for a new password and then says to check the email', async () => {
+  signUp.mockResolvedValue({ mode: 'signup', email: 'a@b.co', sent: true });
   render(<LoginForm next="/today" />);
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }));
-  await waitFor(() => screen.getByLabelText('Code from the email'));
+  fireEvent.click(screen.getByRole('button', { name: 'Create an account' }));
+  expect(screen.getByRole('heading', { name: 'Create your account' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Continue with Google' })).toBeNull();
+  const pw = screen.getByLabelText('Password');
+  expect(pw.getAttribute('autocomplete')).toBe('new-password');
+  expect(pw.getAttribute('minlength')).toBe('8');
+  expect(pw.getAttribute('aria-describedby')).toBe('password-hint');
+  fill('a@b.co', 'long enough');
+  fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+  await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/^Check your email: open the link we sent to a@b.co/));
+  expect(signUp.mock.calls[0][1].get('mode')).toBe('signup');
 });
 
-test('error ties to the email and code inputs via aria-invalid/aria-describedby', async () => {
-  sendEmailCode.mockResolvedValue({ step: 'email', error: 'Nope' });
+test('forgot password sends a reset link without saying whether the account exists', async () => {
+  reset.mockResolvedValue({ mode: 'forgot', email: 'a@b.co', sent: true });
   render(<LoginForm next="/today" />);
-  expect(screen.getByLabelText('Email').getAttribute('aria-invalid')).toBeNull();
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }));
-  const alert = await waitFor(() => screen.getByRole('alert'));
-  const email = screen.getByLabelText('Email');
-  expect(email.getAttribute('aria-invalid')).toBe('true');
-  expect(alert.id).toBeTruthy();
-  expect(email.getAttribute('aria-describedby')).toBe(alert.id);
+  fireEvent.click(screen.getByRole('button', { name: 'Forgot your password?' }));
+  expect(screen.queryByLabelText('Password')).toBeNull();
+  fill('a@b.co');
+  fireEvent.click(screen.getByRole('button', { name: 'Email me a reset link' }));
+  await waitFor(() => expect(screen.getByRole('status').textContent).toBe('If a@b.co has a Scholar account, we sent it a link to set a new password.'));
+  fireEvent.click(screen.getByRole('button', { name: 'Back to sign in' }));
+  expect(screen.getByRole('heading', { name: 'Sign in to Scholar' })).toBeTruthy();
 });
 
 test('initial error also ties to the email input', () => {
-  render(<LoginForm next="/today" initialError="Bad code" />);
+  render(<LoginForm next="/today" initialError="We couldn't finish signing you in." />);
   expect(screen.getByLabelText('Email').getAttribute('aria-describedby')).toBe(screen.getByRole('alert').id);
 });
 

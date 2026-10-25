@@ -24,12 +24,12 @@ Target: Vercel Hobby (free), with the existing shared Supabase project. The owne
    - Add `https://<your-domain>/auth/callback` to **Redirect URLs**. Add `https://*-<team>.vercel.app/auth/callback` too if you want sign-in on preview deploys.
    - Do **not** change **Site URL**: the other apps on this project rely on it. Scholar always passes its own `redirectTo`.
 5. **Google sign-in.** In the Google Cloud OAuth client, the authorized redirect URI is Supabase's (`https://<project-ref>.supabase.co/auth/v1/callback`), which doesn't change. Nothing to add for the new domain unless the consent screen lists authorized domains; then add it there.
-6. **Email codes.** Supabase's built-in email sender is for testing and allows only a few emails an hour across the whole project. Before real students sign in with email, set a custom SMTP sender (Dashboard → Authentication → Emails → SMTP). A free-tier transactional email service is enough for a beta.
+6. **Email and password.** Students sign in with a password; email is sent only to confirm a new account and for a password reset. Both links come back through `/auth/callback`, so the Redirect URLs entry above covers them. Supabase's built-in email sender is for testing and allows only a few emails an hour across the whole project; before real students sign up, set a custom SMTP sender (Dashboard → Authentication → Emails → SMTP). A free-tier transactional email service is enough for a beta. Leave **Confirm email** on (Authentication → Providers → Email): Scholar relies on it to prove the address belongs to the student.
 7. **Function time limit.** Essay analysis makes several LLM calls and can take tens of seconds. In Vercel → Settings → Functions, check the max duration is at least 60 seconds.
 
 ## After the first deploy
 
-- Sign in with Google and with an email code; open Today, Study, Write and Progress.
+- Sign in with Google; create an account with email and password, confirm it from the email, and sign in; try "Forgot your password?". Open Today, Study, Write and Progress.
 - Run one essay check and one card review to confirm the LLM keys work.
 - Check that the PWA installs and that the time zone counts match your local day.
 - Run the Supabase advisors (security and performance) once more.
