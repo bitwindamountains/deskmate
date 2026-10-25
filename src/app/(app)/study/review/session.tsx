@@ -423,7 +423,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
             </div>
           </form>
         ) : checked && (
-          <div className="grid gap-4 md:grid-cols-2">
+          // The card turns over to show its back.
+          <div className="flip-in grid gap-4 md:grid-cols-2">
             {checked.answer !== null && (
               <div>
                 <h3 className="text-sm font-bold text-ink-muted">Your answer</h3>

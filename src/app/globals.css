@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Tokens: see DESIGN.md (Mixtape J-Card). Ballpoint blue on white inlay stock, one printed accent (brand-stripe red).
+/* Tokens: see DESIGN.md (The Study Desk). Ballpoint blue on white card stock, one printed accent (brand-stripe red), one marker (lime highlighter).
    Light is the default; dark follows the OS. */
 :root {
   color-scheme: light dark;
@@ -20,6 +20,7 @@
   --focus: #1e3a8a;        /* focus is ink, drawn as a doubled rule: red stays for the current place */
   --danger: #9b1c1c;
   --selection: #d5ddf0;    /* a faded-ballpoint wash */
+  --highlight: rgb(196 238 64 / 0.62); /* lime highlighter, as in the app icon: ink stays 7:1+ through it */
   /* Paper fibre: fractal noise in ballpoint blue at a few percent, the stock's own grain. Decoration only. */
   --fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.23 0 0 0 0 0.54 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
   /* Draft Coach layer highlights, text is --ink (>= 7:1). Each also carries a text label: colour is never the only signal. */
@@ -54,6 +55,7 @@
     --focus: #e6eaf8;
     --danger: #fca5a5;
     --selection: #2b3a7a;
+    --highlight: rgb(150 190 30 / 0.38);
     --fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.92 0 0 0 0 0.97 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
     --layer-global: #1e3a66;
     --layer-paragraph: #4a3512;
@@ -67,7 +69,7 @@
   }
 }
 
-/* J-card corners: a cut card, not a pill. Every rounded-lg/xl panel in the app takes these. */
+/* Index-card corners: a cut card, not a pill. Every rounded-lg/xl panel in the app takes these. */
 @theme {
   --radius-lg: 0.25rem;
   --radius-xl: 0.375rem;
@@ -127,10 +129,10 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
     display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
     padding: 0.5rem 1.25rem; border: 1.5px solid var(--ink); border-radius: 0.25rem; font-weight: 700; color: var(--ink);
     transition: background-color 150ms var(--ease-out), background-size 220ms var(--ease-out), color 150ms var(--ease-out), transform 100ms var(--ease-out);
-    /* Hover fills the key from the left, the way the tape bar fills. */
+    /* Hover fills the button from the left with a faint ink wash. */
     background-image: linear-gradient(color-mix(in srgb, var(--ink) 10%, transparent), color-mix(in srgb, var(--ink) 10%, transparent)); background-size: 0 100%; background-repeat: no-repeat;
   }
-  /* Pressed like a key on a tape deck: one pixel down, back on release. */
+  /* Pressed like a key: one pixel down, back on release. */
   .btn:active:not(:disabled):not([aria-disabled='true']) { transform: translateY(1px); }
   .btn:hover:not(:disabled):not([aria-disabled='true']) { background-size: 100% 100%; }
   .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
@@ -154,33 +156,37 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   a.inlay:focus-visible { outline: 4px double var(--focus); outline-offset: 2px; }
   .field::placeholder { color: var(--ink-muted); }
   .field:focus-visible { outline-offset: 1px; }
-  /* Hand-lettered block caps, like the J-card's side heads: headings only, never running text. */
+  /* Hand-lettered block caps, like a heading at the top of your notes: headings only, never running text. */
   .hand { font-family: var(--font-patrick), var(--font-atkinson), sans-serif; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 400;
     -webkit-text-stroke: 0.035em currentColor; } /* a pressed ballpoint: the face ships one thin weight */
-  /* The inlay: white stock in a 1.5px ink frame. Ruling is drawn per row (.ruled), like a tracklist, so it never cuts text. */
+  /* An index card: white stock in a 1.5px ink frame. Ruling is drawn per row (.ruled), so it never cuts text. */
   .inlay { background-color: var(--surface); border: 1.5px solid var(--ink); border-radius: 0.375rem; }
   .ruled { border-bottom: 1px solid var(--rule); }
-  /* Today's "press play": the side letters stamp in, side A fills, side B spools after it while the reels turn,
-     then everything stops. Content is visible by default; reduced motion lands on the final frame. */
-  .tape-fill { animation: tape-fill 700ms var(--ease-out) both; transform-origin: left; }
-  .tape-fill-b { animation: tape-fill 700ms var(--ease-out) 450ms both, tape-spool 1150ms linear both; transform-origin: left; }
-  @keyframes tape-fill { from { transform: scaleX(0); } }
-  @keyframes tape-spool { from { background-position: -40px 0; } }
-  .reel { animation: reel-turn 1150ms cubic-bezier(0.3, 0, 0.2, 1) both; transform-box: fill-box; transform-origin: center; }
-  @keyframes reel-turn { from { transform: rotate(-540deg); } }
-  /* The background cassette plays as a page opens: hubs turn, tape moves from the left pack to the right. */
-  .cassette-play .hub, .cassette-play .pack-l, .cassette-play .pack-r { transform-box: fill-box; transform-origin: center; }
-  .cassette-play .hub { animation: reel-turn 1600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
-  .cassette-play .pack-l { animation: pack-l 1600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
-  .cassette-play .pack-r { animation: pack-r 1600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
-  @keyframes pack-l { from { transform: scale(1.25); } }
-  @keyframes pack-r { from { transform: scale(0.7); } }
-  /* Pointing at Today's tape rewinds the reels; leaving it plays them forward again. */
-  .tape-deck:hover .reel { animation-name: reel-rewind; animation-duration: 900ms; }
-  @keyframes reel-rewind { from { transform: rotate(540deg); } }
+  /* Draws something in from the left: a rule, a mark, a highlighter stroke. */
+  @keyframes draw-x { from { transform: scaleX(0); } }
+  /* A highlighter stroke: a translucent lime swipe with uneven ends, laid on left to right (Today's time, the mastery bars). */
+  .hl { background: var(--highlight); border-radius: 2px 7px 3px 6px / 4px 3px 6px 3px; transform-origin: left;
+    animation: draw-x 520ms cubic-bezier(0.5, 0, 0.3, 1) both; }
+  .hl-2 { animation-delay: 380ms; opacity: 0.55; }
+  /* A score or a result pressed onto the card like a rubber stamp. */
   .stamp { display: inline-block; animation: stamp 260ms var(--ease-out) both; }
-  .stamp-b { animation-delay: 120ms; }
   @keyframes stamp { from { transform: scale(1.35) rotate(-8deg); opacity: 0; } }
+  /* Revealing an answer turns the index card over: it flips up from its top edge. */
+  .flip-in { transform-origin: top; animation: flip-in 380ms var(--ease-out) both; }
+  @keyframes flip-in { from { transform: perspective(900px) rotateX(-80deg); opacity: 0; } }
+  /* The index cards on the desk: dealt into a loose fan as a page opens, then still. */
+  .deal > * { transform-box: fill-box; transform-origin: 50% 100%; animation: deal 560ms var(--ease-out) both; }
+  .deal > :nth-child(2) { animation-delay: 90ms; } .deal > :nth-child(3) { animation-delay: 180ms; }
+  @keyframes deal { from { transform: translateY(-24px) rotate(0deg); opacity: 0; } }
+  /* End of a review: the cards just reviewed square up into a pile, then a pen tick is drawn. */
+  .pile > rect { transform-box: fill-box; transform-origin: center; animation: square-up 420ms var(--ease-out) both; }
+  @keyframes square-up { from { transform: translate(var(--from-x), -18px) rotate(var(--from-r)); opacity: 0; } }
+  .tick { stroke-dasharray: 60; stroke-dashoffset: 60; animation: tick 360ms var(--ease-out) both; }
+  @keyframes tick { to { stroke-dashoffset: 0; } }
+  /* Pointing at a feedback card lays a highlighter stroke over its passage in the essay. */
+  mark[id^='hl-'] { background-image: linear-gradient(var(--highlight), var(--highlight)); background-size: 0 100%;
+    background-repeat: no-repeat; transition: background-size 320ms var(--ease-out); }
+  mark[id^='hl-'][data-linked] { background-size: 100% 100%; }
   /* A card slides into view like an inlay pushed into its case: revealed from the left edge. */
   .card-in { animation: card-in 280ms var(--ease-out) both; }
   @keyframes card-in { from { clip-path: inset(0 100% 0 0); transform: translateX(-10px); } to { clip-path: inset(0 0 0 0); } }
@@ -194,9 +200,9 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   .hand-write { display: inline-block; animation: hand-write 560ms cubic-bezier(0.4, 0, 0.6, 1) both; }
   @keyframes hand-write { from { clip-path: inset(-4px 100% -4px -4px); } to { clip-path: inset(-4px -4px -4px -4px); } }
   .rule-draw::after { content: ''; position: absolute; inset-inline: 0; bottom: -5px; height: 5px;
-    border-block: 1.5px solid var(--ink); transform-origin: left; animation: tape-fill 420ms var(--ease-out) 260ms both; }
+    border-block: 1.5px solid var(--ink); transform-origin: left; animation: draw-x 420ms var(--ease-out) 260ms both; }
   /* The current tab's red mark, written in as the page opens. */
-  .mark-in { transform-origin: left; animation: tape-fill 240ms var(--ease-out) 120ms both; }
+  .mark-in { transform-origin: left; animation: draw-x 240ms var(--ease-out) 120ms both; }
   /* A tracklist: rows are written in one after another, the delay capped at the eighth row. */
   .track-in > * { animation: track-in 260ms var(--ease-out) both; }
   .track-in > :nth-child(2) { animation-delay: 45ms; } .track-in > :nth-child(3) { animation-delay: 90ms; }
@@ -204,7 +210,7 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   .track-in > :nth-child(6) { animation-delay: 225ms; } .track-in > :nth-child(7) { animation-delay: 270ms; }
   .track-in > :nth-child(n + 8) { animation-delay: 315ms; }
   @keyframes track-in { from { opacity: 0; transform: translateX(-6px); } }
-  /* The printed brand stripe: three red bars, the J-card's only printed colour. */
+  /* The printed brand stripe: three red bars, the only printed colour. */
   .stripe { display: inline-block; width: 1.25rem; height: 1rem; flex-shrink: 0;
     background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); }
   .error { color: var(--danger); font-weight: 700; }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { CassetteHero } from '@/components/cassette';
+import { CardStackHero } from '@/components/card-stack';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/lib/auth/password';
 import { sendPasswordReset, signInWithGoogle, signInWithPassword, signUpWithPassword, type LoginMode, type LoginState } from './actions';
 
@@ -22,7 +22,7 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
 
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
-      <CassetteHero />
+      <CardStackHero />
       <h1 key={mode} className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{TITLE[mode]}</span></h1>
       {notice && <p role="status">{notice}</p>}
       {shown.error && <p id="login-err" role="alert" className="error">{shown.error}</p>}
