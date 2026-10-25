@@ -118,7 +118,7 @@ export function TodayPlan({ decks, cards, minutes, newIntroducedToday, now, essa
             <p className="flex justify-between gap-4 text-sm"><span>Today&apos;s tape</span>
               <span className="font-bold tabular-nums">{[reviewMin > 0 && `A ~${reviewMin}`, writeMin > 0 && `B ~${writeMin}`].filter(Boolean).join(' · ')} of {minutes} min</span></p>
             {/* The tape: side A solid ink, side B hatched. The sentence above carries the same facts. */}
-            <div aria-hidden="true" className="mt-2 flex items-center gap-2">
+            <div aria-hidden="true" className="tape-deck mt-2 flex items-center gap-2">
               <Reel />
               <div className="flex h-2.5 flex-1 border border-ink">
                 {reviewMin > 0 && <div className="tape-fill h-full bg-ink" style={{ width: pct(reviewMin) }} />}
