@@ -37,8 +37,8 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
             <p>We sent a code to {state.email}.</p>
             <input type="hidden" name="email" value={state.email} />
             <div>
-              <label htmlFor="token" className="mb-1 block">6-digit code</label>
-              <input id="token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required className={input} {...bad} />
+              <label htmlFor="token" className="mb-1 block">Code from the email</label>
+              <input id="token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} required className={input} {...bad} />
             </div>
           </>
         )}
