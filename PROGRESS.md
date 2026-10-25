@@ -3,7 +3,7 @@
 Handoff for the next session. Update it at the end of each session. Last updated 2026-10-25.
 
 ## State
-- `main` has everything through PR #48. PR #38 (2026-10-25): the sign-in code field takes 6–8 digits, since Supabase can send longer codes. PR #18 removed feedback translation and the first-language question (English only), and PR #20 dropped their schema (`scholar.item_translations` and `profiles.first_language`; both were empty). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 597/597 unit tests, 190/190 DB tests, typecheck and the production build pass.
+- `main` has everything through PR #48. PR #38 (2026-10-25): the sign-in code field takes 6–8 digits, since Supabase can send longer codes. PR #18 removed feedback translation and the first-language question (English only), and PR #20 dropped their schema (`scholar.item_translations` and `profiles.first_language`; both were empty). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 605/605 unit tests, 190/190 DB tests, typecheck and the production build pass.
 - PR #26 (2026-10-24, plan and rulings: `docs/superpowers/plans/2026-10-24-small-gaps.md`) closed the small gaps: limit messages say how long until they reset instead of "midnight UTC"; Recall imports Word (.docx) files; problem reports keep a copy of the reported text (`problem_reports.snapshot`, filled in by a database trigger so it can't be faked).
 - PR #28 (second completeness review, against the brief; plan and rulings: `docs/superpowers/plans/2026-10-24-brief-gaps.md`): Today's empty state offers both tools; non-English essays are refused before any AI call; a public `/privacy` notice (**owner reviews the wording**); math renders in cards (KaTeX); new cards per day and target retention are settings; import offers Fewer/Standard/More cards, and generation learns from the student's discards; triage has "Improve this card". Essays stay capped at 2,000 words (ruling: Groq's free tier allows 8,000 tokens a minute). Reviewed with `/code-review high --fix`; findings fixed or ruled on in the plan. 
 - PR #30 (third completeness review: screens, states, pipelines, metrics; plan: `docs/superpowers/plans/2026-10-24-round3-gaps.md`): swipe in triage; Top 5 after three priorities addressed in a row (J5); growth snapshot on Write; hints start at 2 for a recurring weakness (J7); "Suggest a rewrite" in the deck editor; weekly activity on Today; `docs/metrics.sql` (Part F queries, all checked against the database); a poem submitted as an essay asks first; students can score essays against their own rubric; import can choose card types. Reviewed with `/code-review high --fix`; findings fixed or ruled on in the plan. 
@@ -20,7 +20,7 @@ Handoff for the next session. Update it at the end of each session. Last updated
 - PR #48 ("The Study Desk", owner choice 2026-10-25: the mixtape felt misleading): the theme keeps ballpoint, card stock and hand headings but drops the cassette metaphor. Today is one index card (Reviews, Essays) with the day's minutes in lime highlighter; the background is a fanned stack of index cards dealt as each page opens; revealing an answer flips the card; triage cards follow the finger and fly off when sorted; the end of a review squares the reviewed cards into a pile with a pen tick; pointing at a feedback card highlights its passage in the essay; mastery bars are highlighter strokes. `DESIGN.md` rewritten for it; `.impeccable/design.json` still describes the old theme.
 - All migrations through `20261025120000_scholar_review_formats.sql` are applied (2026-10-25), and the advisors show nothing for `scholar`.
 - `20261024130000_scholar_anon_ping.sql` grants anon `usage` on schema `scholar` so the keep-alive cron can call `ping()`. Anon has no table or column grants there and `ping` is its only executable function, so **every new scholar function must keep revoking execute from public**.
-- `graphify-out/` (local, gitignored) was rebuilt on 2026-10-24, and git hooks rebuild it after each commit (code only).
+- `graphify-out/` (local, gitignored) was updated on 2026-10-25 after PR #48, and git hooks rebuild it after each commit (code only). The last doc pass read only parts of `ai-learning-platform-brief.md` (Parts A-C by headings), so its older nodes were kept; a full re-read would refresh them.
 
 ## What's built
 - **Draft Coach**:
@@ -46,6 +46,8 @@ Handoff for the next session. Update it at the end of each session. Last updated
   - "Made by AI from your notes" on generated cards, and card generations left shown before importing;
   - course goals (matched on the device) and prerequisites with suggestions when a concept keeps being missed.
 - **Shared**:
+  - sign-in with email + password (8+ characters, one email confirmation per account, reset by emailed link at `/reset-password`) or Google;
+  - the "Study Desk" design (`DESIGN.md`): ballpoint ink on card stock, hand headings, a lime highlighter, an index-card stack in the background, card flip in review, swipe physics in triage, an end-of-review pile, and essay passages highlighted from their feedback card;
   - Profile → "Your data": download everything as one JSON file (built in the browser through RLS), or delete all Scholar data (typed confirmation, clears the device, signs out);
   - "Report a problem" in the review session and on each feedback card (`scholar.problem_reports`; the owner reads them with SQL);
   - a daily Vercel cron to `/api/keep-alive`, so the free Supabase project doesn't pause;
@@ -68,10 +70,18 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
 2. **Waiting on the owner:**
    - tune `GOAL_MATCH = 0.5` (`src/review/goals.ts`) once real course material exists;
    - import a real deck exported from current Anki (WAL mode and multi-frame zstd are unverified);
-   - deploy per `docs/deploy.md`, including custom SMTP for sign-in emails; after deploying, check `/api/keep-alive` answers `{"ok":true}` and the cron shows in Vercel;
+   - deploy per `docs/deploy.md`, including custom SMTP for the account-confirmation and password-reset emails, with **Confirm email** left on; after deploying, check `/api/keep-alive` answers `{"ok":true}` and the cron shows in Vercel;
    - review the wording of `/privacy` (the brief recommends a legal review before launch), and add a contact address for removing a sign-in;
    - try "Your data", "Report a problem", the Word import, math in cards and "Improve this card" in a browser (not checked yet);
-   - get feedback from beta students before new features.
+   - get feedback from beta students before new features;
+   - try "Create an account" and "Forgot your password?" with a real address (each sends an email, so neither was tried live);
+   - decide on Supabase's project-wide **Secure password change** (would make `/reset-password` ask for a recent sign-in; it also affects the other apps on the project);
+   - three older `@example.test` users (2026-10-22 and 2026-10-24, not from this session) are still in `auth.users`; delete them if they aren't yours.
+3. **Design follow-ups (Study Desk):**
+   - review Write, Progress, Profile, triage, warm-up, practice test and onboarding under the new design, and dark mode everywhere (only Today was checked dark, before PR #48);
+   - check the essay highlighter link in a browser on an essay with feedback (covered by a unit test only), and the motion in Firefox and Safari;
+   - refresh `.impeccable/design.json` (it still describes the mixtape theme) with `/impeccable document`, and drop the two stale cream-palette ignores in `.impeccable/config.json`.
+4. **Code map:** `pip install "graphifyy[sql]"` would let `/graphify --update` map the migrations (they add nothing today).
 
 ## Gotchas
 - Browser-only libraries (pdf.js, sql.js) are aliased to `src/lib/server-stub.ts` in `next.config.ts` and must be loaded with a lazy `await import()`. A static import breaks the build.
@@ -81,5 +91,8 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
 - Browser QA:
   - run a production build on port 3200;
   - make a QA user with `node --env-file=.env.local --experimental-strip-types .superpowers/qa/session.mts`, using `@example.test` emails only;
+  - `@example.test` can't receive email, so to sign in through the form, give the QA user a password with `auth.admin.updateUserById` (service key, server-side script);
+  - in Playwright, wait for the sign-in error text itself, not `role=alert`: Next's route announcer is also an alert and matches at once;
   - delete the user and its token files afterwards.
+- `npm run test:db` can time out (15 s) when Supabase is slow (about 1.5 s a request on 2026-10-25); rerun the failed files on their own before suspecting the code.
 - There is no lint script. The checks are `npx tsc --noEmit`, `npm test` and `npm run build`; `npm run test:db` hits the real Supabase project.
