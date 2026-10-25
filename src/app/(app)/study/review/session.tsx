@@ -45,7 +45,7 @@ type Slip = { cardId: string; deckId: string; front: string; open: boolean };
 /** Shown above the next card after a missed "why" card: explaining it in a paragraph is the next step (C1). */
 function ExplainNote({ front }: { front: string }) {
   return (
-    <p className="rounded-xl border border-line bg-surface p-4">
+    <p className="inlay p-4">
       {`Still unsure about “${front}”? `}
       <Link href={writeHref(front, promptForWhy(front))} className="font-bold underline">Explain it in writing</Link>
     </p>
@@ -54,7 +54,7 @@ function ExplainNote({ front }: { front: string }) {
 
 function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
   return (
-    <div className="max-w-xl space-y-3 rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+    <div className="max-w-xl space-y-3 inlay p-4 [overflow-wrap:anywhere]">
       <p className="font-bold">“{slip.front}” keeps slipping. Want a different way in?</p>
       {slip.open ? <CardHelpPanel cardId={slip.cardId} deckId={slip.deckId} /> : <button type="button" className="btn" onClick={onOpen}>Get help</button>}
     </div>
@@ -63,7 +63,7 @@ function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
 
 function SureNote({ front, quote, example }: { front: string; quote: string; example?: boolean }) {
   return (
-    <div role="status" className="max-w-xl rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+    <div role="status" className="max-w-xl inlay p-4 [overflow-wrap:anywhere]">
       <p className="font-bold">You felt sure about “{front}”, so it&apos;s worth a second look.</p>
       {quote && <p className="mt-1 text-ink-muted">{example ? 'Example' : 'From your notes'}: {quote}</p>}
     </div>
@@ -305,7 +305,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   if (!queue.length) {
     const next = nextReview(all, new Date());
     return (
-      <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+      <section className="max-w-prose inlay p-6">
         <h2 className="text-xl font-bold text-balance">Nothing to review right now.</h2>
         {next && <p className="mt-2 text-ink-muted">Next review: {next.label}, about {next.count} {next.count === 1 ? 'card' : 'cards'}.</p>}
         <Link href="/study" className="btn mt-6">Back to Study</Link>
@@ -331,13 +331,13 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-bold text-ink-muted">Card {i + 1} of {queue.length}</p>
           <button type="button" role="switch" aria-checked={mix} onClick={toggleMix} className="inline-flex min-h-11 items-center gap-2 text-sm">
-            <span aria-hidden="true" className={`inline-block h-5 w-9 rounded-full border border-line p-0.5 ${mix ? 'bg-ink' : 'bg-surface'}`}>
-              <span className={`block h-3.5 w-3.5 rounded-full ${mix ? 'translate-x-4 bg-ground' : 'bg-ink-muted'} transition-transform`} />
+            <span aria-hidden="true" className={`inline-block h-5 w-9 rounded-[3px] border-[1.5px] border-ink p-0.5 ${mix ? 'bg-ink' : 'bg-surface'}`}>
+              <span className={`block h-3 w-3.5 rounded-[2px] ${mix ? 'translate-x-4 bg-ground' : 'bg-ink-muted'} transition-transform`} />
             </span>
             Mix topics
           </button>
         </div>
-        <div aria-hidden="true" className="h-2 overflow-hidden rounded-full border border-line bg-surface">
+        <div aria-hidden="true" className="h-2.5 overflow-hidden border border-ink bg-surface">
           <div className="h-full bg-ink" style={{ width: `${(i / queue.length) * 100}%` }} />
         </div>
       </div>

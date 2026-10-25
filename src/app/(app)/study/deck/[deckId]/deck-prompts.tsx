@@ -7,7 +7,7 @@ export function DeckPrompts({ deckTitle, cards }: { deckTitle: string; cards: { 
   if (!prompts.length) return null;
   return (
     <section aria-labelledby="deck-prompts-h" className="mb-8 max-w-prose space-y-3">
-      <h2 id="deck-prompts-h" className="text-xl font-bold">Write about this deck</h2>
+      <h2 id="deck-prompts-h" className="hand text-2xl">Write about this deck</h2>
       <ul className="space-y-2 [overflow-wrap:anywhere]">
         {prompts.map((p) => <li key={p}><Link href={writeHref(deckTitle, p)} className="underline">{p}</Link></li>)}
       </ul>

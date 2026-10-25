@@ -25,7 +25,7 @@ function ChecksLeft({ n }: { n: number }) {
 function Snapshot({ strength, workingOn }: { strength: string | null; workingOn: string | null }) {
   if (!strength && !workingOn) return null;
   return (
-    <section aria-label="Your writing so far" className="mb-8 max-w-xl rounded-xl border border-line bg-surface p-5">
+    <section aria-label="Your writing so far" className="mb-8 max-w-xl inlay p-5">
       {strength && <p>Your strongest area: <strong>{strength}</strong>.</p>}
       {workingOn && <p>Working on: <strong>{workingOn}</strong>. <Link href="/progress" className="underline">See your progress</Link></p>}
     </section>
@@ -38,7 +38,7 @@ export function EssayList({ essays, checksLeft = 5, snapshot }: { essays: EssayS
     return (
       <>
         <ChecksLeft n={checksLeft} />
-        <section className="max-w-prose rounded-xl border border-line bg-surface p-6">
+        <section className="max-w-prose inlay p-6">
           <h2 className="text-xl font-bold text-balance">No essays yet</h2>
           <p className="mt-2 text-ink-muted">Paste a draft and get feedback that helps you revise it yourself.</p>
           <NewEssay className="mt-6" />
@@ -53,9 +53,9 @@ export function EssayList({ essays, checksLeft = 5, snapshot }: { essays: EssayS
       {snapshot && <Snapshot {...snapshot} />}
       <ul className="max-w-xl space-y-3">
         {essays.map((e) => (
-          <li key={e.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+          <li key={e.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 inlay p-5 [overflow-wrap:anywhere]">
             <Link href={`/write/${e.id}`} className="inline-flex min-h-11 items-center text-xl font-bold text-balance underline">{e.title}</Link>
-            <span className="rounded-full border border-line px-3 py-0.5 text-[0.875rem] text-ink-muted">{e.status}</span>
+            <span className="rounded-[3px] border border-line px-3 py-0.5 text-[0.875rem] text-ink-muted">{e.status}</span>
           </li>
         ))}
       </ul>

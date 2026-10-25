@@ -49,7 +49,7 @@ export function MasteryView({ sections }: { sections: MasterySection[] }) {
             {concepts.map((c) => (
               <li key={c.key}>
                 <Link href={reviewHref(c.deckId, c.key)}
-                  className="flex min-h-11 flex-col gap-1 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-ink">
+                  className="flex min-h-11 flex-col gap-1 inlay p-4 transition-colors hover:border-ink">
                   <span className="font-bold">{c.label}</span>
                   <span className="text-ink-muted">{plural(c.cards, 'card')}</span>
                   <span className="flex items-center gap-2">

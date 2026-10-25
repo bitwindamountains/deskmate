@@ -72,7 +72,7 @@ export function Transfer({ deckId }: { deckId: string }) {
 
   return (
     <section aria-labelledby="transfer-h" className="mb-8 max-w-prose space-y-3">
-      <h2 id="transfer-h" className="text-xl font-bold">Import and export</h2>
+      <h2 id="transfer-h" className="hand text-2xl">Import and export</h2>
       <div>
         <label htmlFor="csv-file" className="mb-1 block">Import cards from a CSV or Anki file</label>
         <input id="csv-file" type="file" accept=".csv,text/csv,.apkg" className="field" disabled={busy}

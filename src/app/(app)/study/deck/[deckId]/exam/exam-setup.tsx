@@ -51,8 +51,8 @@ export function ExamSetup({ deckId, examDate, cards, minutes }: { deckId: string
       </form>
 
       {exam && (
-        <section aria-labelledby="forecast-h" className="space-y-2 rounded-xl border border-line bg-surface p-5">
-          <h2 id="forecast-h" className="text-xl font-bold">Forecast</h2>
+        <section aria-labelledby="forecast-h" className="space-y-2 inlay p-5">
+          <h2 id="forecast-h" className="hand text-2xl">Forecast</h2>
           <p>
             If you stopped studying now, you&apos;d remember about {Math.round(readiness(cards, exam) * 100)}% of this deck on exam day.
             Each review raises it.

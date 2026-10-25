@@ -125,7 +125,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         {reading && <p className="mt-1" role="status">Reading your file…</p>}
       </div>
 
-      <details className="rounded-xl border border-line bg-surface p-4" open={!!initialPrompt}>
+      <details className="inlay p-4" open={!!initialPrompt}>
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Assignment details (optional)</summary>
         <div className="mt-4 space-y-5">
           <div>
@@ -162,7 +162,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
         </div>
       </details>
 
-      <details className="rounded-xl border border-line bg-surface p-4">
+      <details className="inlay p-4">
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">Rate it yourself first (optional)</summary>
         <div className="mt-4 space-y-5">
           <p className="text-ink-muted">After feedback, you&apos;ll see how your rating compares with the coach&apos;s.</p>
