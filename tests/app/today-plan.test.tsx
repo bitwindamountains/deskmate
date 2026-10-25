@@ -23,8 +23,8 @@ test('Today shows due count with minutes at 25 s per card and a Start link', () 
   plan([deck('bio', 'Biology')], Array.from({ length: 18 }, (_, i) => card(`c${i}`, state(`c${i}`, day(-1)))));
   expect(screen.getByText('18 cards')).toBeTruthy();
   expect(screen.getAllByText('~8 min').length).toBeGreaterThan(0);
-  // the tape: side A only, since there are no essays for side B
-  expect(screen.getByText('A ~8 of 20 min')).toBeTruthy();
+  // today's time: reviews only, since there are no essays to write
+  expect(screen.getByText('Reviews ~8 of 20 min')).toBeTruthy();
   expect(screen.queryByText(/min left/)).toBeNull();
   expect(screen.getByRole('link', { name: 'Start review' }).getAttribute('href')).toBe('/study/review');
 });
@@ -60,9 +60,9 @@ test('Today lists an essay with open priorities after reviews and before exams',
   plan([deck('bio', 'Biology', ymd(day(12)))], [card('a', state('a', day(-1)))], [{ id: 'e1', title: 'Climate', openTop3: 2 }]);
   const link = screen.getByRole('link', { name: 'Climate · 2 of 3 priorities open' });
   expect(link.getAttribute('href')).toBe('/write/e1');
-  // side B gets what review leaves of the 20 daily minutes, labelled as left, not estimated
+  // writing gets what review leaves of the 20 daily minutes, labelled as left, not estimated
   expect(screen.getByText('~19 min left')).toBeTruthy();
-  expect(screen.getByText('A ~1 · B ~19 of 20 min')).toBeTruthy();
+  expect(screen.getByText('Reviews ~1 · Writing ~19 of 20 min')).toBeTruthy();
   const order = [screen.getByRole('heading', { name: 'Reviews' }), link, screen.getByRole('heading', { name: 'Exams' })];
   for (let i = 1; i < order.length; i++) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(screen.queryByRole('link', { name: 'Keep revising' })).toBeNull();

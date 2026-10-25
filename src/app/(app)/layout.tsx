@@ -1,6 +1,6 @@
 import { userTimeZone } from '@/lib/time/user-zone';
 import { TimeZoneCookie } from '@/components/time-zone-cookie';
-import { CassetteGround } from '@/components/cassette';
+import { CardStackGround } from '@/components/card-stack';
 import '@fontsource/opendyslexic/400.css';
 import '@fontsource/opendyslexic/700.css';
 import { requireOnboardedUser } from '@/lib/profile/require';
@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         Skip to content
       </a>
       <TimeZoneCookie serverZone={zone} />
-      <CassetteGround />
+      <CardStackGround />
       {children}
     </div>
   );

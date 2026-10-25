@@ -155,6 +155,22 @@ test('clicking a highlight focuses its card; Show in essay focuses the highlight
   expect(within(card('g2')).getByText('Covers the whole essay')).toBeTruthy();
 });
 
+test('pointing at or tabbing into a feedback card highlights its passage in the essay', () => {
+  view();
+  const mark = document.getElementById('hl-g1')!;
+  fireEvent.mouseEnter(card('g1'));
+  expect(mark.hasAttribute('data-linked')).toBe(true);
+  fireEvent.mouseLeave(card('g1'));
+  expect(mark.hasAttribute('data-linked')).toBe(false);
+  // focus moving between controls inside the card keeps the link; leaving the card drops it
+  const [first, second] = within(card('g1')).getAllByRole('button');
+  fireEvent.focus(first);
+  fireEvent.blur(first, { relatedTarget: second });
+  expect(mark.hasAttribute('data-linked')).toBe(true);
+  fireEvent.blur(second, { relatedTarget: document.body });
+  expect(mark.hasAttribute('data-linked')).toBe(false);
+});
+
 test('Show next hint reveals level 1, then 2, then requests level 3', async () => {
   view();
   const c = card('g1');

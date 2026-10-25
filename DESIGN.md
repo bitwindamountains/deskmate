@@ -118,11 +118,11 @@ Mode: Operate (app UI). Tokens live in `src/app/globals.css`; this file is the r
 
 ## Overview
 
-**Creative North Star: "Mixtape J-Card"**
+**Creative North Star: "The Study Desk"**
 
-The app is the paper insert of a cassette you made for yourself. Ballpoint blue ink on white inlay stock, framed in ink rules, with one printed colour: the brand-stripe red. Today is the tape: side A review, side B writing, timed to fit the minutes the student set.
+The app is a student's desk: ruled index cards, a ballpoint pen and a lime highlighter. Ballpoint blue ink on white card stock, framed in ink rules, with one printed colour (the brand-stripe red) and one marker (the highlighter). Everything on the page is something a student actually uses to study; there is no metaphor to decode. Today is one index card: reviews, then writing, with the day's minutes marked in highlighter.
 
-Headings are hand-lettered block caps, like side heads written on a J-card. Everything the student reads stays in Atkinson Hyperlegible. Surfaces are flat: depth comes from ink rules, not shadows. Panels are cut card with near-square corners, not pills.
+Headings are hand-lettered block caps, like a heading written at the top of a page of notes. Everything the student reads stays in Atkinson Hyperlegible. Surfaces are flat: depth comes from ink rules, not shadows. Panels are cut card with near-square corners, not pills.
 
 Dark mode is the same card under a desk lamp at night: navy stock, pale ink, the stripe still red. Both schemes are first-class; dark follows the OS.
 
@@ -147,11 +147,12 @@ Two inks on one stock: ballpoint blue for everything, printed red for "you are h
 
 ### Neutral
 - **Desk Ground** (ground): page background, a cool off-white.
-- **Inlay Stock** (surface): panels and fields.
+- **Card Stock** (surface): panels and fields.
 - **Faded Ballpoint** (ink-muted): secondary text (6.6:1).
 - **Rule Line** (line): field borders and list dividers (at least 3:1).
-- **Printed Ruling** (rule): the inlay's faint ruling and the plain button hover. Decoration only, never a text colour.
+- **Printed Ruling** (rule): the faint per-row ruling. Decoration only, never a text colour.
 - **Ballpoint Wash** (selection): text selection.
+- **Lime Highlighter** (highlight, `rgb(196 238 64 / 0.62)`; dark `rgb(150 190 30 / 0.38)`): the one marker. Today's time, mastery strokes and an essay passage linked to its feedback card. Ink stays at least 7:1 through it in light, 6:1 in dark.
 - **Error Red** (danger): error messages, always with the "Error:" prefix.
 
 ### Kept from before
@@ -167,42 +168,42 @@ Draft Coach layer highlights (layer-global, layer-paragraph, layer-sentence, lay
 **Display Font:** Patrick Hand (with Atkinson Hyperlegible, sans-serif)
 **Body Font:** Atkinson Hyperlegible 400/700 (with system-ui, sans-serif)
 
-**Character:** A thin ballpoint hand for the headings you would write on a J-card, set against a face built to be read. Patrick Hand ships one weight, so headings get a 0.035em text stroke to look pressed.
+**Character:** A thin ballpoint hand for the headings you would write at the top of your notes, set against a face built to be read. Patrick Hand ships one weight, so headings get a 0.035em text stroke to look pressed.
 
 ### Hierarchy
-- **Display** (Patrick Hand 400, 2.25rem, 3rem from 768px, line-height 1.25, caps, 0.03em): the page h1, on a doubled ink rule (5px double) like a J-card headline.
-- **Headline** (Patrick Hand 400, 1.5rem, caps, 0.03em): section h2s; the tape's date line uses 1.25rem.
+- **Display** (Patrick Hand 400, 2.25rem, 3rem from 768px, line-height 1.25, caps, 0.03em): the page h1, on a doubled ink rule (5px double) like a heading ruled off in a notebook.
+- **Headline** (Patrick Hand 400, 1.5rem, caps, 0.03em): section h2s; Today's date line uses 1.25rem.
 - **Title** (Atkinson 700, 1.2rem): lead lines such as the card count or the open essay title. A review card's question is Atkinson 700 at 1.44rem.
 - **Body** (Atkinson 400, 1rem, line-height 1.5): all running text, max `max-w-prose`.
-- **Label** (Atkinson 400 or 700, 0.875rem): meta lines, nav tabs on phones, the tape figure. 0.75rem for chart axis days.
+- **Label** (Atkinson 400 or 700, 0.875rem): meta lines, nav tabs on phones, Today's time. 0.75rem for chart axis days.
 
 ### Named Rules
 **The Hand For Heads Rule.** `.hand` is for headings only, never for running text, labels, buttons or card content.
 
 **The Dyslexia Override Rule.** Under the dyslexia option (OpenDyslexic, line-height 1.6), `.hand` turns off: OpenDyslexic 700, no caps, no letter spacing, no stroke. Headings keep their size.
 
-**The Running Time Rule.** Tabular figures (`tabular-nums`) only on running times and the tape figure, where digits line up like a tracklist. Nowhere else.
+**The Running Time Rule.** Tabular figures (`tabular-nums`) only on running times and Today's time, where digits line up in a column. Nowhere else.
 
 ## Layout
 
 Mobile first. Page gutter 16px on phones, 40px from 768px. The main column is 48rem; two-column screens (the essay beside its feedback) widen to 72rem. On phones the bottom padding (7rem) clears the tab bar, which adds `env(safe-area-inset-bottom)`; the root viewport sets `viewport-fit=cover`.
 
-Each page is the nav, then one main landmark with one h1. Sections stack with 2rem between them. Panels pad 20px (24px for empty states). Inside the tape, rows pad 20px across and 16-20px down, and sides are split by 1.5px ink rules.
+Each page is the nav, then one main landmark with one h1. Sections stack with 2rem between them. Panels pad 20px (24px for empty states). Inside Today's card, rows pad 20px across and 16-20px down, and sections are split by 1.5px ink rules.
 
 Touch targets are at least 44px (`min-h-11`, `.btn`, `.field`); list rows at least 44-48px.
 
 ## Elevation & Depth
 
-Flat. There are no shadows. Depth comes from 1.5px ink frames around panels, 1.5px ink rules between sides, and the faint per-row ruling. The page ground is a shade off the white stock and carries a paper-fibre grain (`--fibre`: fractal noise in the ink's own hue at a few percent, light and dark), so panels read as clean inlay stock laid on a fibrous desk. The grain is decoration only and never sits behind text inside a panel.
+Flat. There are no shadows. Depth comes from 1.5px ink frames around panels, 1.5px ink rules between sections, and the faint per-row ruling. The page ground is a shade off the white stock and carries a paper-fibre grain (`--fibre`: fractal noise in the ink's own hue at a few percent, light and dark), so panels read as clean card stock laid on a fibrous desk. The grain is decoration only and never sits behind text inside a panel.
 
 ### Named Rules
 **The Ruled Row Rule.** Ruling is drawn per row as a 1px rule-colour bottom border (`.ruled`), like a tracklist. Never paint ruling as a background behind text.
 
 ## Shapes
 
-Cut card, not pill. Controls and fields have a 0.25rem corner; panels 0.375rem. Tailwind's `rounded-lg` and `rounded-xl` are overridden in `@theme` to those two values, so every existing panel takes the J-card corner. Borders are 1.5px: ink on panels and buttons, line on fields. The page h1 sits on a 5px double ink rule.
+Cut card, not pill. Controls and fields have a 0.25rem corner; panels 0.375rem. Tailwind's `rounded-lg` and `rounded-xl` are overridden in `@theme` to those two values, so every existing panel takes the index-card corner. Borders are 1.5px: ink on panels and buttons, line on fields. The page h1 sits on a 5px double ink rule.
 
-The brand stripe is the one recurring mark: three red bars, 3px wide with 3px gaps, in a 1.25rem by 1rem box. It sits beside "Scholar" in the spine, beside the current tab from 768px, and in the tape header.
+The brand stripe is the one recurring mark: three red bars, 3px wide with 3px gaps, in a 1.25rem by 1rem box. It sits beside "Scholar" in the side rail, beside the current tab from 768px, and in the header of Today's card.
 
 ## Components
 
@@ -230,19 +231,19 @@ Used app-wide for panels. Do not nest inlays.
 
 ### Navigation
 - **Phones:** bottom tab bar on rail white, 1.5px ink rule on top, five tabs. The current tab is red and bold with a 3px red bar along its top.
-- **From 768px:** the J-card spine, a 14rem sticky column with a 1.5px ink rule on its right, "Scholar" in hand caps with the stripe. The current tab is red and bold with the stripe before it. At the foot of the spine sits the inlay's label block: a boxed A | B in red hand caps over "Scholar · Side A / B", decoration only (`aria-hidden`).
+- **From 768px:** a side rail, a 14rem sticky column with a 1.5px ink rule on its right, "Scholar" in hand caps with the stripe. The current tab is red and bold with the stripe before it.
 - **Other tabs:** faded ballpoint; hover to full ink and underline. Colour transitions 150ms.
 
-### The Tape (signature, Today)
-The day's plan as a J-card inside one inlay.
+### Today's card (signature)
+The day's plan as one index card.
 - **Header:** the date in hand caps, "N min a day" and the stripe on the right, a 1.5px ink rule below.
-- **Sides:** "A Reviews" and "B Essays" as hand h2s, the red side letter hidden from screen readers and the word underlined at 1.5px. Side A shows the card count and "~N min" right-aligned on a ruled row, then Start review. Side B shows "~N min left".
-- **Side B time** is the daily minutes minus review, labelled "left". Never show it as an estimate.
-- **Foot:** "Today's tape" and "A ~x · B ~y of N min", then a 10px bar framed in 1px ink: side A solid ink, side B ink hatching at 135 degrees. The bar is hidden from screen readers; the sentence carries the facts.
-- **Motion ("press play"):** on load the A and B letters stamp in (260ms, B 120ms later), side A fills (700ms scaleX, ease-out), side B fills 450ms later while its hatching spools, and a cassette reel at each end of the bar turns for 1150ms, then everything stops. Nothing loops. Reduced motion (OS or profile) lands on the final frame with no delay.
+- **Reviews, then Essays:** hand h2s, the word underlined at 1.5px. Reviews shows the card count and "~N min" right-aligned on a ruled row, then Start review. Essays shows "~N min left".
+- **Writing time** is the daily minutes minus review, labelled "left". Never show it as an estimate.
+- **Foot:** "Today's time" and "Reviews ~x · Writing ~y of N min", then highlighter strokes along a 1px ruled line: reviews in full lime, writing paler after a small gap. The strokes are hidden from screen readers; the sentence carries the facts.
+- **Motion:** the strokes are laid on left to right (`.hl`, 520ms), writing 380ms after reviews, then stop. Reduced motion shows them laid.
 
 ### Progress bars
-Review progress uses the tape's bar language: 10px, 1px ink frame, solid ink fill, hidden from screen readers next to a "Card N of M" line.
+Review progress is a 10px bar: 1px ink frame, solid ink fill, hidden from screen readers next to a "Card N of M" line. Mastery strength bars are short highlighter strokes in the strength colours (`.hl`), drawn on as the map opens; "Not started" stays an empty dashed box.
 
 ### Ruled lists
 Exams and similar lists sit under a 1.5px ink rule, each row at least 48px with a 1px line rule below, actions as underlined links.
@@ -250,20 +251,21 @@ Exams and similar lists sit under a 1.5px ink rule, each row at least 48px with 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use ink for text, frames and the primary fill; red only for the current tab, side letters and stripe.
+- **Do** use ink for text, frames and the primary fill; red only for the current tab and the stripe.
 - **Do** draw focus as a 4px double ink outline with a 2px offset.
-- **Do** frame panels as inlays: white stock, 1.5px ink, 0.375rem corner.
+- **Do** frame panels as index cards (`.inlay`): white stock, 1.5px ink, 0.375rem corner.
 - **Do** draw ruling per row with `.ruled`.
 - **Do** set headings in `.hand` and everything read in Atkinson.
 - **Do** pair every colour signal with text, weight, shape or `aria-current`.
-- **Do** keep motion to state and one authored moment: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`; buttons press 1px down on `:active`; a new review or warm-up card slides in like an inlay pushed into its case (`.card-in`, 280ms clip-path reveal from the left); "Right." / "Not quite." get an ink underline drawn under them (`.ink-draw`, 320ms); Today's "press play" runs once. On every page the heading is written in by hand, left to right (`.hand-write`, a 560ms clip reveal of the words at a pen's steady pace), and its doubled ink rule is drawn under it (`.rule-draw`, 420ms, from 260ms) and the current tab's red mark is written in (`.mark-in`, 240ms); lists that arrive as lists (decks, essays, concepts, writing patterns, missed test questions) come in as a tracklist (`.track-in`, 260ms per row, 45ms apart, capped at the eighth row); triage and practice-test cards slide in like review cards; a practice-test score is stamped in with an ink underline. Selected test options ink their frame like review options. Background: the mixtape itself, a whole cassette drawn in 2.5px ballpoint line (label, tape window, reels, packs, screws), at 13-14% ink. It lies tilted in the right margin inside the app (1024px and up) and large behind the form on sign-in and onboarding; on every page open its hubs turn and the tape moves from the left pack to the right (1600ms), then it stops. Reduced motion shows it still. Interactions: a button hover fills the key from the left with a 10% ink tint (220ms), link underlines press from 1px to 2.5px, a linked inlay doubles its frame with an inset ink line, fields ink their border on hover and while typing, and pointing at Today's tape rewinds its reels. Honour reduced motion from the OS and the profile.
+- **Do** keep motion to state and one authored moment: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`; buttons press 1px down on `:active`; a new review or warm-up card slides in from the left (`.card-in`, 280ms clip-path reveal); revealing an answer turns the card over from its top edge (`.flip-in`, 380ms); "Right." / "Not quite." get an ink underline drawn under them (`.ink-draw`, 320ms); Today's highlighter strokes are laid on once. On every page the heading is written in by hand, left to right (`.hand-write`, a 560ms clip reveal of the words at a pen's steady pace), and its doubled ink rule is drawn under it (`.rule-draw`, 420ms, from 260ms) and the current tab's red mark is written in (`.mark-in`, 240ms); lists that arrive as lists (decks, essays, concepts, writing patterns, missed test questions) come in one row after another (`.track-in`, 260ms per row, 45ms apart, capped at the eighth row); triage and practice-test cards slide in like review cards; a practice-test score is stamped in with an ink underline. Selected test options ink their frame like review options. Background: three ruled index cards (`src/components/card-stack.tsx`), white stock in a 2px ink line at 22%, fanned on the desk in the right margin inside the app (1024px and up) and large beside the form on sign-in, onboarding and password reset. They are dealt into the fan as each page opens (`.deal`, 560ms, 90ms apart), then stay still. A finished review squares the cards just reviewed into a small pile and draws a pen tick over it (`.pile`, `.tick`). In triage, a dragged card follows the finger and tilts; a kept card flies off to the right and a discarded one to the left while the next slides in. Pointing at or tabbing into a feedback card lays a highlighter stroke over its passage in the essay (`mark[data-linked]`, 320ms). Interactions: a button hover fills the key from the left with a 10% ink tint (220ms), link underlines press from 1px to 2.5px, a linked inlay doubles its frame with an inset ink line, fields ink their border on hover and while typing. Honour reduced motion from the OS and the profile.
 
 ### Don't:
 - **Don't** use red for focus, carets, links, buttons or decoration.
 - **Don't** use Tailwind indigo; the dark primary is night ballpoint with white text.
 - **Don't** add shadows or soft, pill-round panels.
-- **Don't** put loose cassette parts (reels, hubs) on the page ground. The ground carries one object only: the whole cassette the J-card belongs to, drawn in ballpoint (`src/components/cassette.tsx`), which plays once as a page opens and then stops.
+- **Don't** put metaphors on the desk. Every object and motion is something a student uses to study (index cards, pen, highlighter); the ground carries only the card stack.
+- **Don't** use the highlighter for anything but marking: Today's time, mastery strength and linked essay passages.
 - **Don't** paint ruling behind text.
 - **Don't** set running text, labels or card content in the hand face.
-- **Don't** use tabular figures outside running times and the tape figure.
-- **Don't** present Side B time as an estimate.
+- **Don't** use tabular figures outside running times and Today's time.
+- **Don't** present writing time as an estimate.

@@ -11,6 +11,29 @@ import { CARD_TYPE_LABEL as TYPE_LABEL } from '@/lib/cards/types';
 
 const SWIPE_PX = 80; // a drag shorter than this is a tap or a scroll, not a swipe
 
+const stillMotion = (el: HTMLElement) =>
+  !el.animate || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !!el.closest('[data-reduced-motion="true"]');
+
+/** A card let go short of a swipe springs back to its place. */
+function settle(el: HTMLElement) {
+  el.style.transition = 'transform 240ms var(--ease-out)';
+  el.style.transform = '';
+}
+
+/** A sorted card leaves the desk: a copy of it flies off to the keep (right) or discard (left) side while the next
+ * card slides in. The copy is hidden from assistive tech and removed when it lands; reduced motion skips it. */
+function flyOff(el: HTMLElement, dir: 1 | -1) {
+  if (stillMotion(el)) return;
+  const r = el.getBoundingClientRect();
+  const ghost = el.cloneNode(true) as HTMLElement;
+  ghost.removeAttribute('aria-label'); ghost.classList.remove('card-in'); ghost.setAttribute('aria-hidden', 'true'); ghost.inert = true;
+  Object.assign(ghost.style, { position: 'fixed', left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, margin: '0', pointerEvents: 'none', zIndex: '30' });
+  document.body.append(ghost);
+  const done = () => ghost.remove();
+  ghost.animate([{ transform: el.style.transform || 'none' }, { transform: `translateX(${dir * 110}vw) rotate(${dir * 18}deg)`, opacity: 0.4 }],
+    { duration: 340, easing: 'cubic-bezier(0.4, 0, 1, 1)' }).finished.then(done, done);
+}
+
 type Reason = 'trivial' | 'wrong' | 'duplicate' | 'unclear';
 export type KnownCard = { id: string; front: string; back: string; embedding: number[] | null };
 type Problem = { kind: 'quota' | 'session' | 'retry'; message: string; at: number };
@@ -37,6 +60,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   const [improveError, setImproveError] = useState('');
   const [suggested, setSuggested] = useState(false); // the edit form holds the AI's rewrite, not the student's text
   const swipeFrom = useRef<number | null>(null); // B2.5 swipe: x where the press started
+  const cardEl = useRef<HTMLElement>(null);
   const [mode, setMode] = useState<'view' | 'reason' | 'edit'>('view');
   const [draft, setDraft] = useState({ front: '', back: '', error: '' });
 
@@ -71,6 +95,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
 
   function keep() {
     if (!current) return;
+    if (cardEl.current) flyOff(cardEl.current, 1);
     setMode('view'); setActionError('');
     move([current.id], 'kept');
     setSay(`Kept. ${left - 1} left.`);
@@ -79,6 +104,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
 
   function discard(reason?: Reason) {
     if (!current) return;
+    if (cardEl.current) flyOff(cardEl.current, -1);
     setMode('view'); setActionError('');
     move([current.id], 'discarded', reason);
     setSay(`Discarded. ${left - 1} left.`);
@@ -242,18 +268,28 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
       {cards.length > 0 && <p className="font-bold">{plural(left, 'card')} to review</p>}
 
       {current ? (
-        <section key={current.id} aria-label="Current card" className="card-in touch-pan-y space-y-4 inlay p-5 [overflow-wrap:anywhere]"
+        <section key={current.id} ref={cardEl} aria-label="Current card" className="card-in touch-pan-y space-y-4 inlay p-5 [overflow-wrap:anywhere]"
           // B2.5: swipe right keeps, left discards, the same as the arrow keys. touch-pan-y leaves vertical scrolling to the page.
           // Touch and pen only: a mouse drag here is selecting card text, and its click could press Keep a second time.
+          // While dragged, the card follows the finger and tilts; let go short of a swipe and it settles back.
           onPointerDown={(e) => { swipeFrom.current = mode !== 'edit' && e.isPrimary && e.pointerType !== 'mouse' ? e.clientX : null; }}
-          onPointerCancel={() => { swipeFrom.current = null; }}
+          onPointerMove={(e) => {
+            const from = swipeFrom.current;
+            if (from === null || stillMotion(e.currentTarget)) return;
+            const dx = e.clientX - from;
+            e.currentTarget.style.transition = 'none';
+            e.currentTarget.style.transform = `translateX(${dx}px) rotate(${dx / 24}deg)`;
+          }}
+          onPointerCancel={(e) => { swipeFrom.current = null; settle(e.currentTarget); }}
           onPointerUp={(e) => {
             const from = swipeFrom.current;
             swipeFrom.current = null;
             if (from === null || mode === 'edit') return;
             const dx = e.clientX - from;
+            // A sorted card flies off from where the finger let go; anything else settles back first.
             if (dx > SWIPE_PX) keep();
-            else if (dx < -SWIPE_PX) { if (mode === 'reason') discard(); else openReason(); }
+            else if (dx < -SWIPE_PX && mode === 'reason') discard();
+            else { settle(e.currentTarget); if (dx < -SWIPE_PX) openReason(); }
           }}>
           <p className="text-sm font-bold text-ink-muted">{TYPE_LABEL[current.type]}</p>
           {/* E2: every card here was made by AI from the student's notes. */}

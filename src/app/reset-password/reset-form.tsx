@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { CassetteHero } from '@/components/cassette';
+import { CardStackHero } from '@/components/card-stack';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/lib/auth/password';
 import { updatePassword } from '../login/actions';
 
@@ -9,7 +9,7 @@ export function ResetPasswordForm() {
   const [state, action, pending] = useActionState(updatePassword, {});
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
-      <CassetteHero />
+      <CardStackHero />
       <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">Choose a new password</span></h1>
       {state.error && <p id="reset-err" role="alert" className="error">{state.error}</p>}
       <form action={action} className="space-y-3">
