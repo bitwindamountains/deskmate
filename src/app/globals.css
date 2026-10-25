@@ -166,6 +166,19 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   .ink-draw { background: linear-gradient(var(--ink), var(--ink)) 0 100% / 100% 2px no-repeat; padding-bottom: 2px;
     animation: ink-draw 320ms var(--ease-out) both; }
   @keyframes ink-draw { from { background-size: 0 2px; } }
+  /* The page heading's doubled ink rule, drawn left to right like a pen stroke each time a page opens. */
+  .rule-draw { position: relative; margin-bottom: calc(1.5rem + 5px); }
+  .rule-draw::after { content: ''; position: absolute; inset-inline: 0; bottom: -5px; height: 5px;
+    border-block: 1.5px solid var(--ink); transform-origin: left; animation: tape-fill 420ms var(--ease-out) both; }
+  /* The current tab's red mark, written in as the page opens. */
+  .mark-in { transform-origin: left; animation: tape-fill 240ms var(--ease-out) 120ms both; }
+  /* A tracklist: rows are written in one after another, the delay capped at the eighth row. */
+  .track-in > * { animation: track-in 260ms var(--ease-out) both; }
+  .track-in > :nth-child(2) { animation-delay: 45ms; } .track-in > :nth-child(3) { animation-delay: 90ms; }
+  .track-in > :nth-child(4) { animation-delay: 135ms; } .track-in > :nth-child(5) { animation-delay: 180ms; }
+  .track-in > :nth-child(6) { animation-delay: 225ms; } .track-in > :nth-child(7) { animation-delay: 270ms; }
+  .track-in > :nth-child(n + 8) { animation-delay: 315ms; }
+  @keyframes track-in { from { opacity: 0; transform: translateX(-6px); } }
   /* The printed brand stripe: three red bars, the J-card's only printed colour. */
   .stripe { display: inline-block; width: 1.25rem; height: 1rem; flex-shrink: 0;
     background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); }

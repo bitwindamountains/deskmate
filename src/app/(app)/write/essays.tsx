@@ -51,7 +51,7 @@ export function EssayList({ essays, checksLeft = 5, snapshot }: { essays: EssayS
       <ChecksLeft n={checksLeft} />
       <NewEssay className="mb-8" />
       {snapshot && <Snapshot {...snapshot} />}
-      <ul className="max-w-xl space-y-3">
+      <ul className="track-in max-w-xl space-y-3">
         {essays.map((e) => (
           <li key={e.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 inlay p-5 [overflow-wrap:anywhere]">
             <Link href={`/write/${e.id}`} className="inline-flex min-h-11 items-center text-xl font-bold text-balance underline">{e.title}</Link>
