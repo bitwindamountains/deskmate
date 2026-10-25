@@ -350,3 +350,18 @@ test('a learning card with a key point in its answer is a blank: right suggests 
   expect(screen.queryByRole('button', { name: /^Easy/ })).toBeNull();
   expect(fetchMock).not.toHaveBeenCalled();
 });
+
+test('a strong basic card on every third review is reversed and self-rated with all four ratings', async () => {
+  const strong = { card_id: 'v', due: '2026-01-01T00:00:00.000Z', stability: 30, difficulty: 5, scheduled_days: 30, learning_steps: 0,
+    reps: 5, lapses: 0, state: 2, last_review: '2025-12-01T00:00:00.000Z' };
+  render(<ReviewSession cards={[card('v', { front: 'Where does glycolysis happen?', back: 'In the cytoplasm', state: strong })]}
+    minutes={20} newIntroducedToday={0} examDates={{}} />);
+  expect(await screen.findByRole('heading', { name: 'In the cytoplasm' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Show the question' }));
+  expect(await screen.findByText('Where does glycolysis happen?')).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Question' })).toBeTruthy();
+  fireEvent.click(rating('Easy'));
+  await waitFor(async () => expect((await outbox()).map((r) => [r.review.grade_source, r.review.final_rating])).toEqual([['reverse', 4]]));
+  expect(fetchMock).not.toHaveBeenCalled();
+});

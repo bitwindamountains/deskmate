@@ -37,6 +37,7 @@ const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
 const FORMAT_NOTE: Partial<Record<Format, string>> = {
   choice: 'Pick from the options first. It counts a bit less than recalling it.',
   blank: 'Fill in the missing part. It counts a bit less than recalling the whole answer.',
+  reverse: 'This is the answer. What was the question? Think of it, then show it.',
 };
 
 type Slip = { cardId: string; deckId: string; front: string; open: boolean };
@@ -154,6 +155,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     if (!current || phase !== 'answer') return;
     const answer = text;
     const ms = Date.now() - shownAt.current;
+    if (format === 'reverse') { flip(); return; }
     if (format === 'choice' || format === 'blank') {
       // Checked on the device: no grading call for either format.
       if (format === 'choice' && pick === null) return;
@@ -181,7 +183,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   }
 
   function flip() {
-    setChecked({ answer: null, source: 'self', score: null, hit: [], missed: [], feedback: null, suggested: null,
+    setChecked({ answer: null, source: format === 'reverse' ? 'reverse' : 'self', score: null, hit: [], missed: [], feedback: null, suggested: null,
       needsRegrade: false, unavailable: false, ms: Date.now() - shownAt.current });
     setPhase('rate');
   }
@@ -337,7 +339,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
           const reworded = mine?.question && !mine.original ? mine.question : null;
           return (
             <>
-              <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={reworded ?? current.front} /></h2>
+              <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={format === 'reverse' ? current.back : reworded ?? current.front} /></h2>
               {phase !== 'rate' && format === 'typed' && (
                 <div className="flex flex-wrap items-center gap-x-4 text-sm">
                   {reworded && <span className="text-ink-muted">Asked another way</span>}
@@ -378,7 +380,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
                   ))}
                 </div>
               </fieldset>
-            ) : format === 'blank' && blank ? (
+            ) : format === 'reverse' ? null : format === 'blank' && blank ? (
               <div>
                 <label htmlFor="blank" className="mb-1 block font-bold">Fill in the blank</label>
                 <p className="whitespace-pre-wrap">
@@ -399,8 +401,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
             </div>
             )}
             <div className="flex flex-wrap gap-3">
-              <button type="submit" className="btn btn-primary" disabled={phase === 'checking' || (format === 'choice' && pick === null)}>Check</button>
-              {format === 'typed'
+              {format !== 'reverse' && <button type="submit" className="btn btn-primary" disabled={phase === 'checking' || (format === 'choice' && pick === null)}>Check</button>}
+              {format === 'reverse' ? <button type="button" className="btn btn-primary" onClick={flip}>Show the question</button> : format === 'typed'
                 ? <button type="button" className="btn" disabled={phase === 'checking'} onClick={flip}>Show answer</button>
                 : <button type="button" className="btn" onClick={() => { setTypedFor(current.id); setText(''); }}>Type it instead</button>}
             </div>
@@ -414,8 +416,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
               </div>
             )}
             <div>
-              <h3 className="text-sm font-bold text-ink-muted">Answer</h3>
-              <p className="mt-1"><MathText text={current.back} /></p>
+              <h3 className="text-sm font-bold text-ink-muted">{format === 'reverse' ? 'Question' : 'Answer'}</h3>
+              <p className="mt-1"><MathText text={format === 'reverse' ? current.front : current.back} /></p>
             </div>
             <div className="space-y-2 md:col-span-2">
               <div className="flex flex-wrap gap-x-4">
