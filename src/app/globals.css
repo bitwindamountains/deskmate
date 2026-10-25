@@ -171,13 +171,6 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   /* Pointing at Today's tape rewinds the reels; leaving it plays them forward again. */
   .tape-deck:hover .reel { animation-name: reel-rewind; animation-duration: 900ms; }
   @keyframes reel-rewind { from { transform: rotate(540deg); } }
-  /* The ground's reels wind with the scroll: the student moves them, nothing turns on its own.
-     Without scroll timelines (or with reduced motion) they stand still. */
-  @supports (animation-timeline: scroll()) {
-    .ground-reel { animation: ground-wind linear both; animation-timeline: scroll(root); }
-    .ground-reel.reverse { animation-direction: reverse; }
-    @keyframes ground-wind { to { transform: rotate(720deg); } }
-  }
   .stamp { display: inline-block; animation: stamp 260ms var(--ease-out) both; }
   .stamp-b { animation-delay: 120ms; }
   @keyframes stamp { from { transform: scale(1.35) rotate(-8deg); opacity: 0; } }
@@ -188,10 +181,13 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   .ink-draw { background: linear-gradient(var(--ink), var(--ink)) 0 100% / 100% 2px no-repeat; padding-bottom: 2px;
     animation: ink-draw 320ms var(--ease-out) both; }
   @keyframes ink-draw { from { background-size: 0 2px; } }
-  /* The page heading's doubled ink rule, drawn left to right like a pen stroke each time a page opens. */
+  /* The page heading is written onto the inlay by hand, left to right at a pen's steady pace, then its doubled ink
+     rule is drawn under it. The clip sits on the words (.hand-write), so a short heading is written as slowly as a long one. */
   .rule-draw { position: relative; margin-bottom: calc(1.5rem + 5px); }
+  .hand-write { display: inline-block; animation: hand-write 560ms cubic-bezier(0.4, 0, 0.6, 1) both; }
+  @keyframes hand-write { from { clip-path: inset(-4px 100% -4px -4px); } to { clip-path: inset(-4px -4px -4px -4px); } }
   .rule-draw::after { content: ''; position: absolute; inset-inline: 0; bottom: -5px; height: 5px;
-    border-block: 1.5px solid var(--ink); transform-origin: left; animation: tape-fill 420ms var(--ease-out) both; }
+    border-block: 1.5px solid var(--ink); transform-origin: left; animation: tape-fill 420ms var(--ease-out) 260ms both; }
   /* The current tab's red mark, written in as the page opens. */
   .mark-in { transform-origin: left; animation: tape-fill 240ms var(--ease-out) 120ms both; }
   /* A tracklist: rows are written in one after another, the delay capped at the eighth row. */
@@ -210,9 +206,7 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important; }
-  .ground-reel { animation: none !important; }
 }
-[data-reduced-motion='true'] .ground-reel { animation: none !important; }
 [data-reduced-motion='true'] *, [data-reduced-motion='true'] *::before, [data-reduced-motion='true'] *::after {
   transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important;
 }

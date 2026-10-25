@@ -16,7 +16,7 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
 
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
-      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance">Sign in to Scholar</h1>
+      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">Sign in to Scholar</span></h1>
       {notice && <p role="status">{notice}</p>}
       {state.error && <p id="login-err" role="alert" className="error">{state.error}</p>}
 
