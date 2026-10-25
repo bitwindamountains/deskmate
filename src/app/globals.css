@@ -20,6 +20,8 @@
   --focus: #1e3a8a;        /* focus is ink, drawn as a doubled rule: red stays for the current place */
   --danger: #9b1c1c;
   --selection: #d5ddf0;    /* a faded-ballpoint wash */
+  /* Paper fibre: fractal noise in ballpoint blue at a few percent, the stock's own grain. Decoration only. */
+  --fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.23 0 0 0 0 0.54 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
   /* Draft Coach layer highlights, text is --ink (>= 7:1). Each also carries a text label: colour is never the only signal. */
   --layer-global: #dbe7ff;
   --layer-paragraph: #f6e3c4;
@@ -52,6 +54,7 @@
     --focus: #e6eaf8;
     --danger: #fca5a5;
     --selection: #2b3a7a;
+    --fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.92 0 0 0 0 0.97 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
     --layer-global: #1e3a66;
     --layer-paragraph: #4a3512;
     --layer-sentence: #4d2147;
@@ -99,7 +102,7 @@
 
 @layer base {
 body {
-  background: var(--ground);
+  background: var(--ground) var(--fibre);
   color: var(--ink);
   font-family: var(--font-sans);
   line-height: 1.5;
@@ -123,8 +126,10 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
     padding: 0.5rem 1.25rem; border: 1.5px solid var(--ink); border-radius: 0.25rem; font-weight: 700; color: var(--ink);
-    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 100ms var(--ease-out);
   }
+  /* Pressed like a key on a tape deck: one pixel down, back on release. */
+  .btn:active:not(:disabled):not([aria-disabled='true']) { transform: translateY(1px); }
   .btn:hover { background: var(--rule); }
   .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
   /* a .btn label around a visually hidden input (the confidence chips) carries that input's focus ring */
@@ -143,9 +148,24 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   /* The inlay: white stock in a 1.5px ink frame. Ruling is drawn per row (.ruled), like a tracklist, so it never cuts text. */
   .inlay { background-color: var(--surface); border: 1.5px solid var(--ink); border-radius: 0.375rem; }
   .ruled { border-bottom: 1px solid var(--rule); }
-  /* The tape fills once on load, from already-visible empty stock. */
-  .tape-fill { animation: tape-fill 900ms var(--ease-out) both; transform-origin: left; }
+  /* Today's "press play": the side letters stamp in, side A fills, side B spools after it while the reels turn,
+     then everything stops. Content is visible by default; reduced motion lands on the final frame. */
+  .tape-fill { animation: tape-fill 700ms var(--ease-out) both; transform-origin: left; }
+  .tape-fill-b { animation: tape-fill 700ms var(--ease-out) 450ms both, tape-spool 1150ms linear both; transform-origin: left; }
   @keyframes tape-fill { from { transform: scaleX(0); } }
+  @keyframes tape-spool { from { background-position: -40px 0; } }
+  .reel { animation: reel-turn 1150ms cubic-bezier(0.3, 0, 0.2, 1) both; transform-box: fill-box; transform-origin: center; }
+  @keyframes reel-turn { from { transform: rotate(-540deg); } }
+  .stamp { display: inline-block; animation: stamp 260ms var(--ease-out) both; }
+  .stamp-b { animation-delay: 120ms; }
+  @keyframes stamp { from { transform: scale(1.35) rotate(-8deg); opacity: 0; } }
+  /* A card slides into view like an inlay pushed into its case: revealed from the left edge. */
+  .card-in { animation: card-in 280ms var(--ease-out) both; }
+  @keyframes card-in { from { clip-path: inset(0 100% 0 0); transform: translateX(-10px); } to { clip-path: inset(0 0 0 0); } }
+  /* An ink underline drawn under a result ("Right." / "Not quite."). */
+  .ink-draw { background: linear-gradient(var(--ink), var(--ink)) 0 100% / 100% 2px no-repeat; padding-bottom: 2px;
+    animation: ink-draw 320ms var(--ease-out) both; }
+  @keyframes ink-draw { from { background-size: 0 2px; } }
   /* The printed brand stripe: three red bars, the J-card's only printed colour. */
   .stripe { display: inline-block; width: 1.25rem; height: 1rem; flex-shrink: 0;
     background: linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 6px, var(--accent) 6px 9px, transparent 9px 12px, var(--accent) 12px 15px, transparent 15px); }
@@ -154,10 +174,10 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important; }
 }
 [data-reduced-motion='true'] *, [data-reduced-motion='true'] *::before, [data-reduced-motion='true'] *::after {
-  transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important;
 }
 
 @layer base { input[type='checkbox'], input[type='radio'], progress { accent-color: var(--ink); } input[type='checkbox'], input[type='radio'] { width: 1.25rem; height: 1.25rem; } }

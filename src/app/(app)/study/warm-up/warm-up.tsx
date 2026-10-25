@@ -48,7 +48,7 @@ function TrueFalseCard({ item, onNext }: { item: TrueFalse; onNext: (right: numb
   const [said, setSaid] = useState<boolean | null>(null);
   const correct = said === item.isTrue;
   return (
-    <section aria-label="True or false" className="space-y-5 inlay p-5 [overflow-wrap:anywhere]">
+    <section aria-label="True or false" className="card-in space-y-5 inlay p-5 [overflow-wrap:anywhere]">
       <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={item.prompt} /></h2>
       <div>
         <h3 className="text-sm font-bold text-ink-muted">Answer</h3>
@@ -62,7 +62,7 @@ function TrueFalseCard({ item, onNext }: { item: TrueFalse; onNext: (right: numb
       ) : (
         <div className="space-y-3">
           <div role="status">
-            <p className="font-bold">{correct ? 'Right.' : 'Not quite.'}</p>
+            <p className="font-bold"><span className="ink-draw">{correct ? 'Right.' : 'Not quite.'}</span></p>
             {!item.isTrue && <p className="mt-1">The answer is: <MathText text={item.answer} /></p>}
           </div>
           <button type="button" className="btn btn-primary" autoFocus onClick={() => onNext(correct ? 1 : 0)}>Next</button>
@@ -96,7 +96,7 @@ function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) =
   }
 
   return (
-    <section aria-label="Match the answers" className="space-y-5 inlay p-5 [overflow-wrap:anywhere]">
+    <section aria-label="Match the answers" className="card-in space-y-5 inlay p-5 [overflow-wrap:anywhere]">
       <h2 className="text-[1.44rem] leading-snug font-bold text-balance">Match each question to its answer</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <div role="group" aria-label="Questions" className="grid content-start gap-2">
