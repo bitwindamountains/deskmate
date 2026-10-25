@@ -7,7 +7,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 - **Start here:** `PROGRESS.md` has the current state, open PRs, owner decisions and next steps. Update it at the end of each session.
 - Brief: `ai-learning-platform-brief.md`. Spec: `docs/superpowers/specs/2026-10-20-scholar-design.md`.
 - Plans, one per phase: `docs/superpowers/plans/`. Work task by task, tests first, one commit per task (the message is given in the plan). Each plan's Global Constraints and Review Focus apply.
-- UI follows `DESIGN.md` (tokens in `src/app/globals.css`). Product context is in `PRODUCT.md` (Impeccable).
+- UI follows `DESIGN.md` ("The Study Desk": index cards, ballpoint, a lime highlighter; tokens in `src/app/globals.css`). Every visual or motion element must be something a student actually uses to study, not a metaphor (owner, 2026-10-25). Product context is in `PRODUCT.md` (Impeccable).
 - `graphify-out/` is a code map (local only, gitignored). Keep it current: a post-commit hook rebuilds code changes on its own; after changing docs, plans, or other non-code files, run `/graphify --update` before ending the session.
 
 ## Scope (owner decisions)
@@ -28,6 +28,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 - Every table: RLS on; `revoke all ... from public, anon, authenticated`; explicit grants; `grant all ... to service_role`. Policies use `to authenticated` with `(select auth.uid()) = user_id`.
 - Privileged writes go through `scholar_private.*` functions: `security definer`, `set search_path = ''`, fully qualified names, an explicit ownership check, every input validated. Each has a `scholar.*` `security invoker` wrapper.
 - Server auth uses `supabase.auth.getClaims()`, never `getSession()`. Never authorize from `user_metadata`.
+- Sign-in is email + password (one email confirmation per account, reset by emailed link) or Google (brief Part K #16). The Supabase auth settings are project-wide and shared with other apps: don't change them.
 - `SUPABASE_SECRET_KEY` is used only in server code and tests, never in a `NEXT_PUBLIC_` variable.
 - Production LLM calls keep `requireNoTraining: true` (the router default). LLM calls are scarce: deterministic code, the device, and caches come first.
 - Before changing a prompt, model, or LLM setting, read `docs/superpowers/notes/2026-10-21-token-budget.md`. It lists what was measured, kept, and rejected. Re-run the eval after the change and add a row.
