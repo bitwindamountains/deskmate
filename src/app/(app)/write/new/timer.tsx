@@ -36,7 +36,7 @@ export function Timer({ minutes, startedAt, stoppedAt, onStop, onResume }: { min
   if (stoppedAt !== null) {
     const used = Math.max(1, minutesUsed(minutes, startedAt, stoppedAt)); // the same capped value that gets saved
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 inlay p-4">
         <p ref={stoppedRef} tabIndex={-1} role="status" className="font-bold outline-none">{`Stopped at ${used} ${used === 1 ? 'minute' : 'minutes'}`}</p>
         {/* Undoes a mistaken stop: the clock never paused, so it keeps counting from the original start. */}
         <button type="button" className="btn" onClick={() => { resumed.current = true; onResume(); }}>Resume the timer</button>
@@ -45,7 +45,7 @@ export function Timer({ minutes, startedAt, stoppedAt, onStop, onResume }: { min
   }
   const left = minutesLeft(minutes, startedAt, now);
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 inlay p-4">
       {left > 0 ? <p className="font-bold tabular-nums">{plural(left)}</p>
         : <p role="alert" className="font-bold">Time&apos;s up. Finish your sentence and get feedback.</p>}
       <button ref={stopRef} type="button" className="btn" onClick={onStop}>Stop the timer</button>

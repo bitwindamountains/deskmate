@@ -244,7 +244,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
         </div>
         {timed && <p className="mb-4 text-sm text-ink-muted">{timed.used !== null ? `Timed practice: written in ${timed.used} of ${timed.limit} minutes` : `Timed practice: ${timed.limit} minutes`}</p>}
         {editing ? <Editor essayId={essayId} content={content} /> : (
-          <div className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]">
+          <div className="max-w-prose space-y-4 inlay p-5 [overflow-wrap:anywhere]">
             {paragraphs.map((text, i) => {
               const dimmed = !!focus && focusPara !== null && i !== focusPara;
               return (
@@ -267,8 +267,8 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
 
       <section id="feedback" tabIndex={-1} aria-label="Feedback" className="min-w-0 space-y-8 outline-none">
         {analysis?.safety_concern && (
-          <section aria-labelledby="support-h" className="space-y-3 rounded-xl border border-line bg-surface p-5">
-            <h2 id="support-h" className="text-xl font-bold">Support</h2>
+          <section aria-labelledby="support-h" className="space-y-3 inlay p-5">
+            <h2 id="support-h" className="hand text-2xl">Support</h2>
             <p>It sounds like you&apos;re going through something hard. You don&apos;t have to handle it alone.</p>
             <ul className="space-y-1">
               <li>NCMH Crisis Hotline (Philippines), any time: <a href="tel:1553" className="font-bold underline">1553</a></li>
@@ -282,7 +282,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
           {running && <p className="text-ink-muted">{PROGRESS[running]}</p>}
         </div>
         {failed.map((l) => (
-          <div key={l} role="alert" className="space-y-2 rounded-xl border border-line bg-surface p-4">
+          <div key={l} role="alert" className="space-y-2 inlay p-4">
             <p className="text-sm font-bold">{LAYER_NAME[l]}</p>
             <p id={`failed-${l}`}>{layerState[l].message}</p>
             <button type="button" className="btn" aria-describedby={`failed-${l}`} onClick={() => void runLayer(l)}>Try again</button>
@@ -298,10 +298,10 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
             {offPrompt && <Alignment parts={alignment} />}
             {strengths.length > 0 && (
               <section aria-labelledby="strengths-h" className="space-y-3">
-                <h2 id="strengths-h" className="text-xl font-bold">Strengths</h2>
+                <h2 id="strengths-h" className="hand text-2xl">Strengths</h2>
                 <ul className="space-y-3">
                   {strengths.map((s, k) => (
-                    <li key={k} id={`card-strength-${k}`} tabIndex={-1} className="space-y-2 rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+                    <li key={k} id={`card-strength-${k}`} tabIndex={-1} className="space-y-2 inlay p-4 [overflow-wrap:anywhere]">
                       <p className="text-sm font-bold"><span className={`rounded-md px-2 py-0.5 ${LAYER_BG.strength}`}>{LAYER_LABEL.strength}</span></p>
                       <blockquote className="border-l-2 border-line pl-3 text-ink-muted">“{s.quote}”</blockquote>
                       <p>{s.why}</p>
@@ -316,7 +316,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
 
             {(top3.length > 0 || layerState.global.state === 'done') && (
               <section aria-labelledby="top-h" className="space-y-3">
-                <h2 id="top-h" className="text-xl font-bold">Top {topCount} priorities</h2>
+                <h2 id="top-h" className="hand text-2xl">Top {topCount} priorities</h2>
                 {top3.length > 0 ? (
                   <button id="start-focus" type="button" className="btn btn-primary"
                     onClick={() => setFocus({ ids: top3.map((i) => i.id), id: (top3.find((i) => isOpen(status(i))) ?? top3[0]).id })}>
@@ -363,8 +363,8 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
 
             {showScores && analysis && analysis.rubric_scores.length > 0 && (
               <section aria-labelledby="scores-h" className="space-y-3">
-                <h2 id="scores-h" className="text-xl font-bold">Rubric scores</h2>
-                <ul className="divide-y divide-line/40 rounded-xl border border-line bg-surface px-4">
+                <h2 id="scores-h" className="hand text-2xl">Rubric scores</h2>
+                <ul className="divide-y divide-line/40 inlay px-4">
                   {analysis.rubric_scores.map((s) => (
                     <li key={s.criterion} className="space-y-1 py-3">
                       <p className="flex flex-wrap items-center gap-2">

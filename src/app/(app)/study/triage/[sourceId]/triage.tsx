@@ -242,7 +242,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
       {cards.length > 0 && <p className="font-bold">{plural(left, 'card')} to review</p>}
 
       {current ? (
-        <section aria-label="Current card" className="touch-pan-y space-y-4 rounded-xl border border-line bg-surface p-5 [overflow-wrap:anywhere]"
+        <section aria-label="Current card" className="touch-pan-y space-y-4 inlay p-5 [overflow-wrap:anywhere]"
           // B2.5: swipe right keeps, left discards, the same as the arrow keys. touch-pan-y leaves vertical scrolling to the page.
           // Touch and pen only: a mouse drag here is selecting card text, and its click could press Keep a second time.
           onPointerDown={(e) => { swipeFrom.current = mode !== 'edit' && e.isPrimary && e.pointerType !== 'mouse' ? e.clientX : null; }}

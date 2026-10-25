@@ -45,7 +45,7 @@ export function FeedbackCard({ item: it, api, heading = 'h3', children }:
 
   return (
     <article id={`card-${it.id}`} tabIndex={-1} aria-labelledby={`card-${it.id}-t`}
-      className="space-y-3 rounded-xl border border-line bg-surface p-4 [overflow-wrap:anywhere]">
+      className="space-y-3 inlay p-4 [overflow-wrap:anywhere]">
       <p className="flex flex-wrap items-center gap-2 text-sm font-bold">
         <span className={`rounded-md px-2 py-0.5 ${LAYER_BG[it.layer]}`}>{LAYER_LABEL[it.layer]}</span>
         {it.convention && <span className="text-ink-muted">Academic convention</span>}

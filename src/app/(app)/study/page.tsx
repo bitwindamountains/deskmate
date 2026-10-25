@@ -19,7 +19,7 @@ export default async function StudyPage() {
         </div>
       )}
       <section aria-labelledby="decks">
-        <h2 id="decks" className="mb-4 text-[1.44rem] font-bold">Your decks</h2>
+        <h2 id="decks" className="hand mb-4 text-2xl">Your decks</h2>
         <DeckList decks={summaries} />
       </section>
     </AppPage>

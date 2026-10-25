@@ -10,7 +10,7 @@ export function Summary({ ratings, confidences = [], concepts, ms, cards, onDoMo
   const next = nextReview(cards, new Date());
   const selfCheck = calibration(confidences);
   return (
-    <section aria-labelledby="summary-h" className="max-w-prose space-y-4 rounded-xl border border-line bg-surface p-6">
+    <section aria-labelledby="summary-h" className="max-w-prose space-y-4 inlay p-6">
       <h2 id="summary-h" className="text-xl font-bold text-balance">Session done</h2>
       <ul className="space-y-1">
         <li>{ratings.length} {ratings.length === 1 ? 'card' : 'cards'} reviewed</li>

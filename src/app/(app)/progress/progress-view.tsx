@@ -37,10 +37,10 @@ export function ProgressView({ growth, calibration, counts, hint, leech }: Props
   return (
     <div className="max-w-prose space-y-8">
       <section aria-labelledby="patterns-h" className="space-y-3">
-        <h2 id="patterns-h" className="text-xl font-bold">Writing patterns</h2>
+        <h2 id="patterns-h" className="hand text-2xl">Writing patterns</h2>
         {growth.essays === 0 ? <p className="text-ink-muted">Check an essay to see your writing patterns.</p>
           : growth.recurring.length === 0 ? <p className="text-ink-muted">No pattern has come up in two essays yet.</p> : (
-            <ul className="divide-y divide-line/40 rounded-xl border border-line bg-surface px-4">
+            <ul className="divide-y divide-line/40 inlay px-4">
               {growth.recurring.map((p) => (
                 <li key={p.key} className="space-y-2 py-3">
                   <p className="font-bold">{p.label}</p>
@@ -53,7 +53,7 @@ export function ProgressView({ growth, calibration, counts, hint, leech }: Props
       </section>
 
       <section aria-labelledby="calibration-h" className="space-y-3">
-        <h2 id="calibration-h" className="text-xl font-bold">Self-check accuracy</h2>
+        <h2 id="calibration-h" className="hand text-2xl">Self-check accuracy</h2>
         <p className="text-ink-muted">How well your own confidence matches how you actually did.</p>
         <dl className="space-y-2">
           <div><dt className="inline font-bold">Flashcards: </dt><dd className="inline">{calibration.recall !== null
@@ -66,7 +66,7 @@ export function ProgressView({ growth, calibration, counts, hint, leech }: Props
       </section>
 
       <section aria-labelledby="habits-h" className="space-y-3">
-        <h2 id="habits-h" className="text-xl font-bold">Habits</h2>
+        <h2 id="habits-h" className="hand text-2xl">Habits</h2>
         <ul className="space-y-1">
           <li>{hint !== null ? `Deepest hint you usually open: ${hint} of 5` : 'Deepest hint you usually open: none opened yet'}</li>
           <li>{leech !== null ? `Cards that keep slipping: ${leech}%` : 'Cards that keep slipping: no cards studied yet'}</li>

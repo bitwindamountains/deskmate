@@ -28,14 +28,14 @@ export function FocusMode({ items, current, api, onPick, onExit }:
 
   return (
     <section aria-labelledby="focus-h" className="space-y-4" onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onExit(); } }}>
-      <h2 id="focus-h" className="text-xl font-bold">Focus mode</h2>
+      <h2 id="focus-h" className="hand text-2xl">Focus mode</h2>
       <p role="status" className="font-bold">{done} of {items.length} priorities addressed</p>
       {it ? (
         <FeedbackCard item={it} api={focusApi}>
           {skipTo && <button type="button" className="btn" onClick={() => onPick(skipTo)}>Skip</button>}
         </FeedbackCard>
       ) : (
-        <p id="focus-done" tabIndex={-1} className="rounded-xl border border-line bg-surface p-4 font-bold">
+        <p id="focus-done" tabIndex={-1} className="inlay p-4 font-bold">
           All {items.length} priorities addressed. Nice work.
         </p>
       )}

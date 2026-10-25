@@ -47,7 +47,7 @@ export function Goals({ deckId, goals, cards }: { deckId: string; goals: string;
 
   return (
     <section aria-labelledby="goals-h" className="mb-8 max-w-prose space-y-3">
-      <h2 id="goals-h" className="text-xl font-bold">Course goals</h2>
+      <h2 id="goals-h" className="hand text-2xl">Course goals</h2>
       <div>
         <label htmlFor="goals-text" className="mb-1 block">Paste your syllabus, learning objectives or past exam questions</label>
         <textarea id="goals-text" className="field min-h-32 w-full" maxLength={5000} value={text} disabled={busy}
