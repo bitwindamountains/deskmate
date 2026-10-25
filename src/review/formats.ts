@@ -5,7 +5,8 @@ import type { Grade, StateRow } from './schedule';
 
 /** How a card is answered in review. Easier formats are a stepping stone, so they count less (RATING_CAP). */
 export type Format = 'choice' | 'blank' | 'typed' | 'reverse';
-export type FormatCard = { id: string; type: CardType; front: string; back: string; keyPoints: string[]; concept: string; state: StateRow | null };
+export type FormatCard = { id: string; deckId?: string; type: CardType; front: string; back: string; keyPoints: string[]; concept: string;
+  state: StateRow | null };
 
 const FILLER = new Set(['a', 'an', 'the', 'in', 'on', 'at', 'of', 'to', 'it', 'is', 'its']);
 /** "In the mitochondria" and "Mitochondria " are the same answer: lowercase, drop punctuation and filler words. */
@@ -43,11 +44,14 @@ const BLANK_RIGHT = 0.85;
 
 export const RATING_CAP: Record<Format, Grade> = { choice: Rating.Hard, blank: Rating.Good, typed: Rating.Easy, reverse: Rating.Easy };
 
+const conceptKey = (c: string) => c.trim().toLowerCase(); // same grouping as interleave and the mastery map
+
 /** Up to 3 wrong options: other answers on the same concept first, so they are plausible, then the rest of the deck. */
 export function distractors(card: FormatCard, pool: FormatCard[], rnd: () => number): string[] {
-  const others = pool.filter((o) => o.id !== card.id);
-  const near = shuffle(others.filter((o) => o.concept === card.concept), rnd);
-  const far = shuffle(others.filter((o) => o.concept !== card.concept), rnd);
+  // Another subject's answer is a giveaway, so options stay in the card's own deck.
+  const others = pool.filter((o) => o.id !== card.id && o.deckId === card.deckId);
+  const near = shuffle(others.filter((o) => conceptKey(o.concept) === conceptKey(card.concept)), rnd);
+  const far = shuffle(others.filter((o) => conceptKey(o.concept) !== conceptKey(card.concept)), rnd);
   const out: string[] = [];
   for (const o of [...near, ...far]) {
     if (out.length === 3) break;
@@ -56,18 +60,23 @@ export function distractors(card: FormatCard, pool: FormatCard[], rnd: () => num
   return out;
 }
 
-/** The longest key point that appears word for word in the answer and leaves something around it, or null. */
-export function blankPart(card: FormatCard): string | null {
-  const back = card.back.toLowerCase();
-  let best: string | null = null;
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The longest key point that appears word for word in the answer and leaves something around it, blanked out, or null. */
+export function buildBlank(card: FormatCard): { before: string; after: string; expected: string } | null {
+  let best: { before: string; after: string; expected: string } | null = null;
   for (const kp of card.keyPoints) {
     const k = kp.trim();
-    const at = back.indexOf(k.toLowerCase());
-    if (!normalizeAnswer(k) || at < 0 || !normalizeAnswer(card.back.slice(0, at) + card.back.slice(at + k.length))) continue;
-    if (!best || k.length > best.length) best = card.back.slice(at, at + k.length);
+    if (!normalizeAnswer(k)) continue;
+    // Whole words only: a key point "cell" must not blank the start of "cells" and leave a stray "s".
+    const m = new RegExp(`(?<![\\p{L}\\p{N}])${escape(k)}(?![\\p{L}\\p{N}])`, 'iu').exec(card.back);
+    if (!m) continue;
+    const before = card.back.slice(0, m.index), after = card.back.slice(m.index + m[0].length);
+    if (normalizeAnswer(before + after) && (!best || m[0].length > best.expected.length)) best = { before, after, expected: m[0] };
   }
   return best;
 }
+export const blankPart = (card: FormatCard) => buildBlank(card)?.expected ?? null;
 
 export function chooseFormat(card: FormatCard, pool: FormatCard[]): Format {
   const s = card.state;
@@ -81,13 +90,6 @@ export function chooseFormat(card: FormatCard, pool: FormatCard[]): Format {
 export function buildChoice(card: FormatCard, pool: FormatCard[], seed: number): string[] {
   const rnd = random(seed);
   return shuffle([card.back.trim(), ...distractors(card, pool, rnd)], rnd);
-}
-
-export function buildBlank(card: FormatCard): { before: string; after: string; expected: string } | null {
-  const part = blankPart(card);
-  if (!part) return null;
-  const at = card.back.indexOf(part);
-  return { before: card.back.slice(0, at), after: card.back.slice(at + part.length), expected: part };
 }
 
 export const checkBlank = (answer: string, expected: string) =>
@@ -107,6 +109,8 @@ const MATCH_SIZE = 4;
 
 /** Up to 10 cards: one matching set of 4 when 4 cards have clearly different answers, the rest true or false (about half false). */
 export function buildWarmUp(cards: FormatCard[], seed: number): WarmUpItem[] {
+  // Paragraph answers (why, apply, compare) next to one-word ones would give every item away, as in multiple choice.
+  cards = cards.filter((c) => CHOICE_TYPES.includes(c.type));
   if (cards.length < 2) return [];
   const rnd = random(seed);
   const picked = shuffle(cards, rnd).slice(0, WARM_UP_SIZE);

@@ -34,7 +34,7 @@ function answerMatching(m: Matching, missFirst: boolean) {
     fireEvent.click(screen.getByRole('button', { name: p.front }));
     fireEvent.click(screen.getByRole('button', { name: p.back }));
   });
-  expect(answers.querySelectorAll('button:disabled')).toHaveLength(m.pairs.length);
+  expect(answers.querySelectorAll('button[aria-disabled="true"]')).toHaveLength(m.pairs.length);
   fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 }
 

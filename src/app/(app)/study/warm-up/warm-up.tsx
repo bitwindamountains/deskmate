@@ -56,7 +56,7 @@ function TrueFalseCard({ item, onNext }: { item: TrueFalse; onNext: (right: numb
       </div>
       {said === null ? (
         <div role="group" aria-label="Is this answer right?" className="flex flex-wrap gap-3">
-          <button type="button" className="btn" onClick={() => setSaid(true)}>True</button>
+          <button type="button" className="btn" autoFocus onClick={() => setSaid(true)}>True</button>
           <button type="button" className="btn" onClick={() => setSaid(false)}>False</button>
         </div>
       ) : (
@@ -72,7 +72,8 @@ function TrueFalseCard({ item, onNext }: { item: TrueFalse; onNext: (right: numb
   );
 }
 
-/** Tap a question, then its answer. A pair counts as right only when it is matched on the first try. */
+/** Tap a question, then its answer. A pair counts as right only when it is matched on the first try.
+ * Matched buttons are aria-disabled, not disabled, so keyboard focus stays on the button just used. */
 function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) => void }) {
   const [picked, setPicked] = useState<string | null>(null); // card id of the chosen question
   const [matched, setMatched] = useState<string[]>([]);
@@ -81,6 +82,7 @@ function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) =
   const done = matched.length === item.pairs.length;
 
   function choose(back: string) {
+    if (item.pairs.some((p) => p.back === back && matched.includes(p.cardId))) return;
     if (!picked) { setNote('Pick a question first.'); return; }
     const pair = item.pairs.find((p) => p.cardId === picked)!;
     if (pair.back === back) {
@@ -102,7 +104,7 @@ function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) =
             const isMatched = matched.includes(p.cardId);
             return (
               <button key={p.cardId} type="button" className={`btn min-h-11 justify-start text-left ${picked === p.cardId ? 'btn-primary' : ''}`}
-                aria-pressed={picked === p.cardId} disabled={isMatched} onClick={() => { setPicked(p.cardId); setNote(''); }}>
+                aria-pressed={picked === p.cardId} aria-disabled={isMatched} onClick={() => { if (!isMatched) { setPicked(p.cardId); setNote(''); } }}>
                 {isMatched && <span className="mr-2">✓</span>}<MathText text={p.front} />
               </button>
             );
@@ -112,7 +114,7 @@ function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) =
           {item.backs.map((b) => {
             const isMatched = item.pairs.some((p) => p.back === b && matched.includes(p.cardId));
             return (
-              <button key={b} type="button" className="btn min-h-11 justify-start text-left" disabled={isMatched} onClick={() => choose(b)}>
+              <button key={b} type="button" className="btn min-h-11 justify-start text-left" aria-disabled={isMatched} onClick={() => choose(b)}>
                 {isMatched && <span className="mr-2">✓</span>}<MathText text={b} />
               </button>
             );
@@ -120,7 +122,7 @@ function MatchCard({ item, onNext }: { item: Matching; onNext: (right: number) =
         </div>
       </div>
       <p role="status" className="empty:hidden">{note}</p>
-      {done && <button type="button" className="btn btn-primary" onClick={() => onNext(item.pairs.length - missed.length)}>Next</button>}
+      {done && <button type="button" className="btn btn-primary" autoFocus onClick={() => onNext(item.pairs.length - missed.length)}>Next</button>}
     </section>
   );
 }

@@ -104,7 +104,7 @@ a { text-underline-offset: 0.2em; }
     transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
   }
   .btn:hover { background: var(--surface); }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
   /* a .btn label around a visually hidden input (the confidence chips) carries that input's focus ring */
   .btn:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
   .btn-primary { background: var(--mark); color: var(--on-mark); border-color: var(--on-mark); }

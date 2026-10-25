@@ -32,3 +32,14 @@
 - The warm-up never writes to `scholar.reviews` or `card_states`.
 - Tab order and screen-reader labels for options, the blank input and matching.
 - The format doesn't change mid-card on a re-render (seed by card id and review count).
+
+## Review (`/code-review high --fix`) and follow-ups
+- **Fixed by the review:**
+  - Multiple-choice options and warm-up wrong answers stay in the card's own deck, so another subject's answer is never a giveaway. Concepts are grouped by `trim().toLowerCase()`, as in interleave and the mastery map.
+  - Blanks match whole words only ("cell" no longer blanks the start of "cells").
+  - Keyboard focus: reverse cards focus "Show the question"; matched warm-up buttons stay focusable (`aria-disabled`); True and Next take focus in the warm-up.
+  - The format, options and blank are memoized, so typing doesn't rescan the deck on every key.
+- **Fixed after the review:**
+  - "Type it instead" leaked the answer: the options or the blank's sentence were already on screen. The switched card keeps the cap of what was shown (Hard after options, Good after a blank), is graded on the device only (so an offline regrade can't lift it past the cap), and is recorded under that format.
+  - The warm-up uses basic and cloze cards only: paragraph answers next to one-word ones gave every item away.
+- **Ruled:** the warm-up keeps using `loadStudy` (2–3 extra small queries per load). A cards-only loader would duplicate it for little gain; revisit if the page is slow.

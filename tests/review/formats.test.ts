@@ -59,6 +59,21 @@ test('the blank is the longest key point found in the answer, matched without ca
   expect(blankPart(card(2, { back: 'Cytoplasm', keyPoints: ['cytoplasm'] }))).toBeNull();
 });
 
+test('a blank covers whole words only', () => {
+  const c = card(1, { back: 'Many cells hold one cell wall', keyPoints: ['cell'] });
+  expect(buildBlank(c)).toEqual({ before: 'Many cells hold one ', after: ' wall', expected: 'cell' });
+  expect(blankPart(card(2, { back: 'Photosynthesis makes glucose', keyPoints: ['synthesis'] }))).toBeNull();
+});
+
+test('distractors stay in the same deck, and concepts match without case', () => {
+  const mine = card(1, { deckId: 'bio', concept: 'Cells' });
+  const pool = [mine, card(2, { deckId: 'bio', concept: 'cells ' }), card(3, { deckId: 'bio' }), card(4, { deckId: 'bio' }),
+    card(5, { deckId: 'french' }), card(6, { deckId: 'french' })];
+  expect(chooseFormat(mine, pool)).toBe('choice');
+  expect(buildChoice(mine, pool, 1)).not.toContain('Answer 5');
+  expect(chooseFormat(mine, pool.filter((c) => c.id !== 'c4'))).not.toBe('choice'); // 2 in-deck answers are not enough
+});
+
 test('a blank is right when it matches closely, ignoring case and small typos', () => {
   expect(checkBlank('protons flow down their gradient', 'Protons flow down their gradient')).toBe(true);
   expect(checkBlank('protons flow down thier gradient', 'Protons flow down their gradient')).toBe(true);
@@ -100,4 +115,11 @@ test('the warm-up skips matching when answers repeat, and needs 2 cards', async 
   const items = buildWarmUp(same, 1);
   expect(items.every((x) => x.kind === 'tf' && x.isTrue)).toBe(true); // no wrong answer to show
   expect(buildWarmUp([card(1)], 1)).toEqual([]);
+});
+
+test('the warm-up leaves out paragraph-answer card types', async () => {
+  const { buildWarmUp } = await import('@/review/formats');
+  const mixed = [card(1), card(2), card(3, { type: 'why', back: 'Because protons flow down their gradient through the enzyme.' })];
+  const ids = buildWarmUp(mixed, 2).flatMap((x) => (x.kind === 'tf' ? [x.cardId] : x.pairs.map((p) => p.cardId)));
+  expect(ids.sort()).toEqual(['c1', 'c2']);
 });
