@@ -14,6 +14,7 @@ export default async function StudyPage() {
       {summaries.some((d) => d.kept > 0) && (
         <div className="mb-8 flex flex-wrap gap-3">
           {summaries.some((d) => d.due + d.fresh > 0) &&<Link href="/study/review" className="btn btn-primary">Review now</Link>}
+          <Link href="/study/warm-up" className="btn">Warm-up</Link>
           <Link href="/study/mastery" className="btn">Mastery map</Link>
         </div>
       )}
