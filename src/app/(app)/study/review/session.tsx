@@ -14,6 +14,7 @@ import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
 import { applyRating, buildSession, DEFAULT_RETENTION, nextReview, parseDay, schedulerFor, type Grade } from '@/review/schedule';
 import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/store';
+import { allowedRatings, buildBlank, buildChoice, checkBlank, chooseFormat, seedFor, suggestFor, type Format } from '@/review/formats';
 import { CardHelpPanel } from './card-help';
 import { conceptSummary, interleave } from '@/review/interleave';
 import { Summary } from './summary';
@@ -21,7 +22,7 @@ import { MathText } from '@/components/math-text';
 
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
-  feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number };
+  feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number; right?: boolean };
 type Done = { cardId: string; concept: string; rating: Grade; confidence?: Confidence };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
@@ -31,6 +32,12 @@ const MIX_KEY = 'scholar-mix-topics';
 const readMix = () => { try { return localStorage.getItem(MIX_KEY) === '1'; } catch { return false; } };
 const CONFIDENCE: [Confidence, string, string][] = [[1, 'Guessing', 'G'], [2, 'Unsure', 'U'], [3, 'Confident', 'C']];
 const CONFIDENCE_KEYS: Record<string, Confidence> = { g: 1, u: 2, c: 3 };
+
+/** Why an easier format is shown, and that it counts less (plan 2026-10-25-review-formats.md). */
+const FORMAT_NOTE: Partial<Record<Format, string>> = {
+  choice: 'Pick from the options first. It counts a bit less than recalling it.',
+  blank: 'Fill in the missing part. It counts a bit less than recalling the whole answer.',
+};
 
 type Slip = { cardId: string; deckId: string; front: string; open: boolean };
 
@@ -87,6 +94,10 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   const shownAt = useRef(Date.now());
   const embedFn = useRef<EmbedFn | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
+  const firstOption = useRef<HTMLInputElement>(null);
+  const blankField = useRef<HTMLInputElement>(null);
+  const [pick, setPick] = useState<string | null>(null); // the chosen multiple-choice option
+  const [typedFor, setTypedFor] = useState<string | null>(null); // card id switched to typed recall ("Type it instead")
   const firstRating = useRef<HTMLButtonElement>(null);
   const suggestedBtn = useRef<HTMLButtonElement>(null);
   const introduced = useRef(0);
@@ -127,11 +138,15 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
 
   const current = queue[i];
   const finished = all !== null && queue.length > 0 && i >= queue.length;
+  // The format comes from the card's state when it came up (queue entries keep it), so it never changes mid-card.
+  const format: Format = !current || !all || typedFor === current.id ? 'typed' : chooseFormat(current, all);
+  const options = format === 'choice' ? buildChoice(current, all!, seedFor(current.id, current.state?.reps ?? 0)) : [];
+  const blank = format === 'blank' ? buildBlank(current) : null;
 
   useEffect(() => {
-    if (phase === 'answer') field.current?.focus();
+    if (phase === 'answer') (format === 'choice' ? firstOption : format === 'blank' ? blankField : field).current?.focus();
     else if (phase === 'rate') (suggestedBtn.current ?? firstRating.current)?.focus();
-  }, [phase, i, current]);
+  }, [phase, i, current, format]);
 
   useEffect(() => { if (finished) void runSync(); }, [finished]);
 
@@ -139,6 +154,16 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     if (!current || phase !== 'answer') return;
     const answer = text;
     const ms = Date.now() - shownAt.current;
+    if (format === 'choice' || format === 'blank') {
+      // Checked on the device: no grading call for either format.
+      if (format === 'choice' && pick === null) return;
+      const given = format === 'choice' ? pick! : answer;
+      const right = format === 'choice' ? given === current.back.trim() : checkBlank(given, blank!.expected);
+      setChecked({ answer: given, source: format, score: null, hit: [], missed: [], feedback: null, suggested: suggestFor(format, right),
+        needsRegrade: false, unavailable: false, ms, right });
+      setPhase('rate');
+      return;
+    }
     const local = await gradeLocally({ type: current.type, reference: current.back, keyPoints: current.keyPoints, answer, responseMs: ms }, embedFn.current);
     if (!local.needsLlm) {
       setChecked({ answer, source: local.source, score: local.score, hit: local.hit, missed: local.missed, feedback: null,
@@ -176,7 +201,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   }
 
   async function rate(g: Grade) {
-    if (!current || !checked || phase !== 'rate') return;
+    if (!current || !checked || phase !== 'rate' || !allowedRatings(format).includes(g)) return;
     const now = new Date();
     const exam = examFor(current.deckId);
     const { state } = applyRating(current, g, now, exam, schedulerFor(retention));
@@ -203,6 +228,8 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     setShowSource(false);
     setHelpOpen(false);
     setAsked(null);
+    setPick(null);
+    setTypedFor(null);
     setText('');
     setChecked(null);
     setPhase('answer');
@@ -311,7 +338,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
           return (
             <>
               <h2 className="text-[1.44rem] leading-snug font-bold text-balance"><MathText text={reworded ?? current.front} /></h2>
-              {phase !== 'rate' && (
+              {phase !== 'rate' && format === 'typed' && (
                 <div className="flex flex-wrap items-center gap-x-4 text-sm">
                   {reworded && <span className="text-ink-muted">Asked another way</span>}
                   {mine?.question
@@ -338,6 +365,29 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
                 ))}
               </div>
             </fieldset>
+            {FORMAT_NOTE[format] && <p className="text-sm text-ink-muted">{FORMAT_NOTE[format]}</p>}
+            {format === 'choice' ? (
+              <fieldset>
+                <legend className="mb-1 font-bold">Your answer</legend>
+                <div className="grid gap-2">
+                  {options.map((o, k) => (
+                    <label key={o} className={`btn min-h-11 justify-start gap-3 text-left ${pick === o ? 'btn-primary' : ''}`}>
+                      <input ref={k === 0 ? firstOption : undefined} type="radio" name="option" checked={pick === o} onChange={() => setPick(o)} />
+                      <MathText text={o} />
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ) : format === 'blank' && blank ? (
+              <div>
+                <label htmlFor="blank" className="mb-1 block font-bold">Fill in the blank</label>
+                <p className="whitespace-pre-wrap">
+                  {blank.before}<span aria-hidden="true" className="font-bold">_____</span>{blank.after}
+                </p>
+                <input ref={blankField} id="blank" type="text" autoComplete="off" maxLength={200} value={text} className="field mt-2"
+                  onChange={(e) => setText(e.target.value)} />
+              </div>
+            ) : (
             <div>
               <label htmlFor="answer" className="mb-1 block font-bold">Your answer</label>
               <textarea ref={field} id="answer" rows={3} maxLength={2000} value={text} className="field" disabled={phase === 'checking'}
@@ -347,9 +397,12 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
               {/* B3.6: spoken words are added to what's typed, for the student to check before checking. */}
               <div className="mt-2"><MicButton key={current.id} onText={(t) => setText((x) => (x.trim() ? `${x.trimEnd()} ${t}` : t))} /></div>
             </div>
+            )}
             <div className="flex flex-wrap gap-3">
-              <button type="submit" className="btn btn-primary" disabled={phase === 'checking'}>Check</button>
-              <button type="button" className="btn" disabled={phase === 'checking'} onClick={flip}>Show answer</button>
+              <button type="submit" className="btn btn-primary" disabled={phase === 'checking' || (format === 'choice' && pick === null)}>Check</button>
+              {format === 'typed'
+                ? <button type="button" className="btn" disabled={phase === 'checking'} onClick={flip}>Show answer</button>
+                : <button type="button" className="btn" onClick={() => { setTypedFor(current.id); setText(''); }}>Type it instead</button>}
             </div>
           </form>
         ) : checked && (
@@ -386,6 +439,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
 
         <div role="status" className="empty:hidden">
           {phase === 'checking' && <p className="text-ink-muted">Checking your answer…</p>}
+          {phase === 'rate' && checked?.right !== undefined && <p className="font-bold">{checked.right ? 'Right.' : 'Not quite.'}</p>}
           {phase === 'rate' && checked?.unavailable && <p className="font-bold">Couldn&apos;t check this one right now. How did you do?</p>}
           {phase === 'rate' && checked?.feedback && <p className="max-w-prose">{checked.feedback}</p>}
         </div>
@@ -396,7 +450,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       {phase === 'rate' && (
         <div className="space-y-3">
           <div role="group" aria-label="How well did you know it?" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {RATINGS.map(([g, label], k) => {
+            {RATINGS.filter(([g]) => allowedRatings(format).includes(g)).map(([g, label], k) => {
               const suggested = checked?.suggested === g;
               return (
                 <button key={g} ref={suggested ? suggestedBtn : k === 0 ? firstRating : undefined} type="button"
@@ -408,7 +462,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
               );
             })}
           </div>
-          <p className="text-sm text-ink-muted">Keys: 1 Again, 2 Hard, 3 Good, 4 Easy.</p>
+          <p className="text-sm text-ink-muted">Keys: {RATINGS.filter(([g]) => allowedRatings(format).includes(g)).map(([, label], k) => `${k + 1} ${label}`).join(', ')}.</p>
         </div>
       )}
     </div>
