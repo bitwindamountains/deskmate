@@ -170,7 +170,7 @@ Draft Coach layer highlights (layer-global, layer-paragraph, layer-sentence, lay
 **Character:** A thin ballpoint hand for the headings you would write on a J-card, set against a face built to be read. Patrick Hand ships one weight, so headings get a 0.035em text stroke to look pressed.
 
 ### Hierarchy
-- **Display** (Patrick Hand 400, 2.25rem, line-height 1.25, caps, 0.03em): the page h1, with a 3px ink rule under it.
+- **Display** (Patrick Hand 400, 2.25rem, 3rem from 768px, line-height 1.25, caps, 0.03em): the page h1, on a doubled ink rule (5px double) like a J-card headline.
 - **Headline** (Patrick Hand 400, 1.5rem, caps, 0.03em): section h2s; the tape's date line uses 1.25rem.
 - **Title** (Atkinson 700, 1.2rem): lead lines such as the card count or the open essay title. A review card's question is Atkinson 700 at 1.44rem.
 - **Body** (Atkinson 400, 1rem, line-height 1.5): all running text, max `max-w-prose`.
@@ -193,14 +193,14 @@ Touch targets are at least 44px (`min-h-11`, `.btn`, `.field`); list rows at lea
 
 ## Elevation & Depth
 
-Flat. There are no shadows. Depth comes from 1.5px ink frames around panels, 1.5px ink rules between sides, and the faint per-row ruling. The page ground is a shade off the white stock, so panels read as cards laid on a desk.
+Flat. There are no shadows. Depth comes from 1.5px ink frames around panels, 1.5px ink rules between sides, and the faint per-row ruling. The page ground is a shade off the white stock and carries a paper-fibre grain (`--fibre`: fractal noise in the ink's own hue at a few percent, light and dark), so panels read as clean inlay stock laid on a fibrous desk. The grain is decoration only and never sits behind text inside a panel.
 
 ### Named Rules
 **The Ruled Row Rule.** Ruling is drawn per row as a 1px rule-colour bottom border (`.ruled`), like a tracklist. Never paint ruling as a background behind text.
 
 ## Shapes
 
-Cut card, not pill. Controls and fields have a 0.25rem corner; panels 0.375rem. Tailwind's `rounded-lg` and `rounded-xl` are overridden in `@theme` to those two values, so every existing panel takes the J-card corner. Borders are 1.5px: ink on panels and buttons, line on fields. The page h1 rule is 3px ink.
+Cut card, not pill. Controls and fields have a 0.25rem corner; panels 0.375rem. Tailwind's `rounded-lg` and `rounded-xl` are overridden in `@theme` to those two values, so every existing panel takes the J-card corner. Borders are 1.5px: ink on panels and buttons, line on fields. The page h1 sits on a 5px double ink rule.
 
 The brand stripe is the one recurring mark: three red bars, 3px wide with 3px gaps, in a 1.25rem by 1rem box. It sits beside "Scholar" in the spine, beside the current tab from 768px, and in the tape header.
 
@@ -230,7 +230,7 @@ Used app-wide for panels. Do not nest inlays.
 
 ### Navigation
 - **Phones:** bottom tab bar on rail white, 1.5px ink rule on top, five tabs. The current tab is red and bold with a 3px red bar along its top.
-- **From 768px:** the J-card spine, a 14rem sticky column with a 1.5px ink rule on its right, "Scholar" in hand caps with the stripe. The current tab is red and bold with the stripe before it.
+- **From 768px:** the J-card spine, a 14rem sticky column with a 1.5px ink rule on its right, "Scholar" in hand caps with the stripe. The current tab is red and bold with the stripe before it. At the foot of the spine sits the inlay's label block: a boxed A | B in red hand caps over "Scholar · Side A / B", decoration only (`aria-hidden`).
 - **Other tabs:** faded ballpoint; hover to full ink and underline. Colour transitions 150ms.
 
 ### The Tape (signature, Today)
@@ -239,7 +239,7 @@ The day's plan as a J-card inside one inlay.
 - **Sides:** "A Reviews" and "B Essays" as hand h2s, the red side letter hidden from screen readers and the word underlined at 1.5px. Side A shows the card count and "~N min" right-aligned on a ruled row, then Start review. Side B shows "~N min left".
 - **Side B time** is the daily minutes minus review, labelled "left". Never show it as an estimate.
 - **Foot:** "Today's tape" and "A ~x · B ~y of N min", then a 10px bar framed in 1px ink: side A solid ink, side B ink hatching at 135 degrees. The bar is hidden from screen readers; the sentence carries the facts.
-- **Motion:** the bar fills once on load (900ms scaleX from the left, ease-out). Reduced motion cuts it.
+- **Motion ("press play"):** on load the A and B letters stamp in (260ms, B 120ms later), side A fills (700ms scaleX, ease-out), side B fills 450ms later while its hatching spools, and a cassette reel at each end of the bar turns for 1150ms, then everything stops. Nothing loops. Reduced motion (OS or profile) lands on the final frame with no delay.
 
 ### Progress bars
 Review progress uses the tape's bar language: 10px, 1px ink frame, solid ink fill, hidden from screen readers next to a "Card N of M" line.
@@ -256,7 +256,7 @@ Exams and similar lists sit under a 1.5px ink rule, each row at least 48px with 
 - **Do** draw ruling per row with `.ruled`.
 - **Do** set headings in `.hand` and everything read in Atkinson.
 - **Do** pair every colour signal with text, weight, shape or `aria-current`.
-- **Do** keep motion to state: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`, the tape fill once, and honour reduced motion from the OS and the profile.
+- **Do** keep motion to state and one authored moment: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`; buttons press 1px down on `:active`; a new review or warm-up card slides in like an inlay pushed into its case (`.card-in`, 280ms clip-path reveal from the left); "Right." / "Not quite." get an ink underline drawn under them (`.ink-draw`, 320ms); Today's "press play" runs once. Honour reduced motion from the OS and the profile.
 
 ### Don't:
 - **Don't** use red for focus, carets, links, buttons or decoration.
