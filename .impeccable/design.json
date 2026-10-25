@@ -26,7 +26,7 @@
       "layer-strength": { "role": "tertiary", "displayName": "Draft Coach: strength", "canonical": "#cdeed8" }
     },
     "typographyMeta": {
-      "display": { "displayName": "Hand Display", "purpose": "The page h1 in hand-lettered caps with a 3px ink rule under it." },
+      "display": { "displayName": "Hand Display", "purpose": "The page h1 in hand-lettered caps (2.25rem, 3rem from 768px) on a 5px double ink rule." },
       "headline": { "displayName": "Hand Headline", "purpose": "Section h2s and the tape's side heads. Headings only." },
       "title": { "displayName": "Lead Line", "purpose": "Atkinson bold lead lines: card counts, the open essay title." },
       "body": { "displayName": "Body", "purpose": "All running text, max-w-prose." },
