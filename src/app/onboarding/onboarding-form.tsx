@@ -18,7 +18,7 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
 
   return (
     <main className="mx-auto max-w-md space-y-6 px-4 py-10">
-      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance">Set up Scholar</h1>
+      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">Set up Scholar</span></h1>
       {state.error && <p role="alert" className="error">{state.error}</p>}
       <form action={action} className="space-y-5">
         {!defaults && (
