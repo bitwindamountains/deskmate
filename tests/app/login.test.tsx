@@ -34,7 +34,7 @@ test('moves to the code step with a labelled field', async () => {
   render(<LoginForm next="/today" />);
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } });
   fireEvent.click(screen.getByRole('button', { name: 'Email me a code' }));
-  await waitFor(() => screen.getByLabelText('6-digit code'));
+  await waitFor(() => screen.getByLabelText('Code from the email'));
 });
 
 test('error ties to the email and code inputs via aria-invalid/aria-describedby', async () => {
