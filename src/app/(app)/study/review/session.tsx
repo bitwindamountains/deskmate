@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
 import { MicButton } from '@/components/mic-button';
 import { ReportProblem } from '@/components/report-problem';
@@ -14,7 +14,7 @@ import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
 import { applyRating, buildSession, DEFAULT_RETENTION, nextReview, parseDay, schedulerFor, type Grade } from '@/review/schedule';
 import { cacheDueCards, db, enqueueReview, type ReviewPayload } from '@/review/store';
-import { allowedRatings, buildBlank, buildChoice, checkBlank, chooseFormat, seedFor, suggestFor, type Format } from '@/review/formats';
+import { allowedRatings, buildBlank, buildChoice, checkBlank, chooseFormat, RATING_CAP, seedFor, suggestFor, type Format } from '@/review/formats';
 import { CardHelpPanel } from './card-help';
 import { conceptSummary, interleave } from '@/review/interleave';
 import { Summary } from './summary';
@@ -97,6 +97,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   const field = useRef<HTMLTextAreaElement>(null);
   const firstOption = useRef<HTMLInputElement>(null);
   const blankField = useRef<HTMLInputElement>(null);
+  const revealBtn = useRef<HTMLButtonElement>(null);
   const [pick, setPick] = useState<string | null>(null); // the chosen multiple-choice option
   const [typedFor, setTypedFor] = useState<string | null>(null); // card id switched to typed recall ("Type it instead")
   const firstRating = useRef<HTMLButtonElement>(null);
@@ -140,12 +141,19 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   const current = queue[i];
   const finished = all !== null && queue.length > 0 && i >= queue.length;
   // The format comes from the card's state when it came up (queue entries keep it), so it never changes mid-card.
-  const format: Format = !current || !all || typedFor === current.id ? 'typed' : chooseFormat(current, all);
-  const options = format === 'choice' ? buildChoice(current, all!, seedFor(current.id, current.state?.reps ?? 0)) : [];
-  const blank = format === 'blank' ? buildBlank(current) : null;
+  // Memoized: the pool scan for distractors would otherwise rerun on every keystroke.
+  // capped: the format whose rating cap applies. "Type it instead" keeps the cap of the options or blank already seen,
+  // since they showed the answer (or most of it); the review is then recorded under that format.
+  const { format, capped, options, blank } = useMemo(() => {
+    const shown: Format = !current || !all ? 'typed' : chooseFormat(current, all);
+    const f: Format = current && typedFor === current.id ? 'typed' : shown;
+    return { format: f, capped: shown === 'choice' || shown === 'blank' ? shown : f,
+      options: f === 'choice' ? buildChoice(current, all!, seedFor(current.id, current.state?.reps ?? 0)) : [],
+      blank: f === 'blank' ? buildBlank(current) : null };
+  }, [current, all, typedFor]);
 
   useEffect(() => {
-    if (phase === 'answer') (format === 'choice' ? firstOption : format === 'blank' ? blankField : field).current?.focus();
+    if (phase === 'answer') (format === 'choice' ? firstOption : format === 'blank' ? blankField : format === 'reverse' ? revealBtn : field).current?.focus();
     else if (phase === 'rate') (suggestedBtn.current ?? firstRating.current)?.focus();
   }, [phase, i, current, format]);
 
@@ -167,6 +175,13 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       return;
     }
     const local = await gradeLocally({ type: current.type, reference: current.back, keyPoints: current.keyPoints, answer, responseMs: ms }, embedFn.current);
+    if (capped !== format && (capped === 'choice' || capped === 'blank')) {
+      // Switched from options or a blank: graded on the device only, so an offline regrade can never lift it past the cap.
+      setChecked({ answer, source: capped, score: local.score, hit: local.hit, missed: local.missed, feedback: null,
+        suggested: Math.min(local.suggested, RATING_CAP[capped]) as Grade, needsRegrade: false, unavailable: false, ms });
+      setPhase('rate');
+      return;
+    }
     if (!local.needsLlm) {
       setChecked({ answer, source: local.source, score: local.score, hit: local.hit, missed: local.missed, feedback: null,
         suggested: local.suggested, needsRegrade: false, unavailable: false, ms });
@@ -183,7 +198,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   }
 
   function flip() {
-    setChecked({ answer: null, source: format === 'reverse' ? 'reverse' : 'self', score: null, hit: [], missed: [], feedback: null, suggested: null,
+    setChecked({ answer: null, source: format === 'reverse' ? 'reverse' : capped === 'choice' || capped === 'blank' ? capped : 'self', score: null, hit: [], missed: [], feedback: null, suggested: null,
       needsRegrade: false, unavailable: false, ms: Date.now() - shownAt.current });
     setPhase('rate');
   }
@@ -203,7 +218,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
   }
 
   async function rate(g: Grade) {
-    if (!current || !checked || phase !== 'rate' || !allowedRatings(format).includes(g)) return;
+    if (!current || !checked || phase !== 'rate' || !allowedRatings(capped).includes(g)) return;
     const now = new Date();
     const exam = examFor(current.deckId);
     const { state } = applyRating(current, g, now, exam, schedulerFor(retention));
@@ -402,7 +417,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
             )}
             <div className="flex flex-wrap gap-3">
               {format !== 'reverse' && <button type="submit" className="btn btn-primary" disabled={phase === 'checking' || (format === 'choice' && pick === null)}>Check</button>}
-              {format === 'reverse' ? <button type="button" className="btn btn-primary" onClick={flip}>Show the question</button> : format === 'typed'
+              {format === 'reverse' ? <button ref={revealBtn} type="button" className="btn btn-primary" onClick={flip}>Show the question</button> : format === 'typed'
                 ? <button type="button" className="btn" disabled={phase === 'checking'} onClick={flip}>Show answer</button>
                 : <button type="button" className="btn" onClick={() => { setTypedFor(current.id); setText(''); }}>Type it instead</button>}
             </div>
@@ -452,7 +467,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       {phase === 'rate' && (
         <div className="space-y-3">
           <div role="group" aria-label="How well did you know it?" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {RATINGS.filter(([g]) => allowedRatings(format).includes(g)).map(([g, label], k) => {
+            {RATINGS.filter(([g]) => allowedRatings(capped).includes(g)).map(([g, label], k) => {
               const suggested = checked?.suggested === g;
               return (
                 <button key={g} ref={suggested ? suggestedBtn : k === 0 ? firstRating : undefined} type="button"
@@ -464,7 +479,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
               );
             })}
           </div>
-          <p className="text-sm text-ink-muted">Keys: {RATINGS.filter(([g]) => allowedRatings(format).includes(g)).map(([, label], k) => `${k + 1} ${label}`).join(', ')}.</p>
+          <p className="text-sm text-ink-muted">Keys: {RATINGS.filter(([g]) => allowedRatings(capped).includes(g)).map(([, label], k) => `${k + 1} ${label}`).join(', ')}.</p>
         </div>
       )}
     </div>

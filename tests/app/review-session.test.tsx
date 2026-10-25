@@ -336,6 +336,18 @@ test('Type it instead switches the card to typed recall', async () => {
   expect(screen.getByRole('button', { name: 'Show answer' })).toBeTruthy();
 });
 
+test('typing after seeing the options keeps the multiple-choice cap and never calls the grader', async () => {
+  await startChoice(choiceDeck);
+  const back = currentBack();
+  fireEvent.click(screen.getByRole('button', { name: 'Type it instead' }));
+  await answer((await screen.findByLabelText('Your answer')) as HTMLTextAreaElement, back);
+  await waitFor(() => expect(rating('Hard').textContent).toContain('Suggested'));
+  expect(screen.queryByRole('button', { name: /^Easy/ })).toBeNull();
+  fireEvent.click(rating('Hard'));
+  await waitFor(async () => expect((await outbox()).map((r) => [r.review.grade_source, r.review.final_rating])).toEqual([['choice', 2]]));
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
 test('a learning card with a key point in its answer is a blank: right suggests Good and hides Easy', async () => {
   const learning = { card_id: 'k', due: '2026-01-01T00:00:00.000Z', stability: 1, difficulty: 5, scheduled_days: 0, learning_steps: 1,
     reps: 1, lapses: 0, state: 1, last_review: '2026-01-01T00:00:00.000Z' };
