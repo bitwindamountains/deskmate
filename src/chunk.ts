@@ -1,9 +1,14 @@
-import { numberParagraphs } from './llm/prompts';
-
 export const CHUNK_WORDS = 1500; // smaller than Phase 0's 3000 so cards stream sooner and stay within free-tier output limits
 
 export interface PageText { page: number; text: string }
 export interface Chunk { position: number; pageStart: number; pageEnd: number; text: string }
+
+export function numberParagraphs(essay: string): string[] {
+  return essay
+    .split(/\r?\n\s*\r?\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
 
 export const wordCount = (text: string): number => text.split(/\s+/).filter(Boolean).length;
 

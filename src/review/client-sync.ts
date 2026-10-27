@@ -2,7 +2,7 @@
 import { Rating } from 'ts-fsrs';
 import { ESSAY_DRAFT_PREFIX } from '@/lib/essay/text';
 import { createClient } from '@/lib/supabase/client';
-import { GradeAnswer } from '@/llm/schemas';
+import type { GradeAnswer } from '@/llm/schemas';
 import type { StateRow } from './schedule';
 import { db, type ReviewPayload } from './store';
 import { syncOutbox, type SyncDeps } from './sync';
@@ -14,7 +14,8 @@ export async function requestGrade(cardId: string, answer: string): Promise<Grad
   try {
     const res = await fetch('/api/grade', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId, answer }) });
     if (!res.ok || res.redirected) return null;
-    return GradeAnswer.safeParse((await res.json())?.result).data ?? null;
+    // /api/grade already validates with GradeAnswer; parsing again here would ship zod to the review page.
+    return ((await res.json())?.result as GradeAnswer | undefined) ?? null;
   } catch {
     return null; // offline: the caller falls back to self-grading
   }

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { Card, CardGenerate, CardHelp, CardImprove, CardRephrase, EssayGlobal, Feynman, EssayParagraphs, GradeAnswer, HintLadder, HintRewrite, ItemDialogue } from './schemas';
 import { CARD_TYPES, DEFAULT_CARD_TYPES, type CardType } from '@/lib/cards/types';
+import { numberParagraphs } from '@/chunk';
+
+export { numberParagraphs };
 
 export interface RubricCriterion {
   name: string;
@@ -44,13 +47,6 @@ type Prompt = { system: string; user: string };
 export function wrapData(tag: string, text: string): string {
   const escaped = text.replace(new RegExp(`</${tag}`, 'gi'), `<\\/${tag}`);
   return `<${tag}>\n${escaped}\n</${tag}>`;
-}
-
-export function numberParagraphs(essay: string): string[] {
-  return essay
-    .split(/\r?\n\s*\r?\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
 }
 
 
