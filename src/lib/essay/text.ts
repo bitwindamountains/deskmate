@@ -1,6 +1,5 @@
-import { wordCount } from '@/chunk';
+import { numberParagraphs, wordCount } from '@/chunk';
 import { findAnchor, normalizeText } from '@/grounding';
-import { numberParagraphs } from '@/llm/prompts';
 import { looksEnglish } from './english';
 
 export const ESSAY_TYPES = ['argumentative', 'expository', 'narrative', 'compare-contrast', 'research', 'personal-statement'] as const;

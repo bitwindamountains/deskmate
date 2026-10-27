@@ -1,4 +1,4 @@
-import { allRows } from '@/lib/cards/transfer';
+import { allRows } from '@/lib/cards/all-rows';
 import type { Db } from '@/lib/llm-calls';
 
 // Every scholar table that holds a student's rows, with its key so paging is stable. Read through RLS, so only the caller's rows.
