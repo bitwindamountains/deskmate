@@ -60,9 +60,11 @@ export async function gradeLocally(i: CascadeInput, embed: EmbedFn | null): Prom
   if (ans === normalizeAnswer(i.reference)) return done(1, 'exact', i.keyPoints, [], true);
   const sim = similarity(ans, i.reference);
   if (i.reference.trim().split(/\s+/).length <= 8 && sim >= 0.85) return done(sim, 'fuzzy', i.keyPoints, [], true);
-  if (!embed) return done(sim, 'fuzzy', [], i.keyPoints, false);
+  // Without the model (still loading, or it failed) edit distance can't tell a paraphrase from a wrong answer, so a low score isn't settled.
+  const fuzzy = { ...done(sim, 'fuzzy', [], i.keyPoints, false), needsLlm: EXPLAIN_TYPES.includes(i.type) || sim <= 0.85 };
+  if (!embed) return fuzzy;
   let v: number[][];
-  try { v = await embed([i.answer, i.reference, ...i.keyPoints]); } catch { return done(sim, 'fuzzy', [], i.keyPoints, false); }
+  try { v = await embed([i.answer, i.reference, ...i.keyPoints]); } catch { return fuzzy; }
   if (!i.keyPoints.length) return done(Math.min(1, Math.max(0, cosine(v[0], v[1]))), 'embedding', [], [], false);
   const hit = i.keyPoints.filter((_, k) => cosine(v[0], v[2 + k]) >= KP_HIT);
   const result = done(hit.length / i.keyPoints.length, 'embedding', hit, i.keyPoints.filter((k) => !hit.includes(k)), false);
