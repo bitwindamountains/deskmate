@@ -333,7 +333,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
             <button type="button" className="btn btn-primary" aria-keyshortcuts="ArrowRight" onClick={keep}>Keep</button>
           </div>
           <p className="text-sm text-ink-muted">Swipe the card right to keep or left to discard. Keys: → keep, ← discard, E edit.</p>
-          <button type="button" className="text-sm underline" disabled={improving} onClick={improve}>{improving ? 'Improving…' : 'Improve this card'}</button>
+          <button type="button" className="inline-flex min-h-11 items-center text-sm underline" disabled={improving} onClick={improve}>{improving ? 'Improving…' : 'Improve this card'}</button>
           {improveError && <p role="alert" className="error">{improveError}</p>}
           {mode === 'reason' && (
             <div role="group" aria-labelledby="reason-label" className="space-y-3">

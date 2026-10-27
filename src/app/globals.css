@@ -16,7 +16,7 @@
   --mark: #1e3a8a;         /* primary action fill */
   --mark-strong: #142a6b;
   --on-mark: #ffffff;
-  --accent: #c0282d;       /* brand stripe: current place and side letters (5.9:1) */
+  --accent: #c0282d;       /* brand stripe: the current place (5.9:1) */
   --focus: #1e3a8a;        /* focus is ink, drawn as a doubled rule: red stays for the current place */
   --danger: #9b1c1c;
   --selection: #d5ddf0;    /* a faded-ballpoint wash */
@@ -224,7 +224,18 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important;
 }
 
-@layer base { input[type='checkbox'], input[type='radio'], progress { accent-color: var(--ink); } input[type='checkbox'], input[type='radio'] { width: 1.25rem; height: 1.25rem; } }
+/* Ticks and radios drawn in ink on card stock: the browser's own boxes turn grey on navy in dark mode. */
+@layer base {
+  progress { accent-color: var(--ink); }
+  input[type='checkbox'], input[type='radio'] { appearance: none; flex-shrink: 0; width: 1.25rem; height: 1.25rem; margin: 0;
+    border: 1.5px solid var(--ink); border-radius: 0.25rem; background: var(--surface); cursor: pointer; }
+  input[type='radio'] { border-radius: 50%; }
+  input[type='checkbox']:checked { border-color: var(--mark); background: var(--mark) center / 85% no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E"); }
+  input[type='radio']:checked { background: radial-gradient(var(--ink) 0 38%, var(--surface) 44%); }
+  input[type='checkbox']:disabled, input[type='radio']:disabled { opacity: 0.6; cursor: not-allowed; }
+  @media (forced-colors: active) { input[type='checkbox'], input[type='radio'] { appearance: auto; } }
+}
 
 /* Mastery chart labels are in viewBox units and the chart scales with its column: on a phone the 400-unit chart is
    ~343px wide, so labels need a larger unit size to render at ~12px. */
