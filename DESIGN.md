@@ -128,7 +128,7 @@ Dark mode is the same card under a desk lamp at night: navy stock, pale ink, the
 
 **Key Characteristics:**
 - Ballpoint blue text and rules on white stock; no Tailwind indigo.
-- One printed accent, red, for the current place and the A/B side letters only.
+- One printed accent, red, for the current place only (the current tab and the stripe).
 - Hand-lettered caps for headings, Atkinson for all reading.
 - 1.5px ink frames, 4-6px corners, no shadows.
 - Ruling drawn per row, never behind text.
@@ -143,7 +143,7 @@ Two inks on one stock: ballpoint blue for everything, printed red for "you are h
 - **Night Ballpoint** (dark-mark): the dark-scheme primary fill, white text on it (5.3:1).
 
 ### Secondary
-- **Brand-Stripe Red** (accent): the current nav tab, the A and B side letters, and the three-bar stripe. 5.9:1 on surface. Nothing else.
+- **Brand-Stripe Red** (accent): the current nav tab and the three-bar stripe. 5.9:1 on surface. Nothing else.
 
 ### Neutral
 - **Desk Ground** (ground): page background, a cool off-white.
@@ -159,7 +159,7 @@ Two inks on one stock: ballpoint blue for everything, printed red for "you are h
 Draft Coach layer highlights (layer-global, layer-paragraph, layer-sentence, layer-strength) and chart and strength colours (chart-idle, chart-review, strength-*) carry over unchanged. They were validated earlier: text on layers stays ink (at least 7:1), chart colours are marks only, and every mark and layer has a text label.
 
 ### Named Rules
-**The One Printed Colour Rule.** Red marks the current tab, the side letters and the stripe. It is never a focus ring, a caret, a button fill, a link or decoration.
+**The One Printed Colour Rule.** Red marks the current tab and the stripe. It is never a focus ring, a caret, a button fill, a link or decoration.
 
 **The Never Alone Rule.** Colour is never the only signal. The current tab is also bold, carries `aria-current="page"` and gets a bar or stripe; errors carry "Error:"; layers and chart marks carry text labels.
 
@@ -197,7 +197,7 @@ Touch targets are at least 44px (`min-h-11`, `.btn`, `.field`); list rows at lea
 Flat. There are no shadows. Depth comes from 1.5px ink frames around panels, 1.5px ink rules between sections, and the faint per-row ruling. The page ground is a shade off the white stock and carries a paper-fibre grain (`--fibre`: fractal noise in the ink's own hue at a few percent, light and dark), so panels read as clean card stock laid on a fibrous desk. The grain is decoration only and never sits behind text inside a panel.
 
 ### Named Rules
-**The Ruled Row Rule.** Ruling is drawn per row as a 1px rule-colour bottom border (`.ruled`), like a tracklist. Never paint ruling as a background behind text.
+**The Ruled Row Rule.** Ruling is drawn per row as a 1px rule-colour bottom border (`.ruled`), like the lines on an index card. Never paint ruling as a background behind text.
 
 ## Shapes
 
@@ -218,16 +218,16 @@ Plain, inked, square-ish.
 ### Inputs / Fields
 - **Style:** white stock, 1.5px line border, 0.25rem corner, 44px tall, muted placeholder.
 - **Focus:** the same double ink outline, 1px offset.
-- **Checkboxes and radios:** 1.25rem, `accent-color: ink`, in 44px labels.
+- **Checkboxes and radios:** drawn, not the browser's: 1.25rem, 1.5px ink frame on card stock (radios round); a checked box fills with the primary ink and a white pen tick, a checked radio takes an ink dot. In 44px labels. Forced-colours mode falls back to the system controls.
 - **Error:** `.error`, danger colour, bold, "Error:" prefix, `role="alert"`.
 
-### Cards / Containers (the inlay)
+### Cards / Containers (the index card, `.inlay`)
 - **Corner Style:** 0.375rem.
 - **Background:** surface.
 - **Shadow Strategy:** none (see Elevation & Depth).
 - **Border:** 1.5px ink.
 - **Internal Padding:** 20px, 24px for empty states.
-Used app-wide for panels. Do not nest inlays.
+Used app-wide for panels. Do not nest index cards.
 
 ### Navigation
 - **Phones:** bottom tab bar on rail white, 1.5px ink rule on top, five tabs. The current tab is red and bold with a 3px red bar along its top.
@@ -257,7 +257,7 @@ Exams and similar lists sit under a 1.5px ink rule, each row at least 48px with 
 - **Do** draw ruling per row with `.ruled`.
 - **Do** set headings in `.hand` and everything read in Atkinson.
 - **Do** pair every colour signal with text, weight, shape or `aria-current`.
-- **Do** keep motion to state and one authored moment: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`; buttons press 1px down on `:active`; a new review or warm-up card slides in from the left (`.card-in`, 280ms clip-path reveal); revealing an answer turns the card over from its top edge (`.flip-in`, 380ms); "Right." / "Not quite." get an ink underline drawn under them (`.ink-draw`, 320ms); Today's highlighter strokes are laid on once. On every page the heading is written in by hand, left to right (`.hand-write`, a 560ms clip reveal of the words at a pen's steady pace), and its doubled ink rule is drawn under it (`.rule-draw`, 420ms, from 260ms) and the current tab's red mark is written in (`.mark-in`, 240ms); lists that arrive as lists (decks, essays, concepts, writing patterns, missed test questions) come in one row after another (`.track-in`, 260ms per row, 45ms apart, capped at the eighth row); triage and practice-test cards slide in like review cards; a practice-test score is stamped in with an ink underline. Selected test options ink their frame like review options. Background: three ruled index cards (`src/components/card-stack.tsx`), white stock in a 2px ink line at 22%, fanned on the desk in the right margin inside the app (1024px and up) and large beside the form on sign-in, onboarding and password reset. They are dealt into the fan as each page opens (`.deal`, 560ms, 90ms apart), then stay still. A finished review squares the cards just reviewed into a small pile and draws a pen tick over it (`.pile`, `.tick`). In triage, a dragged card follows the finger and tilts; a kept card flies off to the right and a discarded one to the left while the next slides in. Pointing at or tabbing into a feedback card lays a highlighter stroke over its passage in the essay (`mark[data-linked]`, 320ms). Interactions: a button hover fills the key from the left with a 10% ink tint (220ms), link underlines press from 1px to 2.5px, a linked inlay doubles its frame with an inset ink line, fields ink their border on hover and while typing. Honour reduced motion from the OS and the profile.
+- **Do** keep motion to state and one authored moment: colour transitions 150ms `cubic-bezier(0.16, 1, 0.3, 1)`; buttons press 1px down on `:active`; a new review or warm-up card slides in from the left (`.card-in`, 280ms clip-path reveal); revealing an answer turns the card over from its top edge (`.flip-in`, 380ms); "Right." / "Not quite." get an ink underline drawn under them (`.ink-draw`, 320ms); Today's highlighter strokes are laid on once. On every page the heading is written in by hand, left to right (`.hand-write`, a 560ms clip reveal of the words at a pen's steady pace), and its doubled ink rule is drawn under it (`.rule-draw`, 420ms, from 260ms) and the current tab's red mark is written in (`.mark-in`, 240ms); lists that arrive as lists (decks, essays, concepts, writing patterns, missed test questions) come in one row after another (`.track-in`, 260ms per row, 45ms apart, capped at the eighth row); triage and practice-test cards slide in like review cards; a practice-test score is stamped in with an ink underline. Selected test options ink their frame like review options. Background: three ruled index cards (`src/components/card-stack.tsx`), white stock in a 2px ink line at 22%, fanned on the desk in the right margin inside the app (1024px and up) and large beside the form on sign-in and password reset (onboarding shows it only from 768px: on phones its long form would scroll over the cards). They are dealt into the fan as each page opens (`.deal`, 560ms, 90ms apart), then stay still. A finished review squares the cards just reviewed into a small pile and draws a pen tick over it (`.pile`, `.tick`). In triage, a dragged card follows the finger and tilts; a kept card flies off to the right and a discarded one to the left while the next slides in. Pointing at or tabbing into a feedback card lays a highlighter stroke over its passage in the essay (`mark[data-linked]`, 320ms). Interactions: a button hover fills the key from the left with a 10% ink tint (220ms), link underlines press from 1px to 2.5px, a linked index card doubles its frame with an inset ink line, fields ink their border on hover and while typing. Honour reduced motion from the OS and the profile.
 
 ### Don't:
 - **Don't** use red for focus, carets, links, buttons or decoration.
