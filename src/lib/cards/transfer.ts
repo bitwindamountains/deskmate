@@ -2,25 +2,15 @@ import { z } from 'zod';
 import type { Db } from '@/lib/llm-calls';
 import { type CsvCard, parseCards } from './csv';
 import { CARD_TYPES } from '@/lib/cards/types';
+import { allRows } from './all-rows';
+
+export { allRows };
 
 const NO_DECK = { ok: false, message: "We couldn't find that deck." } as const;
 const FAILED = { ok: false, message: "We couldn't import those cards. Try again." } as const;
 
 /** inDeck: cards the deck already has; inFile: rows that repeat an earlier row of the same file. */
 export type ImportResult = { ok: true; added: number; skippedRows: number[]; inDeck: number; inFile: number } | { ok: false; message: string };
-
-const PAGE = 1000; // the API's default row cap
-
-/** Every row of a query, page by page: a single select stops silently at the API's row cap. order() keeps pages stable. */
-export async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[] | null> {
-  const out: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await page(from, from + PAGE - 1);
-    if (error || !data) return null;
-    out.push(...data);
-    if (data.length < PAGE) return out;
-  }
-}
 
 // Same card means the same front and back, ignoring case and outer spaces.
 const keyOf = (front: string, back: string) => `${front.trim().toLowerCase()}\u0000${back.trim().toLowerCase()}`;
