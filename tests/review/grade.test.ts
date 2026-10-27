@@ -36,6 +36,12 @@ describe('gradeLocally', () => {
     const r = await gradeLocally({ type: 'basic', reference: 'a long reference with many more than eight words in total here', keyPoints: ['k'], answer: 'zzz', responseMs: 1 }, async () => { throw new Error('offline'); });
     expect(r.source).toBe('fuzzy');
   });
+  test('a low edit score with no embedding model is unsettled: a paraphrase goes to the AI grader', async () => {
+    const i = { type: 'basic' as const, reference: 'A catalyst lowers the activation energy of a reaction', keyPoints: ['lowers activation energy'], answer: 'it makes the reaction need less energy to start', responseMs: 1 };
+    expect(similarity(i.answer, i.reference)).toBeLessThan(0.45);
+    expect((await gradeLocally(i, null)).needsLlm).toBe(true);
+    expect((await gradeLocally(i, async () => { throw new Error('offline'); })).needsLlm).toBe(true);
+  });
   test('why card with rejecting embed needs LLM', async () => {
     const r = await gradeLocally({ type: 'why', reference: 'a long reference with many more than eight words in total here', keyPoints: ['k'], answer: 'zzz', responseMs: 1 }, async () => { throw new Error('offline'); });
     expect(r).toMatchObject({ source: 'fuzzy', needsLlm: true });
