@@ -83,7 +83,6 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
    - review Write, Progress, Profile, triage, warm-up, practice test and onboarding under the new design, and dark mode everywhere (only Today was checked dark, before PR #48);
    - check the essay highlighter link in a browser on an essay with feedback (covered by a unit test only), and the motion in Firefox and Safari;
    - refresh `.impeccable/design.json` (it still describes the mixtape theme) with `/impeccable document`, and drop the two stale cream-palette ignores in `.impeccable/config.json`.
-4. **Code map:** `pip install "graphifyy[sql]"` would let `/graphify --update` map the migrations (they add nothing today).
 
 ## Gotchas
 - Browser-only libraries (pdf.js, sql.js) are aliased to `src/lib/server-stub.ts` in `next.config.ts` and must be loaded with a lazy `await import()`. A static import breaks the build.
