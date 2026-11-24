@@ -10,6 +10,7 @@ import { getEmbedder } from '@/lib/embed/embed';
 import { promptForWhy, writeHref } from '@/growth/prompts';
 import type { ReviewCard } from '@/lib/review/load';
 import type { Confidence } from '@/review/calibration';
+import { resetsIn } from '@/lib/time/reset';
 import { recordReview, requestGrade, runSync } from '@/review/client-sync';
 import { gradeLocally, scoreToRating } from '@/review/grade';
 import { applyRating, buildSession, DEFAULT_RETENTION, nextReview, parseDay, schedulerFor, type Grade } from '@/review/schedule';
@@ -22,7 +23,7 @@ import { MathText } from '@/components/math-text';
 
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
-  feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number; right?: boolean };
+  feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: false | 'busy' | 'limit'; ms: number; right?: boolean };
 // result: what the answer earned, the app's suggestion when it graded one, else the student's rating; the summary counts it,
 // so rating a miss Good still schedules as Good but doesn't show as accurate.
 type Done = { cardId: string; concept: string; rating: Grade; result: Grade; confidence?: Confidence };
@@ -192,10 +193,11 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     }
     setPhase('checking');
     const r = await requestGrade(current.id, answer);
-    setChecked(r
+    // At the daily cap the student's rating stands: a queued regrade would hold the review back until the UTC day turns.
+    setChecked(r && r !== 'limit'
       ? { answer, source: 'llm', score: r.score, hit: r.hit, missed: r.missed, feedback: r.feedback, suggested: scoreToRating(r.score, ms),
         needsRegrade: false, unavailable: false, ms }
-      : { answer, source: 'self', score: local.score, hit: [], missed: [], feedback: null, suggested: null, needsRegrade: true, unavailable: true, ms });
+      : { answer, source: 'self', score: local.score, hit: [], missed: [], feedback: null, suggested: null, needsRegrade: r !== 'limit', unavailable: r === 'limit' ? 'limit' : 'busy', ms });
     setPhase('rate');
   }
 
@@ -460,7 +462,10 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
         <div role="status" className="empty:hidden">
           {phase === 'checking' && <p className="text-ink-muted">Checking your answer…</p>}
           {phase === 'rate' && checked?.right !== undefined && <p className="font-bold"><span className="ink-draw">{checked.right ? 'Right.' : 'Not quite.'}</span></p>}
-          {phase === 'rate' && checked?.unavailable && <p className="font-bold">Couldn&apos;t check this one right now. How did you do?</p>}
+          {phase === 'rate' && checked?.unavailable === 'busy' && <p className="font-bold">Couldn&apos;t check this one right now. How did you do?</p>}
+          {phase === 'rate' && checked?.unavailable === 'limit' && (
+            <p className="font-bold">You&apos;ve had a lot of answers checked today. Rate this one yourself; checking is back {resetsIn()}.</p>
+          )}
           {phase === 'rate' && checked?.feedback && <p className="max-w-prose">{checked.feedback}</p>}
         </div>
       </section>
