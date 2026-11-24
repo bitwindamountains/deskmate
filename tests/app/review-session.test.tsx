@@ -88,6 +88,18 @@ test('grade 503 shows self-grade prompt and queues a regrade', async () => {
   expect(row).toMatchObject({ needsRegrade: 1, review: { grade_source: 'self', final_rating: 2, suggested_rating: null, answer_text: 'no idea really' } });
 });
 
+test('grade 429 says checking is used up for today and keeps the student rating without a regrade', async () => {
+  fetchMock.mockResolvedValueOnce(json(429, { error: 'grade_limit', message: 'x' }));
+  const field = await start([why]);
+  await answer(field, 'no idea really');
+  expect(await screen.findByText(/^You've had a lot of answers checked today\. Rate this one yourself; checking is back in (under an hour|about \d+ hours?)\.$/)).toBeTruthy();
+  expect(screen.queryByText("Couldn't check this one right now. How did you do?")).toBeNull();
+  fireEvent.click(rating('Hard'));
+  await waitFor(async () => expect(await outbox()).toHaveLength(1));
+  const [row] = await outbox();
+  expect(row).toMatchObject({ needsRegrade: 0, review: { grade_source: 'self', final_rating: 2, suggested_rating: null } });
+});
+
 test('pressing 1 overrides the suggestion to Again', async () => {
   const field = await start([card('a'), card('b')]);
   after12s();

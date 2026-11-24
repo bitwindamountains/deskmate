@@ -10,9 +10,11 @@ import { syncOutbox, type SyncDeps } from './sync';
 const LLM_RATING = { again: Rating.Again, hard: Rating.Hard, good: Rating.Good, easy: Rating.Easy } as const;
 const SHELL_CACHE = 'scholar-shell-v1'; // public/sw.js
 
-export async function requestGrade(cardId: string, answer: string): Promise<GradeAnswer | null> {
+/** 'limit': today's grading cap is used up (429); null: busy or offline. */
+export async function requestGrade(cardId: string, answer: string): Promise<GradeAnswer | 'limit' | null> {
   try {
     const res = await fetch('/api/grade', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cardId, answer }) });
+    if (res.status === 429) return 'limit';
     if (!res.ok || res.redirected) return null;
     // /api/grade already validates with GradeAnswer; parsing again here would ship zod to the review page.
     return ((await res.json())?.result as GradeAnswer | undefined) ?? null;
@@ -30,7 +32,7 @@ const deps: SyncDeps = {
   recordReview,
   grade: async (cardId, answer) => {
     const r = await requestGrade(cardId, answer);
-    return r ? { ok: true, suggested: LLM_RATING[r.suggested_rating], score: r.score } : { ok: false };
+    return r && r !== 'limit' ? { ok: true, suggested: LLM_RATING[r.suggested_rating], score: r.score } : { ok: false };
   },
 };
 
