@@ -18,7 +18,7 @@
     "@huggingface/transformers": "4.3.1",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.2",
-    "dexie": "4.4.6",
+    "dexie": "4.4.7",
     "diff": "9.0.0",
     "fflate": "0.8.3",
     "fzstd": "0.1.1",
