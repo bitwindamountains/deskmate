@@ -126,6 +126,19 @@ test('summary shows count, accuracy, and next review', async () => {
   expect(screen.getByRole('button', { name: 'Do more' })).toBeTruthy();
 });
 
+test('a miss the student rates Good still counts as a miss in accuracy and concepts', async () => {
+  fetchMock.mockResolvedValue(json(200, { result: { ...llm, score: 0, hit: [], suggested_rating: 'again' }, cached: false }));
+  const field = await start([card('a', { concept: 'Glycolysis' })]);
+  await answer(field, 'no clue');
+  await screen.findByText(/Suggested/);
+  await waitFor(() => rating('Again'));
+  fireEvent.keyDown(window, { key: '3' });
+  expect(await screen.findByRole('heading', { name: 'Session done' })).toBeTruthy();
+  expect(screen.getByText('Accuracy: 0%')).toBeTruthy();
+  expect(screen.queryByText(/Got stronger/)).toBeNull();
+  expect(screen.getByText('Needs another look: Glycolysis')).toBeTruthy();
+});
+
 test('keyboard only: Enter checks, digits rate, focus returns to the answer field', async () => {
   const field = await start([card('a'), card('b')]);
   await waitFor(() => expect(document.activeElement).toBe(field)); // focus is set by an effect after the field renders
