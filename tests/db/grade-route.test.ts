@@ -112,3 +112,29 @@ test('POST for another user card is 404 with the error shape', async () => {
   expect(res.status).toBe(404);
   expect(Object.keys(await res.json()).sort()).toEqual(['error', 'message']);
 });
+
+test('consume_grade_quota allows 300 new grades a day, then refuses, and users cannot reset it', async () => {
+  const U = await createTestUser(); created.push(U.userId);
+  await adminClient().from('quota_usage').insert({ user_id: U.userId, day: new Date().toISOString().slice(0, 10), grades: 299 });
+  const take = () => U.client.rpc('consume_grade_quota');
+  expect((await take()).data).toBe(true);
+  expect((await take()).data).toBe(false);
+  expect((await U.client.from('quota_usage').select('grades').single()).data?.grades).toBe(300);
+  await U.client.from('quota_usage').update({ grades: 0 }).eq('user_id', U.userId);
+  expect((await take()).data).toBe(false);
+  expect((await anonClient().rpc('consume_grade_quota')).error).not.toBeNull();
+});
+
+test('at the daily cap, a new answer is refused with no LLM call, but a cached one is still served', async () => {
+  const day = new Date().toISOString().slice(0, 10);
+  const { error } = await adminClient().from('quota_usage').upsert({ user_id: A.userId, day, grades: 300 }, { onConflict: 'user_id,day' });
+  if (error) throw error;
+  const fn = okComplete();
+  expect(await gradeWithLlm(A.client, A.userId, aCard, 'a brand new answer', {}, fn)).toEqual({ ok: false, status: 429 });
+  expect(fn).not.toHaveBeenCalled();
+  expect(await gradeWithLlm(A.client, A.userId, aCard, 'Protons flow through it', {}, fn)).toMatchObject({ ok: true, cached: true });
+  session.client = A.client;
+  const res = await post({ cardId: aCard, answer: 'another new answer' });
+  expect(res.status).toBe(429);
+  expect(await res.json()).toMatchObject({ error: 'grade_limit' });
+});
