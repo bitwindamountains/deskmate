@@ -8,7 +8,7 @@ const atkinson = Atkinson_Hyperlegible({ weight: ['400', '700'], subsets: ['lati
 // Hand-lettered caps for headings only (like a heading on a page of notes); everything read stays in Atkinson (DESIGN.md).
 const hand = Patrick_Hand({ weight: '400', subsets: ['latin'], variable: '--font-patrick' });
 
-export const metadata: Metadata = { title: 'Scholar', description: 'Learn anything, remember it.' };
+export const metadata: Metadata = { description: 'Learn anything, remember it.' };
 export const viewport: Viewport = { viewportFit: 'cover' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
