@@ -23,7 +23,9 @@ import { MathText } from '@/components/math-text';
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
   feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: boolean; ms: number; right?: boolean };
-type Done = { cardId: string; concept: string; rating: Grade; confidence?: Confidence };
+// result: what the answer earned, the app's suggestion when it graded one, else the student's rating; the summary counts it,
+// so rating a miss Good still schedules as Good but doesn't show as accurate.
+type Done = { cardId: string; concept: string; rating: Grade; result: Grade; confidence?: Confidence };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
 const SAVE_FAILED = "We couldn't save that review. Try again.";
@@ -235,7 +237,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     if (!current.state) introduced.current++;
     setError('');
     setAll((a) => a!.map((c) => (c.id === current.id ? { ...c, state } : c)));
-    setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, ...(confidence ? { confidence } : {}) }]);
+    setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, result: checked.suggested ?? g, ...(confidence ? { confidence } : {}) }]);
     // A confident miss is the most memorable kind once corrected, so show where the answer came from.
     // Shown above the next card, so it names the card it is about.
     setSureNote(confidence === 3 && g === Rating.Again ? { front: current.front, quote: current.sourceQuote ?? '', example: current.quoteIsExample } : null);
@@ -319,7 +321,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
         {sureNote !== null && <SureNote front={sureNote.front} quote={sureNote.quote} example={sureNote.example} />}
         {slipping && <Slipping slip={slipping} onOpen={() => setSlipping({ ...slipping, open: true })} />}
         {explain && <ExplainNote front={explain} />}
-        <Summary ratings={done.map((d) => d.rating)} concepts={conceptSummary(done.map((d) => ({ concept: d.concept, rating: d.rating })))} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
+        <Summary ratings={done.map((d) => d.result)} concepts={conceptSummary(done.map((d) => ({ concept: d.concept, rating: d.result })))} confidences={done.flatMap((d) => (d.confidence ? [{ confidence: d.confidence, final_rating: d.rating }] : []))}
           ms={Date.now() - startedAt} cards={all} onDoMore={doMore} nothingMore={nothingMore} />
       </>
     );
