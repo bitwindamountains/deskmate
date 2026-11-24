@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { getProfile } from '@/lib/profile/require';
 import { OnboardingForm } from './onboarding-form';
 
+export const metadata = { title: 'Set up · Scholar' };
+
 export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams;
   const { profile } = await getProfile();

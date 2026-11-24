@@ -1,6 +1,8 @@
 import { safeNext } from '@/lib/auth/paths';
 import { LoginForm } from './login-form';
 
+export const metadata = { title: 'Sign in · Scholar' };
+
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; deleted?: string }> }) {
   const { next, error, deleted } = await searchParams;
   return (
