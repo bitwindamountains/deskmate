@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 const Body = z.object({ cardId: z.uuid(), answer: z.string().max(2000) });
 const ERRORS = {
   404: { error: 'not_found', message: "We couldn't find that card." },
+  429: { error: 'grade_limit', message: "You've had a lot of answers checked today. Rate this one yourself." },
   503: { error: 'busy', message: 'Grading is busy right now. Rate this one yourself.' },
 } as const;
 
