@@ -5,6 +5,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 
 ## Where things are
 - **Start here:** `PROGRESS.md` has the current state, open PRs, owner decisions and next steps. Update it at the end of each session.
+- **Pending (owner-approved 2026-11-26, not built):** hand-written Q&A cards on the deck page, and essay feedback saying "P0" (paragraph labels from `[P1]`). The plan for both is item 0 of "Next steps" in `PROGRESS.md`; remove this line once they are merged.
 - Brief: `ai-learning-platform-brief.md`. Spec: `docs/superpowers/specs/2026-10-20-scholar-design.md`.
 - Plans, one per phase: `docs/superpowers/plans/`. Work task by task, tests first, one commit per task (the message is given in the plan). Each plan's Global Constraints and Review Focus apply.
 - UI follows `DESIGN.md` ("The Study Desk": index cards, ballpoint, a lime highlighter; tokens in `src/app/globals.css`). Every visual or motion element must be something a student actually uses to study, not a metaphor (owner, 2026-10-25). Product context is in `PRODUCT.md` (Impeccable).
