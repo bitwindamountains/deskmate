@@ -34,4 +34,11 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 - Before changing a prompt, model, or LLM setting, read `docs/superpowers/notes/2026-10-21-token-budget.md`. It lists what was measured, kept, and rejected. Re-run the eval after the change and add a row.
 - Beta is 18+ only. Accessibility is WCAG 2.2 AA: keyboard works everywhere, color is never the only signal. Mobile first.
 - No guilt-based copy and no streak pressure.
+- Page titles come from `AppPage` (`<title>{title} · Scholar</title>`); pages outside it export `metadata.title`. The root layout sets no title, so there is only ever one (WCAG 2.4.2).
+- Every LLM route has a daily cap through a `scholar_private.consume_*_quota()` function (essays 5, generations 3, hints and help 60, grades 300); check it after any cache and before the AI call. A new LLM route needs one too.
 - Line endings are LF.
+
+## Dependencies
+- `next build` stops with `SecurityFatalError` on a Next version with known advisories (the message comes last, after the route list): pin the patched version with `npm i -E`, don't work around it.
+- `ts-fsrs` stays on 5.x (FSRS-6). v6 makes FSRS-7 the default, adds `stabilityFast` to card states, changes fuzzing and needs Node 24: a scheduling and data migration that waits for the owner.
+- sql.js loads its wasm from `public/vendor/sql-wasm-<version>.wasm` (`SQL_WASM` in `transfer.tsx`). When bumping sql.js, copy the new `node_modules/sql.js/dist/sql-wasm.wasm` there, update the constant, delete the old file; `tests/lib/sql-wasm.test.ts` fails if they drift.
