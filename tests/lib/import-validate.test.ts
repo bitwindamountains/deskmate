@@ -19,7 +19,11 @@ test('21 pdf pages rejected', () => {
 });
 test('scanned pdf rejected with the no-text message', () => {
   const r = validateImport({ ...base, kind: 'pdf', pages: [{ page: 1, text: '' }] });
-  expect(r).toEqual({ ok: false, error: 'This PDF has no selectable text. Paste the text instead; photo import comes later.' });
+  expect(r).toEqual({ ok: false, error: 'This PDF has no selectable text (it may be a scan). Choose a photo of the pages instead, or paste the text.' });
+});
+test('a pdf with a little text is called too short, not textless', () => {
+  const r = validateImport({ ...base, kind: 'pdf', pages: [{ page: 1, text: 'Page one text about mitochondria.' }, { page: 2, text: 'Page two text about ATP.' }] });
+  expect(r).toEqual({ ok: false, error: 'This PDF has too little text to make cards from. Add more pages, or paste a few more sentences.' });
 });
 test('neither deckId nor newDeckTitle is rejected', () => {
   expect(validateImport({ title: 't', kind: 'text', pages: [{ page: 1, text: words(30) }] })).toEqual({ ok: false, error: 'Choose a deck or name a new one.' });
