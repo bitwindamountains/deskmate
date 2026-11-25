@@ -87,7 +87,7 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
    - Supabase's leaked-password protection (HaveIBeenPwned) is off. It's project-wide, so the owner decides.
    - Quotas are consumed before the AI call, so a failed call still uses one help or hint. Minor; refund if students notice.
    - ts-fsrs 6 (FSRS-7, new card-state field, Node 24) waits for the owner; everything else is current (PR #58).
-4. **Design follow-ups (Study Desk):** done in PR #54, except one item that was skipped: the motion was not checked in Firefox or Safari (the Playwright browser download was stopped). Still open: run the pages in Firefox and Safari (WebKit) once, and confirm each animation finishes on its final frame.
+4. **Design follow-ups (Study Desk):** Firefox checked on 2026-11-26 (Playwright 1.63, production build, 1280px): on login, Today, Study, review (including the answer flip), triage, warm-up, Write, new essay, Progress, Profile and privacy, every animation finishes, none loops, each lands on its final frame, and with reduced motion nothing is running after 300 ms; no console errors. Still open: Safari (WebKit), whose Playwright download hasn't been made.
 
 ## Gotchas
 - Browser-only libraries (pdf.js, sql.js) are aliased to `src/lib/server-stub.ts` in `next.config.ts` and must be loaded with a lazy `await import()`. A static import breaks the build.
