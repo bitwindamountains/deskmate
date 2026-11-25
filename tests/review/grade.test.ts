@@ -60,6 +60,20 @@ describe('gradeLocally', () => {
     const r = await gradeLocally({ type: 'basic', reference: 'long reference text with many many more than eight words in it', keyPoints: ['kp one', 'kp two'], answer: 'my answer', responseMs: 1 }, embed);
     expect(r).toMatchObject({ score: 0.5, source: 'embedding', hit: ['kp one'], missed: ['kp two'], needsLlm: true });
   });
+  // Measured with all-MiniLM-L6-v2 (2026-11-26): a key point written as a label ("ETC location") scores ~0.07 against a right
+  // paraphrase, while the paraphrase scores 0.86 against the answer itself; wrong answers ("the cytoplasm") score ~0.3.
+  test('no key point hit but close to the answer itself: unsettled, so the AI grader decides', async () => {
+    const vec: Record<string, number[]> = { 'the inner membrane of the mitochondrion': [0.86, 0.51, 0], 'inner mitochondrial membrane': [1, 0, 0], 'ETC location': [0, 0, 1] };
+    const embed = async (t: string[]) => t.map((x) => vec[x]);
+    const r = await gradeLocally({ type: 'basic', reference: 'inner mitochondrial membrane', keyPoints: ['ETC location'], answer: 'the inner membrane of the mitochondrion', responseMs: 1 }, embed);
+    expect(r).toMatchObject({ score: 0, missed: ['ETC location'], needsLlm: true });
+  });
+  test('no key point hit and far from the answer: settled as a miss, no AI call', async () => {
+    const vec: Record<string, number[]> = { 'the cytoplasm': [0.34, 0.94, 0], 'inner mitochondrial membrane': [1, 0, 0], 'ETC location': [0, 0, 1] };
+    const embed = async (t: string[]) => t.map((x) => vec[x]);
+    const r = await gradeLocally({ type: 'basic', reference: 'inner mitochondrial membrane', keyPoints: ['ETC location'], answer: 'the cytoplasm', responseMs: 1 }, embed);
+    expect(r).toMatchObject({ score: 0, needsLlm: false });
+  });
   test('embedding without key points uses cosine to reference', async () => {
     const embed = async (t: string[]) => t.map(() => [1, 0]);
     const r = await gradeLocally({ type: 'basic', reference: 'one two three four five six seven eight nine ten', keyPoints: [], answer: 'zzz', responseMs: 1 }, embed);
