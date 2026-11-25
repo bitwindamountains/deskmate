@@ -35,6 +35,8 @@ export interface CascadeInput { type: CardType; reference: string; keyPoints: st
 export interface CascadeResult { score: number; source: 'exact' | 'fuzzy' | 'embedding'; hit: string[]; missed: string[]; suggested: Grade; needsLlm: boolean }
 
 const KP_HIT = 0.75;
+// all-MiniLM-L6-v2, 2026-11-26: right paraphrases score 0.86-0.88 against the answer, wrong answers 0.28-0.59.
+const REF_CLOSE = 0.7;
 
 /**
  * B2.3 "Put in order": matching key points says nothing about order. When every step appears word for word, their order
@@ -68,5 +70,8 @@ export async function gradeLocally(i: CascadeInput, embed: EmbedFn | null): Prom
   if (!i.keyPoints.length) return done(Math.min(1, Math.max(0, cosine(v[0], v[1]))), 'embedding', [], [], false);
   const hit = i.keyPoints.filter((_, k) => cosine(v[0], v[2 + k]) >= KP_HIT);
   const result = done(hit.length / i.keyPoints.length, 'embedding', hit, i.keyPoints.filter((k) => !hit.includes(k)), false);
+  // Key points can be labels ("ETC location") that a right paraphrase never matches. When the key points say "miss" but the
+  // answer is close to the answer itself, the AI grader decides; clear misses stay settled on the device.
+  if (!result.needsLlm && result.score < 0.45 && cosine(v[0], v[1]) >= REF_CLOSE) result.needsLlm = true;
   return i.type === 'sequence' ? checkOrder(i, ans, result) : result;
 }

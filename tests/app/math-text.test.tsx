@@ -1,6 +1,6 @@
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
-import { MathText, splitMath } from '@/components/math-text';
+import { blankCloze, MathText, splitMath } from '@/components/math-text';
 
 afterEach(cleanup);
 
@@ -33,4 +33,18 @@ test('broken TeX shows the source instead of failing', async () => {
   const { container } = render(<MathText text="Bad \(\frac{1}{\)" />);
   await waitFor(() => expect(container.querySelector('.katex, .katex-error')).not.toBeNull());
   expect(container.textContent).toContain('Bad');
+});
+
+test('a cloze card never shows its hidden part: the blank is drawn and read as "blank"', () => {
+  const { container } = render(<MathText text="The chain is in the {{c1::inner membrane}} of the {{c1::mitochondria::organelle}}." />);
+  expect(container.textContent).not.toContain('inner membrane');
+  expect(container.textContent).not.toContain('{{');
+  expect(container.textContent).toBe('The chain is in the blank_____ of the blank_____ (organelle).');
+  expect(container.querySelectorAll('.sr-only')).toHaveLength(2);
+  expect(container.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
+});
+
+test('blankCloze gives plain text for places that are not MathText', () => {
+  expect(blankCloze('In the {{c1::cytoplasm}}.')).toBe('In the _____.');
+  expect(blankCloze('No cloze here.')).toBe('No cloze here.');
 });

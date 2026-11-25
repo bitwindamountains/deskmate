@@ -402,3 +402,14 @@ test('a strong basic card on every third review is reversed and self-rated with 
   await waitFor(async () => expect((await outbox()).map((r) => [r.review.grade_source, r.review.final_rating])).toEqual([['reverse', 4]]));
   expect(fetchMock).not.toHaveBeenCalled();
 });
+
+test('a right multiple-choice answer counts as accurate in the summary, though its rating is capped at Hard', async () => {
+  await startChoice([choiceDeck[0]].concat(choiceDeck.slice(1).map((c) => ({ ...c, state: { due: new Date(Date.now() + 9e8).toISOString() } as never }))));
+  fireEvent.click(screen.getByRole('radio', { name: currentBack() }));
+  fireEvent.click(screen.getByRole('button', { name: 'Check' }));
+  expect(await screen.findByText('Right.')).toBeTruthy();
+  fireEvent.click(rating('Hard'));
+  expect(await screen.findByRole('heading', { name: 'Session done' })).toBeTruthy();
+  expect(screen.getByText('Accuracy: 100%')).toBeTruthy();
+  expect(screen.getByText('Got stronger: cell')).toBeTruthy();
+});
