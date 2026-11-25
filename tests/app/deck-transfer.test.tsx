@@ -62,7 +62,7 @@ test('an Anki package is read on the device and its cards imported', async () =>
   render(<Transfer deckId={D} />);
   fireEvent.change(screen.getByLabelText('Import cards from a CSV or Anki file'), { target: { files: [new File([new Uint8Array([1])], 'deck.apkg')] } });
   expect(await screen.findByText('Added 2 cards. Skipped 1 note: a side was empty or over 500 characters.')).toBeTruthy();
-  expect(readApkg).toHaveBeenCalledWith(expect.any(Uint8Array), '/vendor/sql-wasm-1.14.2.wasm');
+  expect(readApkg).toHaveBeenCalledWith(expect.any(Uint8Array), '/vendor/sql-wasm-1.17.0.wasm');
   expect(importAnki).toHaveBeenCalledWith(D, ANKI);
   expect(importCsv).not.toHaveBeenCalled();
 });
