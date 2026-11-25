@@ -87,7 +87,7 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
    - Supabase's leaked-password protection (HaveIBeenPwned) is off. It's project-wide, so the owner decides.
    - Quotas are consumed before the AI call, so a failed call still uses one help or hint. Minor; refund if students notice.
    - ts-fsrs 6 (FSRS-7, new card-state field, Node 24) waits for the owner; everything else is current (PR #58).
-4. **Design follow-ups (Study Desk):** Firefox checked on 2026-11-26 (Playwright 1.63, production build, 1280px): on login, Today, Study, review (including the answer flip), triage, warm-up, Write, new essay, Progress, Profile and privacy, every animation finishes, none loops, each lands on its final frame, and with reduced motion nothing is running after 300 ms; no console errors. Still open: Safari (WebKit), whose Playwright download hasn't been made.
+4. **Design follow-ups (Study Desk):** done. Checked on 2026-11-26 in Firefox and WebKit (Playwright 1.63, WebKit 26.6, production build, 1280px): on login, Today, Study, review (including the answer flip), triage, warm-up, Write, new essay, Progress, Profile and privacy, every animation finishes, none loops, each lands on its final frame, and with reduced motion nothing is running after 300 ms; no console errors in either. One thing to look at on a real Mac: in Playwright's Windows WebKit, regular-weight text on Today's card ("2 cards", "Today's time") rasterizes heavier than in Firefox. Computed styles are identical (weight 400, no stroke, shadow, transform or filter), so it is most likely that build's font rendering; open Today in Safari once to confirm.
 
 ## Gotchas
 - Browser-only libraries (pdf.js, sql.js) are aliased to `src/lib/server-stub.ts` in `next.config.ts` and must be loaded with a lazy `await import()`. A static import breaks the build.
@@ -100,6 +100,7 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
   - `@example.test` can't receive email, so to sign in through the form, give the QA user a password with `auth.admin.updateUserById` (service key, server-side script);
   - in Playwright, wait for the sign-in error text itself, not `role=alert`: Next's route announcer is also an alert and matches at once;
   - delete the user and its token files afterwards.
+- Stopping a backgrounded `npx next start` task doesn't kill the Node server; it keeps port 3200, and the next start fails with EADDRINUSE. Stop the process that owns the port (`Get-NetTCPConnection -LocalPort 3200`).
 - `npm run test:db` can time out (15 s) when Supabase is slow (about 1.5 s a request on 2026-10-25); rerun the failed files on their own before suspecting the code.
 - Keep zod out of browser code: a client file that imports anything from `src/llm/*` (even a plain helper) bundles zod and every schema, about 33 KB gzipped. Next 16 doesn't print route sizes; read `entryJSFiles` in `.next/server/app/**/page_client-reference-manifest.js` and gzip the listed chunks.
 - There is no lint script. The checks are `npx tsc --noEmit`, `npm test` and `npm run build`; `npm run test:db` hits the real Supabase project.
