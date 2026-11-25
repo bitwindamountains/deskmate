@@ -2,6 +2,8 @@
 
 Handoff for the next session. Update it at the end of each session. Last updated 2026-11-26.
 
+**Next session: start with "Next session (owner-approved, 2026-11-26)" under Next steps.**
+
 ## State
 - `main` has everything through PR #62 (2026-11-26: 616/616 unit tests, 192/192 DB tests, typecheck, build and `npm audit` clean). Older notes: PR #38 (2026-10-25): the sign-in code field takes 6–8 digits, since Supabase can send longer codes. PR #18 removed feedback translation and the first-language question (English only), and PR #20 dropped their schema (`scholar.item_translations` and `profiles.first_language`; both were empty). PR #19 writes the time zone cookie on every page. PR #21 lets a stopped timer be resumed. PR #23 (from the 2026-10-24 completeness review) adds data export and delete, "Report a problem", and a daily keep-alive. On `main`: 606/606 unit tests, 190/190 DB tests, typecheck and the production build pass.
 - PR #26 (2026-10-24, plan and rulings: `docs/superpowers/plans/2026-10-24-small-gaps.md`) closed the small gaps: limit messages say how long until they reset instead of "midnight UTC"; Recall imports Word (.docx) files; problem reports keep a copy of the reported text (`problem_reports.snapshot`, filled in by a database trigger so it can't be faked).
@@ -73,6 +75,12 @@ The brief's Part K decision log (`ai-learning-platform-brief.md`) lists these an
 - Merging: the owner granted Claude full permission for this project (2026-10-24, Part K #14): Claude merges its own PRs after the checks pass, then deletes the branch locally and on GitHub.
 
 ## Next steps
+0. **Next session (owner-approved, 2026-11-26).** The owner asked for both; nothing is built yet. One branch, tests first, one commit each, then the usual checks and merge.
+   - **Hand-written cards.** An "Add a card" form on the deck page (`src/app/(app)/study/deck/[deckId]/page.tsx`), placed above `<CardList>`: Question, Answer, Concept (optional). Q&A cards only (`type: 'basic'`), kept at once like a CSV import.
+     - Server: a new `addCard(deckId, input)` server action in that folder's `actions.ts` (uuid check, `session()`), calling a new helper in `src/lib/cards/transfer.ts` that validates one card with the same rules as `AnkiCards` (front and back 1–500 characters, concept up to 120), forces `type: 'basic'`, and saves through `insertCards` (so duplicates count as "already in this deck" and another student's deck is refused).
+     - Client: a small client component like `transfer.tsx`: after saving, say "Added." (or "That card is already in this deck."), clear the fields, focus Question for the next card, `router.refresh()`. Errors in `role="alert"`, the note in `role="status"`. No LLM call, so no quota.
+     - Tests: a DB test in `tests/db/card-import.test.ts` (adds a kept card, a duplicate adds nothing, empty or 501-character sides are refused, another user's deck is refused), and a component test like `tests/app/deck-transfer.test.tsx`.
+   - **"P0" in essay feedback.** The prompts label paragraphs `[P0]`, `[P1]`… (`src/llm/prompts.ts`: around lines 101, 112, 117 and 156), and the model repeats the label in its text ("a clear thesis in P0"), while the outline shows P1 (`outline.tsx` adds 1). Fix: label from `[P1]` in the prompts (including the `onlyParagraphs` line), and subtract 1 from every `paragraph_index` the model returns where its output is read (`src/lib/essay/analyze.ts`, which saves feedback items, strengths and outline lines). `paragraph_index` stays 0-based in the database and the UI. This is a prompt change, so first read `docs/superpowers/notes/2026-10-21-token-budget.md`, then run `npm run eval` and add a row there. Check that highlights, "Show in essay" and the outline links still land on the right paragraph.
 1. **Brief gaps:** closed or ruled on in `docs/superpowers/plans/2026-10-24-brief-gaps.md`. **Small gaps:** none open. Ruled on in `docs/superpowers/plans/2026-10-24-small-gaps.md`: daily limits stay on the UTC day (a local day could be gamed by changing time zone), failed AI calls are not queued (nothing is lost; a queue needs a worker that Hobby can't run often enough), and a magic link opened in another browser keeps the layout's one refresh.
 2. **Waiting on the owner:**
    - tune `GOAL_MATCH = 0.5` (`src/review/goals.ts`) once real course material exists;
