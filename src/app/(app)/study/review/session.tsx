@@ -19,13 +19,14 @@ import { allowedRatings, buildBlank, buildChoice, checkBlank, chooseFormat, RATI
 import { CardHelpPanel } from './card-help';
 import { conceptSummary, interleave } from '@/review/interleave';
 import { Summary } from './summary';
-import { MathText } from '@/components/math-text';
+import { blankCloze, MathText } from '@/components/math-text';
 
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
   feedback: string | null; suggested: Grade | null; needsRegrade: boolean; unavailable: false | 'busy' | 'limit'; ms: number; right?: boolean };
 // result: what the answer earned, the app's suggestion when it graded one, else the student's rating; the summary counts it,
-// so rating a miss Good still schedules as Good but doesn't show as accurate.
+// so rating a miss Good still schedules as Good but doesn't show as accurate. A right choice or blank answer counts as
+// accurate (Good) here, though its rating is capped below Good.
 type Done = { cardId: string; concept: string; rating: Grade; result: Grade; confidence?: Confidence };
 
 const RATINGS: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']];
@@ -58,7 +59,7 @@ function ExplainNote({ front }: { front: string }) {
 function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
   return (
     <div className="max-w-xl space-y-3 inlay p-4 [overflow-wrap:anywhere]">
-      <p className="font-bold">“{slip.front}” keeps slipping. Want a different way in?</p>
+      <p className="font-bold">“{blankCloze(slip.front)}” keeps slipping. Want a different way in?</p>
       {slip.open ? <CardHelpPanel cardId={slip.cardId} deckId={slip.deckId} /> : <button type="button" className="btn" onClick={onOpen}>Get help</button>}
     </div>
   );
@@ -67,7 +68,7 @@ function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
 function SureNote({ front, quote, example }: { front: string; quote: string; example?: boolean }) {
   return (
     <div role="status" className="max-w-xl inlay p-4 [overflow-wrap:anywhere]">
-      <p className="font-bold">You felt sure about “{front}”, so it&apos;s worth a second look.</p>
+      <p className="font-bold">You felt sure about “{blankCloze(front)}”, so it&apos;s worth a second look.</p>
       {quote && <p className="mt-1 text-ink-muted">{example ? 'Example' : 'From your notes'}: {quote}</p>}
     </div>
   );
@@ -239,7 +240,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
     if (!current.state) introduced.current++;
     setError('');
     setAll((a) => a!.map((c) => (c.id === current.id ? { ...c, state } : c)));
-    setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, result: checked.suggested ?? g, ...(confidence ? { confidence } : {}) }]);
+    setDone((d) => [...d, { cardId: current.id, concept: current.concept, rating: g, result: checked.right ? Math.max(checked.suggested ?? g, Rating.Good) as Grade : checked.suggested ?? g, ...(confidence ? { confidence } : {}) }]);
     // A confident miss is the most memorable kind once corrected, so show where the answer came from.
     // Shown above the next card, so it names the card it is about.
     setSureNote(confidence === 3 && g === Rating.Again ? { front: current.front, quote: current.sourceQuote ?? '', example: current.quoteIsExample } : null);

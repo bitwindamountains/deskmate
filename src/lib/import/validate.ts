@@ -38,7 +38,11 @@ export function validateImport(input: ImportInput): { ok: true } | { ok: false; 
   if (!i.deckId && !i.newDeckTitle?.trim()) return no('Choose a deck or name a new one.');
   if (i.pages.length > MAX_PAGES) return no('Pick up to 20 pages at a time.');
   if (!hasTextLayer(i.pages)) {
-    return no(i.kind === 'pdf' ? 'This PDF has no selectable text. Paste the text instead; photo import comes later.' : 'Paste at least a few sentences.');
+    if (i.kind === 'text') return no('Paste at least a few sentences.');
+    // A scan has no text layer at all; a PDF with a little text is just too short to make cards from.
+    return no(wordCount(i.pages.map((p) => p.text).join(' '))
+      ? 'This PDF has too little text to make cards from. Add more pages, or paste a few more sentences.'
+      : 'This PDF has no selectable text (it may be a scan). Choose a photo of the pages instead, or paste the text.');
   }
   if (wordCount(i.pages.map((p) => p.text).join(' ')) > MAX_WORDS) return tooMany();
   if (!chunksWithinLimits(chunkPages(i.pages, CHUNK_WORDS))) return tooMany();
