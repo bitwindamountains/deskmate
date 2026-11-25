@@ -19,7 +19,7 @@ import { allowedRatings, buildBlank, buildChoice, checkBlank, chooseFormat, RATI
 import { CardHelpPanel } from './card-help';
 import { conceptSummary, interleave } from '@/review/interleave';
 import { Summary } from './summary';
-import { MathText } from '@/components/math-text';
+import { blankCloze, MathText } from '@/components/math-text';
 
 export type { ReviewCard };
 type Checked = { answer: string | null; source: ReviewPayload['grade_source']; score: number | null; hit: string[]; missed: string[];
@@ -58,7 +58,7 @@ function ExplainNote({ front }: { front: string }) {
 function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
   return (
     <div className="max-w-xl space-y-3 inlay p-4 [overflow-wrap:anywhere]">
-      <p className="font-bold">“{slip.front}” keeps slipping. Want a different way in?</p>
+      <p className="font-bold">“{blankCloze(slip.front)}” keeps slipping. Want a different way in?</p>
       {slip.open ? <CardHelpPanel cardId={slip.cardId} deckId={slip.deckId} /> : <button type="button" className="btn" onClick={onOpen}>Get help</button>}
     </div>
   );
@@ -67,7 +67,7 @@ function Slipping({ slip, onOpen }: { slip: Slip; onOpen: () => void }) {
 function SureNote({ front, quote, example }: { front: string; quote: string; example?: boolean }) {
   return (
     <div role="status" className="max-w-xl inlay p-4 [overflow-wrap:anywhere]">
-      <p className="font-bold">You felt sure about “{front}”, so it&apos;s worth a second look.</p>
+      <p className="font-bold">You felt sure about “{blankCloze(front)}”, so it&apos;s worth a second look.</p>
       {quote && <p className="mt-1 text-ink-muted">{example ? 'Example' : 'From your notes'}: {quote}</p>}
     </div>
   );
