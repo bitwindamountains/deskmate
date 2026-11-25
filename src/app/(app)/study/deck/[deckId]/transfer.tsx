@@ -13,7 +13,7 @@ async function readText(file: File): Promise<string> {
 
 const MAX_BYTES = 1_000_000; // matches the server action's limit
 const MAX_APKG_BYTES = 100_000_000; // media makes packages big; only the collection file inside is read
-const SQL_WASM = '/vendor/sql-wasm-1.14.2.wasm';
+const SQL_WASM = '/vendor/sql-wasm-1.17.0.wasm';
 const ANKI_BATCH = 500; // 500 cards of 500-character sides stay under the 1 MB server action limit
 const FAILED = { ok: false as const, message: "We couldn't import those cards. Try again." };
 const SHOW_ROWS = 5;
