@@ -29,6 +29,18 @@ test('download saves everything as one JSON file', async () => {
   expect(JSON.parse(await blob.text())).toEqual({ decks: [{ id: 'd1' }] });
 });
 
+test('the file is named by the local date, not the UTC one', async () => {
+  // Half past midnight local time: in any time zone east of UTC, the UTC date is still the day before.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 27, 0, 30));
+  exportMyData.mockResolvedValue({});
+  render(<YourData />);
+  fireEvent.click(screen.getByRole('button', { name: 'Download my data' }));
+  await waitFor(() => expect(click).toHaveBeenCalled());
+  expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('scholar-data-2026-11-27.json');
+  vi.useRealTimers();
+});
+
 test('a failed download says so', async () => {
   exportMyData.mockResolvedValue(null);
   render(<YourData />);

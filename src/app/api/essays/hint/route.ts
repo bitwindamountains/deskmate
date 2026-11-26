@@ -4,6 +4,10 @@ import { requestHint, type HintResult } from '@/lib/essay/hints';
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
+// AI calls with retries and failover; 60 s is the Vercel Hobby limit without Fluid compute.
+export const maxDuration = 60;
+
+
 const Body = z.object({ itemId: z.uuid(), level: z.union([z.literal(3), z.literal(4), z.literal(5)]) });
 const ERROR = { 404: 'not_found', 409: 'whole_essay', 429: 'rewrite_cap', 503: 'busy' } as const;
 

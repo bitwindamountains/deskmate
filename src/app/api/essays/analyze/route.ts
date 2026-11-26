@@ -4,6 +4,10 @@ import { analyzeLayer, type AnalyzeResult } from '@/lib/essay/analyze';
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
+// AI calls with retries and failover; 60 s is the Vercel Hobby limit without Fluid compute.
+export const maxDuration = 60;
+
+
 const Body = z.object({ draftId: z.uuid(), layer: z.enum(['global', 'paragraphs', 'sentences']) });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
