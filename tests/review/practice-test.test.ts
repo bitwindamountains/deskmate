@@ -33,3 +33,10 @@ test('distractors leave out answers equivalent to the right one, ignoring case, 
   }
   expect(buildTest(cards, 3).find((x) => x.cardId === 'c1')!.kind).toBe('choice');
 });
+
+test('a yes/no question among place names is short answer, not a giveaway multiple choice', () => {
+  const cards = [card(1, { back: 'No' }), card(2, { back: 'Paris' }), card(3, { back: 'Lyon' }), card(4, { back: 'Nice' }), card(5, { back: 'Lille' })];
+  const t = buildTest(cards, 1);
+  expect(t.find((q) => q.cardId === 'c1')!.kind).toBe('short');
+  for (const q of t.filter((x) => x.kind === 'choice')) expect(q.choices).not.toContain('No');
+});
