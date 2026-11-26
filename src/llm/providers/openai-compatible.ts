@@ -7,7 +7,15 @@ export function mapFetchError(e: unknown): ProviderOutcome {
   return { ok: false, status: 'network', message };
 }
 
-/** Groq, OpenRouter, Ollama and other OpenAI-compatible chat endpoints. */
+/** Retry-After in seconds or as an HTTP date, in ms; undefined when absent or unreadable. */
+export function retryAfter(res: Response, now = Date.now()): number | undefined {
+  const v = res.headers.get('retry-after');
+  if (!v) return undefined;
+  const ms = /^\d+(\.\d+)?$/.test(v.trim()) ? Number(v) * 1000 : Date.parse(v) - now;
+  return Number.isFinite(ms) && ms > 0 ? ms : undefined;
+}
+
+/** Groq, Mistral, Ollama and other OpenAI-compatible chat endpoints. */
 export async function callOpenAICompatible(
   p: ProviderConfig,
   apiKey: string | null,
@@ -31,7 +39,7 @@ export async function callOpenAICompatible(
         ],
       }),
     });
-    if (!res.ok) return { ok: false, status: res.status, message: (await res.text()).slice(0, 200) };
+    if (!res.ok) return { ok: false, status: res.status, message: (await res.text()).slice(0, 200), retryAfterMs: retryAfter(res) };
     const body = await res.json();
     return {
       ok: true,
