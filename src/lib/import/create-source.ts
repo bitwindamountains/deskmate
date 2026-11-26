@@ -35,8 +35,9 @@ export async function insertSource(db: SupabaseClient<any, any, any>, userId: st
         card_density: input.cardDensity ?? 'standard', ...(input.cardTypes ? { card_types: input.cardTypes } : {}) }).select('id').single();
     if (srcErr || !src) { await undo(); return fail; }
     sourceId = src.id as string;
+    const paged = input.kind === 'pdf'; // pasted text has no pages
     const rows = chunkPages(input.pages, CHUNK_WORDS).map((c) => ({
-      user_id: userId, source_id: sourceId, position: c.position, page_start: c.pageStart, page_end: c.pageEnd, text: c.text,
+      user_id: userId, source_id: sourceId, position: c.position, page_start: paged ? c.pageStart : null, page_end: paged ? c.pageEnd : null, text: c.text,
     }));
     const { error: chunkErr } = await db.from('source_chunks').insert(rows);
     if (chunkErr) { await undo(); return fail; }
