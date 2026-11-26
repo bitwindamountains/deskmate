@@ -15,7 +15,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 ## Scope (owner decisions)
 - Students only: no teacher, class or school features.
 - English only: no translation and no other essay or card languages. The brief's first-language explanations (A3.9) are out.
-- The owner deploys (`docs/deploy.md`). Claude may merge its own PRs after typecheck, `npm test`, `npm run test:db` and the build pass, then deletes the branch locally and on GitHub (owner grant, brief Part K #14).
+- The owner deploys production (`docs/deploy.md`). The public portfolio demo (`DEMO_MODE=true`, `render.demo.yaml`, `docs/deployment-render-demo.md`) runs on Render as `deskmate-demo` and auto-deploys from `main`; Claude manages it through the Render API with `RENDER_API_KEY` from `.env.local` (owner, 2026-11-27; never print the key). Demo accounts live on `@scholar-demo.invalid` (`DEMO_DOMAIN`, unchanged by the rename) and are deleted after a day. `.github/workflows/keep-alive.yml` pings the demo daily so the free Supabase project doesn't pause. Claude may merge its own PRs after typecheck, `npm test`, `npm run test:db` and the build pass, then deletes the branch locally and on GitHub (owner grant, brief Part K #14).
 
 ## Commands
 - `npx tsc --noEmit`: typecheck. There is no lint script.
@@ -36,7 +36,7 @@ Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.
 - Before changing a prompt, model, or LLM setting, read `docs/superpowers/notes/2026-10-21-token-budget.md`. It lists what was measured, kept, and rejected. Re-run the eval after the change and add a row.
 - Beta is 18+ only. Accessibility is WCAG 2.2 AA: keyboard works everywhere, color is never the only signal. Mobile first.
 - No guilt-based copy and no streak pressure.
-- Page titles come from `AppPage` (`<title>{title} · Scholar</title>`); pages outside it export `metadata.title`. The root layout sets no title, so there is only ever one (WCAG 2.4.2).
+- Page titles come from `AppPage` (`<title>{title} · Deskmate</title>`); pages outside it export `metadata.title`. The root layout sets no title, so there is only ever one (WCAG 2.4.2).
 - Every LLM route has a daily cap through a `scholar_private.consume_*_quota()` function (essays 5, generations 3, hints and help 60, grades 300); check it after any cache and before the AI call. A new LLM route needs one too.
 - Line endings are LF.
 
