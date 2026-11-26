@@ -34,3 +34,9 @@ test('without filters every card is reviewed under the plain heading', async () 
   expect(ids()).toEqual(['a', 'b', 'c', 'd']);
   expect(screen.getByRole('heading', { level: 1, name: 'Review' })).toBeTruthy();
 });
+
+test('a deck-only session (from triage) shows that deck and names it in the heading', async () => {
+  render(await ReviewPage({ searchParams: Promise.resolve({ deck: 'd2' }) }));
+  expect(ids()).toEqual(['d']);
+  expect(screen.getByRole('heading', { level: 1, name: 'Review: Chem' })).toBeTruthy();
+});
