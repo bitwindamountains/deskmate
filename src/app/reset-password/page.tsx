@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { ResetPasswordForm } from './reset-form';
 
-export const metadata = { title: 'New password · Scholar' };
+export const metadata = { title: 'New password · Deskmate' };
 
 // Reached from the reset email through /auth/callback, which signs the student in first.
 export default async function ResetPasswordPage() {

@@ -113,7 +113,7 @@ test('form shows labelled fields and the verbatim disclosure', () => {
   expect(screen.queryByLabelText('Your first language')).toBeNull();
   expect(screen.getByRole('group', { name: 'Reading font' })).toBeTruthy();
   expect((screen.getByLabelText('Show rubric scores') as HTMLInputElement).checked).toBe(true);
-  const disclosure = "Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this (or to Mistral when Groq is busy), and essays are also checked by LanguageTool for spelling and grammar. Neither Groq nor Mistral trains its models on what you send. Read the privacy notice.";
+  const disclosure = "Deskmate uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this (or to Mistral when Groq is busy), and essays are also checked by LanguageTool for spelling and grammar. Neither Groq nor Mistral trains its models on what you send. Read the privacy notice.";
   expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === disclosure)).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Read the privacy notice' }).getAttribute('href')).toBe('/privacy');
   expect(screen.getByRole('button', { name: 'Start studying' })).toBeTruthy();
@@ -122,7 +122,7 @@ test('form shows labelled fields and the verbatim disclosure', () => {
 test('first-time mode: 18+ box required, button says Start studying', () => {
   render(<OnboardingForm />);
   expect((screen.getByLabelText('I am 18 or older.') as HTMLInputElement).required).toBe(true);
-  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Set up Scholar');
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Set up Deskmate');
   expect(screen.getByRole('button', { name: 'Start studying' })).toBeTruthy();
 });
 test('edit mode: no 18+ box, button says Save changes, disclosure stays', () => {

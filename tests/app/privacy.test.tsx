@@ -16,5 +16,5 @@ test('it names every service that receives student text, what stays, and how to 
   for (const s of ['photos, voice and text never leave it', "Voice recordings aren't kept", 'Groq', 'Mistral', 'LanguageTool', 'Supabase', 'Vercel', 'does not train', 'until you delete it', 'Download my data', 'Delete my data', '18']) {
     expect(text).toContain(s);
   }
-  expect(screen.getByRole('link', { name: 'Back to Scholar' }).getAttribute('href')).toBe('/');
+  expect(screen.getByRole('link', { name: 'Back to Deskmate' }).getAttribute('href')).toBe('/');
 });

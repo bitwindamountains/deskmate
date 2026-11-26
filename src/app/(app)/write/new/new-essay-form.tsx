@@ -156,7 +156,7 @@ export function NewEssayForm({ initialTitle = '', initialPrompt = '' }: { initia
             <textarea id="rubric" rows={5} maxLength={4000} value={rubricText} onChange={(e) => setRubricText(e.target.value)} className="field"
               {...bad('rubric')} aria-describedby={error && errField === 'rubric' ? 'essay-err rubric-help' : 'rubric-help'} />
             <p id="rubric-help" className="mt-1 text-sm text-ink-muted">
-              One criterion per line, like &quot;Evidence: uses specific sources&quot;. 2 to 8 lines, each scored 1 to 4. Leave it empty to use Scholar&apos;s rubric.
+              One criterion per line, like &quot;Evidence: uses specific sources&quot;. 2 to 8 lines, each scored 1 to 4. Leave it empty to use Deskmate&apos;s rubric.
             </p>
           </div>
         </div>

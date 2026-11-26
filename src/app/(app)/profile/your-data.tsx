@@ -22,7 +22,7 @@ export function YourData() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `scholar-data-${new Date().toLocaleDateString('en-CA')}.json`; // en-CA writes the local date as YYYY-MM-DD
+    a.download = `deskmate-data-${new Date().toLocaleDateString('en-CA')}.json`; // en-CA writes the local date as YYYY-MM-DD
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -42,9 +42,9 @@ export function YourData() {
   return (
     <section aria-labelledby="your-data" className="mt-8 max-w-prose space-y-6 inlay p-6">
       <h2 id="your-data" className="hand text-2xl">Your data</h2>
-      <p><a href="/privacy" className="underline">Read what Scholar keeps and who sees it</a>.</p>
+      <p><a href="/privacy" className="underline">Read what Deskmate keeps and who sees it</a>.</p>
       <div className="space-y-2">
-        <p>Download everything you have in Scholar (essays, drafts, feedback, cards and reviews) as one JSON file.</p>
+        <p>Download everything you have in Deskmate (essays, drafts, feedback, cards and reviews) as one JSON file.</p>
         <button type="button" className="btn" disabled={downloading} onClick={download}>
           {downloading ? 'Gathering your data…' : 'Download my data'}
         </button>

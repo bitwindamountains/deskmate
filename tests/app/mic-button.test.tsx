@@ -33,7 +33,7 @@ test('a refused microphone or a model that cannot load says so; nothing is sent 
   (navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new DOMException('denied', 'NotAllowedError'));
   render(<MicButton onText={vi.fn()} transcribe={async () => { throw new Error('no model'); }} />);
   fireEvent.click(screen.getByRole('button', { name: 'Speak your answer' }));
-  expect((await screen.findByRole('alert')).textContent).toBe('Scholar needs permission to use your microphone. You can type your answer instead.');
+  expect((await screen.findByRole('alert')).textContent).toBe('Deskmate needs permission to use your microphone. You can type your answer instead.');
   fireEvent.click(screen.getByRole('button', { name: 'Speak your answer' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Stop recording' }));
   expect((await screen.findByRole('alert')).textContent).toBe("Voice input isn't available on this device. You can type your answer instead.");

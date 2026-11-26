@@ -20,7 +20,7 @@ test('a card report sends the reason and note, then thanks the student', async (
   fireEvent.click(screen.getByLabelText('My answer was graded wrong'));
   fireEvent.change(screen.getByLabelText('Anything to add? (optional)'), { target: { value: 'Synonym' } });
   fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
-  expect((await screen.findByRole('status')).textContent).toBe('Thanks. Reports like this help us fix Scholar.');
+  expect((await screen.findByRole('status')).textContent).toBe('Thanks. Reports like this help us fix Deskmate.');
   expect(sendReport).toHaveBeenCalledWith({ target: 'card', targetId: ID, reason: 'grading', note: 'Synonym' });
   expect(screen.queryByRole('button', { name: 'Report a problem' })).toBeNull();
 });
