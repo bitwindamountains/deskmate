@@ -9,17 +9,17 @@ const ESSAY = 'Prompt: Should schools ban phones?\nSchools should ban phones bec
 
 const globalData = {
   strengths: [
-    { paragraph_index: 0, quote: 'Schools should ban phones', why: 'clear position' },
-    { paragraph_index: 1, quote: 'Studies show', why: 'cites evidence' },
+    { paragraph_index: 1, quote: 'Schools should ban phones', why: 'clear position' },
+    { paragraph_index: 2, quote: 'Studies show', why: 'cites evidence' },
   ],
   rubric_scores: [{ criterion: 'Thesis', score: 3, justification: 'j', confidence: 'high' }],
   items: [
-    item('global', 'thesis', 0, 'Schools should ban phones', 'high'),
-    item('global', 'counterargument', 0, 'this quote is not in the essay', 'medium'),
+    item('global', 'thesis', 1, 'Schools should ban phones', 'high'),
+    item('global', 'counterargument', 1, 'this quote is not in the essay', 'medium'),
   ],
 };
 const paragraphData = {
-  items: [item('paragraph', 'evidence', 1, 'Studies show focus improves', 'medium'), item('paragraph', 'analysis', 0, 'distract students', 'low')],
+  items: [item('paragraph', 'evidence', 2, 'Studies show focus improves', 'medium'), item('paragraph', 'analysis', 1, 'distract students', 'low')],
 };
 const cardData = {
   cards: [
@@ -79,7 +79,7 @@ test('assignment prompt line is passed to the prompt, not treated as essay text'
   await runEval(opts());
   const [, prompt] = fake.mock.calls.find(([t]) => t === 'essay_global')!;
   expect(prompt.user).toContain('<assignment>\nShould schools ban phones?');
-  expect(prompt.user).toContain('[P0] Schools should ban phones');
+  expect(prompt.user).toContain('[P1] Schools should ban phones');
 });
 
 test('essay output has top3 ranked items', async () => {

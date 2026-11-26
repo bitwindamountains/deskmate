@@ -24,12 +24,14 @@ const log = (task: string) => [{ task, provider: 'groq', model: 'fake', status: 
 const item = (layer: string, paragraph_index: number, quote: string, summary = 's') =>
   ({ layer, category: 'evidence', rubric_criterion: 'Evidence', paragraph_index, quote, severity: 'high', summary, hints: ['q?', 'hint'] });
 const GLOBAL = {
-  strengths: [{ paragraph_index: 0, quote: 'banned in classrooms', why: 'clear position' }, { paragraph_index: 9, quote: 'not in the essay', why: 'x' }],
+  // The model answers with the prompt's [Pn] labels, which count from 1.
+  strengths: [{ paragraph_index: 1, quote: 'banned in classrooms', why: 'clear position' }, { paragraph_index: 10, quote: 'not in the essay', why: 'x' }],
   rubric_scores: [{ criterion: 'Thesis', score: 3, justification: 'j', confidence: 'high' }],
-  items: [item('global', 0, 'distract students from learning', 'Thesis needs a reason'), item('global', 1, 'robots are coming')],
+  items: [item('global', 1, 'distract students from learning', 'Thesis needs a reason'), item('global', 2, 'robots are coming')],
   safety_concern: false, carried: [],
 };
-const PARAS = { items: [item('paragraph', 1, 'check social media'), item('paragraph', 0, 'earn much higher grades')], outline: [] }; // wrong index on purpose
+const PARAS = { items: [item('paragraph', 2, 'check social media'), item('paragraph', 1, 'earn much higher grades')], outline: [] }; // wrong label on purpose
+const labelled = <T extends { paragraph_index: number }>(lines: T[]) => lines.map((l) => ({ ...l, paragraph_index: l.paragraph_index + 1 }));
 
 type Fake = typeof complete & ReturnType<typeof vi.fn>;
 const fakeComplete = (outputs: Record<string, unknown>) =>
@@ -178,7 +180,7 @@ test('draft 2: unchanged paragraph items are copied, changed paragraphs alone ar
   const para = fakeComplete({ essay_paragraphs: { items: [], outline: [] } });
   const p = await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: para });
   expect(p.ok).toBe(true);
-  expect((para.mock.calls[0][1] as { system: string }).system).toContain('Report only on paragraphs [P2]');
+  expect((para.mock.calls[0][1] as { system: string }).system).toContain('Report only on paragraphs [P3]');
   const glob = fakeComplete({ essay_global: { ...GLOBAL, carried: [{ id: oldGlobal.id, status: 'addressed' }, { id: 'invented', status: 'open' }] } });
   const g = await analyzeLayer(U.client, U.userId, d2.draftId, 'global', {}, { completeFn: glob });
   expect(g.ok).toBe(true);
@@ -261,7 +263,7 @@ test('global layer stores prompt_alignment; paragraphs layer stores the outline 
   await analyzeLayer(U.client, U.userId, draftId, 'global', {}, { completeFn: fakeComplete({ essay_global: { ...GLOBAL, prompt_alignment: alignment } }) });
   expect((await adminClient().from('analyses').select('prompt_alignment').eq('draft_id', draftId).single()).data!.prompt_alignment).toEqual(alignment);
   const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
-  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline: labelled(outline) } }) });
   expect(await outlineOf(draftId)).toEqual(outline);
 });
 
@@ -269,10 +271,10 @@ test('re-check carries outline lines of unchanged paragraphs and fills changed o
   const U = await freshUser();
   const d1 = await newDraft(U);
   const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
-  await analyzeLayer(U.client, U.userId, d1.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  await analyzeLayer(U.client, U.userId, d1.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline: labelled(outline) } }) });
   // P1 moves to index 2; a new paragraph is inserted at index 1
   const d2 = await newDraft(U, [P[0], 'A brand new paragraph about teachers and their rules for phones in class.', P[1], P[2]].join('\n\n'), d1.essayId, 2);
-  const fresh = [{ paragraph_index: 1, summary: 'Teachers set rules', flag: 'order' }];
+  const fresh = [{ paragraph_index: 2, summary: 'Teachers set rules', flag: 'order' }];
   await analyzeLayer(U.client, U.userId, d2.draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { items: [], outline: fresh } }) });
   expect(await outlineOf(d2.draftId)).toEqual([
     { paragraph_index: 0, summary: 'Point 0', flag: null },
@@ -291,9 +293,9 @@ test('a failed outline save then a retry saves each paragraph item once', async 
   const flaky = new Proxy(U.client, { get: (t, k) => (k === 'rpc'
     ? (name: string, args: unknown) => (name === 'set_outline' && failOnce ? (failOnce = false, Promise.resolve({ data: null, error: { message: 'boom' } })) : t.rpc(name, args as never))
     : Reflect.get(t, k)) }) as typeof U.client;
-  const first = await analyzeLayer(flaky, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  const first = await analyzeLayer(flaky, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline: labelled(outline) } }) });
   expect(first.ok).toBe(false);
-  const retry = await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  const retry = await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline: labelled(outline) } }) });
   expect(retry.ok).toBe(true);
   expect((await adminClient().from('feedback_items').select('id').eq('draft_id', draftId).eq('layer', 'paragraph')).data).toHaveLength(2);
   expect(await outlineOf(draftId)).toEqual(outline);
@@ -303,7 +305,7 @@ test('POST returns the saved outline with the items', async () => {
   const U = await freshUser();
   const { draftId } = await newDraft(U);
   const outline = P.map((_, i) => ({ paragraph_index: i, summary: `Point ${i}`, flag: null }));
-  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline } }) });
+  await analyzeLayer(U.client, U.userId, draftId, 'paragraphs', {}, { completeFn: fakeComplete({ essay_paragraphs: { ...PARAS, outline: labelled(outline) } }) });
   session.client = U.client;
   // The layer is done, so this answers from the database without an LLM call.
   const res = await POST(new NextRequest('http://localhost/api/essays/analyze', { method: 'POST', body: JSON.stringify({ draftId, layer: 'paragraphs' }) }));
