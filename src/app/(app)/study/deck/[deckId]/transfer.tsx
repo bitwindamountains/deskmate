@@ -34,7 +34,7 @@ async function importApkg(deckId: string, file: File): Promise<{ r: ImportResult
   const { readApkg } = await import('@/lib/cards/apkg'); // loaded only when a package is picked
   const read = await readApkg(new Uint8Array(await file.arrayBuffer()), SQL_WASM);
   if (read.error) return { r: { ok: false, message: read.error }, skipped: 0 };
-  if (!read.cards.length) return { r: { ok: false, message: 'That package has no cards Scholar can use.' }, skipped: 0 };
+  if (!read.cards.length) return { r: { ok: false, message: 'That package has no cards Deskmate can use.' }, skipped: 0 };
   const total = { ok: true as const, added: 0, skippedRows: [] as number[], inDeck: 0, inFile: 0 };
   for (let i = 0; i < read.cards.length; i += ANKI_BATCH) {
     const r = await importAnki(deckId, read.cards.slice(i, i + ANKI_BATCH));

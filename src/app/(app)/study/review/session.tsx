@@ -218,7 +218,7 @@ export function ReviewSession({ cards, minutes, newIntroducedToday, examDates, n
       if (res.ok && typeof body.question === 'string') done({ question: body.question });
       else done({ error: body.message ?? 'Help is busy right now. Try again in a minute.' });
     } catch {
-      done({ error: "We couldn't reach Scholar. The card works as it is offline." });
+      done({ error: "We couldn't reach Deskmate. The card works as it is offline." });
     }
   }
 

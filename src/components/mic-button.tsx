@@ -37,7 +37,7 @@ export function MicButton({ onText, transcribe }: { onText: (text: string) => vo
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      return setError('Scholar needs permission to use your microphone. You can type your answer instead.');
+      return setError('Deskmate needs permission to use your microphone. You can type your answer instead.');
     } finally {
       starting.current = false;
     }

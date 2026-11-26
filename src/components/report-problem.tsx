@@ -50,7 +50,7 @@ export function ReportProblem({ target, targetId }: { target: Target; targetId: 
     setBusy(false);
   }
 
-  if (sent) return <p role="status" className="text-sm text-ink-muted">Thanks. Reports like this help us fix Scholar.</p>;
+  if (sent) return <p role="status" className="text-sm text-ink-muted">Thanks. Reports like this help us fix Deskmate.</p>;
   if (!open) {
     return <button ref={trigger} type="button" className="text-sm underline" aria-expanded={false} onClick={() => setOpen(true)}>Report a problem</button>;
   }

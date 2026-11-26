@@ -1,5 +1,5 @@
 // Sentence-level feedback without an LLM (spec §6.2): the free LanguageTool public API.
-// ponytail: the public API allows about 20 requests a minute, shared by every Scholar user; self-host LanguageTool once 429s show up.
+// ponytail: the public API allows about 20 requests a minute, shared by every Deskmate user; self-host LanguageTool once 429s show up.
 const ENDPOINT = 'https://api.languagetool.org/v2/check';
 
 // Dialect fairness (brief E3): only rules about clear errors, never style. Convention rules are labelled, not called errors.

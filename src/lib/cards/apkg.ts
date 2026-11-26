@@ -32,7 +32,7 @@ export function ankiText(html: string): string {
 
 const CLOZE = /\{\{c(\d+)::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g;
 
-/** One Scholar cloze card per Anki cloze number: that number stays hidden (as c1), the others show their answer. */
+/** One Deskmate cloze card per Anki cloze number: that number stays hidden (as c1), the others show their answer. */
 export function clozeCards(text: string): { front: string; back: string }[] {
   const numbers = [...new Set([...text.matchAll(CLOZE)].map((m) => m[1]))];
   return numbers.map((n) => {

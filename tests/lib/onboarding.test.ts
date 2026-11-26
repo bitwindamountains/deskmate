@@ -10,7 +10,7 @@ const ok = { adult: 'on', study_minutes_per_day: '20', font: 'default' };
 
 test('missing 18+ box gives the adult error and no value', () => {
   const { adult: _a, ...rest } = ok;
-  expect(parseOnboarding(fd(rest))).toEqual({ ok: false, errors: { adult: "Scholar's beta is for adults (18+) for now." } });
+  expect(parseOnboarding(fd(rest))).toEqual({ ok: false, errors: { adult: "Deskmate's beta is for adults (18+) for now." } });
 });
 test.each(['3', '200', 'abc'])('study minutes %s rejected', (m) => {
   const r = parseOnboarding(fd({ ...ok, study_minutes_per_day: m }));
