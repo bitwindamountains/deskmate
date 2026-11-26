@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 import { AllProvidersFailedError, complete } from '../../src/llm/router.js';
+import { providerLimiter } from '../../src/llm/limiter.js';
 import type { ProviderConfig } from '../../src/llm/types.js';
 
 const a: ProviderConfig = { id: 'a', kind: 'openai', baseUrl: 'https://a/v1', model: 'ma', apiKeyEnv: 'A_KEY', trainsOnInputs: false };
@@ -9,21 +10,21 @@ const env = { A_KEY: 'ka', B_KEY: 'kb' };
 const pr = { system: 'S', user: 'U' };
 const s = z.object({ n: z.number() });
 
-type Reply = { status?: number; content?: string; reject?: unknown };
+type Reply = { status?: number; content?: string; reject?: unknown; headers?: Record<string, string> };
 /** Each provider host gets a queue of replies, consumed in order. */
 function stubHosts(replies: Record<string, Reply[]>) {
   const f = vi.fn(async (url: string, _init?: RequestInit) => {
     const host = new URL(url).host;
     const r = replies[host].shift()!;
     if (r.reject) throw r.reject;
-    return new Response(JSON.stringify({ choices: [{ message: { content: r.content ?? '' } }] }), { status: r.status ?? 200 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: r.content ?? '' } }] }), { status: r.status ?? 200, headers: r.headers });
   });
   vi.stubGlobal('fetch', f);
   return f;
 }
 const statuses = (log: { status: string }[]) => log.map((l) => l.status);
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); providerLimiter.reset(); });
 
 test('returns parsed data from first provider', async () => {
   stubHosts({ a: [{ content: '{"n":1}' }] });
@@ -114,4 +115,24 @@ test('requireNoTraining defaults to true', async () => {
   stubHosts({ b: [{ content: '{"n":1}' }] });
   const r = await complete('grade_answer', pr, s, { env, providers: [{ ...a, trainsOnInputs: true }, b] });
   expect(statuses(r.log)).toEqual(['skipped_privacy', 'ok']);
+});
+
+test('after a 429, the provider is skipped without a call until its Retry-After passes', async () => {
+  const f = stubHosts({ a: [{ status: 429, headers: { 'retry-after': '30' } }], b: [{ content: '{"n":1}' }, { content: '{"n":2}' }] });
+  await complete('grade_answer', pr, s, { env, providers: [a, b] });
+  const r = await complete('grade_answer', pr, s, { env, providers: [a, b] });
+  expect(r.provider).toBe('b');
+  expect(r.log[0]).toMatchObject({ provider: 'a', status: 'rate_limited' });
+  expect(r.log[0].message).toMatch(/cooling down/);
+  expect(f.mock.calls.filter(([url]) => new URL(url).host === 'a')).toHaveLength(1);
+});
+
+test('a provider at its requests-a-minute limit is skipped for the next one', async () => {
+  const one = { ...a, limits: { rpm: 1 } };
+  const f = stubHosts({ a: [{ content: '{"n":1}' }], b: [{ content: '{"n":2}' }] });
+  expect((await complete('grade_answer', pr, s, { env, providers: [one, b] })).provider).toBe('a');
+  const r = await complete('grade_answer', pr, s, { env, providers: [one, b] });
+  expect(r.provider).toBe('b');
+  expect(r.log[0].message).toMatch(/1 requests a minute/);
+  expect(f).toHaveBeenCalledTimes(2);
 });

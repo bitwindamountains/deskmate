@@ -15,8 +15,8 @@ Target: Vercel Hobby (free), with the existing shared Supabase project. The owne
    | `NEXT_PUBLIC_SUPABASE_SCHEMA` | `scholar` | public |
    | `SITE_URL` | `https://<your-domain>` | no trailing slash; Google sign-in fails closed without it in production |
    | `GROQ_API_KEY` | from `.env.local` | server only |
-   | `OPENROUTER_API_KEY` | from `.env.local` | server only, fallback provider |
-   | `GEMINI_API_KEY` | from `.env.local` | server only, fallback provider |
+   | `MISTRAL_API_KEY` | from Mistral's console | server only; serves students when Groq is busy. **First** turn off "Anonymous improvement data" in Mistral's Admin Console: the router treats Mistral as not training on inputs only on that condition |
+   | `GEMINI_API_KEY` | from `.env.local` | server only; optional. Its free tier may train on inputs, so production never uses it (eval and development only) |
 
    Do **not** add `SUPABASE_SECRET_KEY`, `SUPABASE_PROJECT_REF` or `SUPABASE_DB_PASSWORD`: the app never reads them; only tests and migrations do.
 
@@ -37,6 +37,6 @@ Target: Vercel Hobby (free), with the existing shared Supabase project. The owne
 
 ## Known free-tier limits
 
-- Groq free tier: per-minute and per-day token limits; the app's own limit is 60 helper calls a day per student, plus the daily essay checks.
+- Groq free tier: per-minute and per-day token limits; the app's own limit is 60 helper calls a day per student, plus the daily essay checks. The router keeps each provider under its per-minute limits (`limits` in `src/llm/config.ts`) and skips one that just answered 429 until its Retry-After passes, going to Mistral instead. Those counts live in each server instance's memory, so with several instances the provider's own 429 is still the backstop.
 - LanguageTool public API: rate-limited per IP. Vercel functions share IPs, so heavy use may hit it; the sentence-level check then fails and the student is asked to try again (no LLM call is spent).
 - Supabase free tier: the project pauses after a week with no activity. `vercel.json` has Vercel call `/api/keep-alive` once a day to prevent that; it needs no setup. Check it under Settings → Cron Jobs after the first deploy.

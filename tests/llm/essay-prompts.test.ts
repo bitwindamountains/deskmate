@@ -54,6 +54,24 @@ test('essay and hint tasks lead with a no-training provider and skip the 20b mod
   }
 });
 
+test('the owner providers (2026-11-26): three hosted ones; students are served by Groq, then Mistral', () => {
+  // Ollama is the local, keyless development model, not a hosted provider.
+  expect(Object.keys(PROVIDERS).filter((id) => id !== 'ollama').sort()).toEqual(['gemini', 'groq', 'mistral']);
+  expect(PROVIDERS.gemini.trainsOnInputs).toBe(true); // free tier may use inputs to improve Google products
+  expect(PROVIDERS.mistral.trainsOnInputs).toBe(false); // only with "Anonymous improvement data" off in Mistral's Admin Console
+  for (const [task, route] of Object.entries(TASK_ROUTES)) {
+    // What requireNoTraining (the production default) leaves.
+    const served = route.filter((id) => !PROVIDERS[id].trainsOnInputs && id !== 'ollama');
+    expect(served, task).toEqual(['groq', 'mistral']);
+  }
+});
+
+test('each hosted provider stays under its free tier per minute', () => {
+  expect(PROVIDERS.groq.limits).toEqual({ rpm: 30, tpm: 8000 });
+  expect(PROVIDERS.mistral.limits).toEqual({ rpm: 60 });
+  expect(PROVIDERS.gemini.limits).toEqual({ rpm: 10 });
+});
+
 test('groq runs gpt-oss at low reasoning effort', () => {
   // perf 2026-10-21: medium spent 47-73% of output tokens on hidden reasoning; low cut output 50-56% with valid JSON
   expect(PROVIDERS.groq.reasoningEffort).toBe('low');

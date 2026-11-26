@@ -13,14 +13,20 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     // Default (medium) spent 47-73% of output tokens on hidden reasoning; low halves output with no measured quality loss
     // (docs/superpowers/notes/2026-10-21-token-budget.md).
     reasoningEffort: 'low',
+    limits: { rpm: 30, tpm: 8000 }, // free tier for this model
   },
-  openrouter: {
-    id: 'openrouter',
+  // Owner (2026-11-26): three hosted providers in total, Groq, Mistral and Gemini (NVIDIA NIM and OpenRouter left out: their free
+  // tiers are testing-only or may train on inputs, like Gemini's). Terms checked that day, mostly from third-party summaries.
+  // Mistral's free plan trains on inputs by default; false here holds only while "Anonymous improvement data" is off in
+  // its Admin Console. Its free plan has no stated production allowance (guides call it prototyping).
+  mistral: {
+    id: 'mistral',
     kind: 'openai',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    model: 'meta-llama/llama-3.3-70b-instruct:free',
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    trainsOnInputs: true,
+    baseUrl: 'https://api.mistral.ai/v1',
+    model: 'mistral-medium-latest',
+    apiKeyEnv: 'MISTRAL_API_KEY',
+    trainsOnInputs: false,
+    limits: { rpm: 60 }, // free plan: about 1 request a second; Admin Console → Limits has the live numbers
   },
   gemini: {
     id: 'gemini',
@@ -29,6 +35,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     model: 'gemini-2.5-flash',
     apiKeyEnv: 'GEMINI_API_KEY',
     trainsOnInputs: true,
+    limits: { rpm: 10 }, // free tier for gemini-2.5-flash
   },
   ollama: {
     id: 'ollama',
@@ -42,15 +49,15 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 
 export const TASK_ROUTES: Record<TaskName, string[]> = {
   // Essay text is real student work: no-training providers lead; the router skips the others unless requireNoTraining is false.
-  essay_global: ['groq', 'gemini', 'openrouter', 'ollama'],
-  essay_paragraphs: ['groq', 'gemini', 'openrouter', 'ollama'],
-  hint_ladder: ['groq', 'gemini', 'openrouter', 'ollama'],
-  hint_rewrite: ['groq', 'gemini', 'openrouter', 'ollama'],
-  card_generate: ['gemini', 'groq', 'openrouter', 'ollama'],
-  grade_answer: ['groq', 'gemini', 'openrouter', 'ollama'],
-  card_help: ['groq', 'gemini', 'openrouter', 'ollama'],
-  card_improve: ['groq', 'gemini', 'openrouter', 'ollama'],
-  card_rephrase: ['groq', 'gemini', 'openrouter', 'ollama'],
-  feynman: ['groq', 'gemini', 'openrouter', 'ollama'],
-  item_dialogue: ['groq', 'gemini', 'openrouter', 'ollama'],
+  essay_global: ['groq', 'mistral', 'gemini', 'ollama'],
+  essay_paragraphs: ['groq', 'mistral', 'gemini', 'ollama'],
+  hint_ladder: ['groq', 'mistral', 'gemini', 'ollama'],
+  hint_rewrite: ['groq', 'mistral', 'gemini', 'ollama'],
+  card_generate: ['gemini', 'groq', 'mistral', 'ollama'],
+  grade_answer: ['groq', 'mistral', 'gemini', 'ollama'],
+  card_help: ['groq', 'mistral', 'gemini', 'ollama'],
+  card_improve: ['groq', 'mistral', 'gemini', 'ollama'],
+  card_rephrase: ['groq', 'mistral', 'gemini', 'ollama'],
+  feynman: ['groq', 'mistral', 'gemini', 'ollama'],
+  item_dialogue: ['groq', 'mistral', 'gemini', 'ollama'],
 };
