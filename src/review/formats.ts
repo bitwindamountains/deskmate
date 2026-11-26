@@ -46,18 +46,37 @@ export const RATING_CAP: Record<Format, Grade> = { choice: Rating.Hard, blank: R
 
 const conceptKey = (c: string) => c.trim().toLowerCase(); // same grouping as interleave and the mastery map
 
-/** Up to 3 wrong options: other answers on the same concept first, so they are plausible, then the rest of the deck. */
-export function distractors(card: FormatCard, pool: FormatCard[], rnd: () => number): string[] {
-  // Another subject's answer is a giveaway, so options stay in the card's own deck.
-  const others = pool.filter((o) => o.id !== card.id && o.deckId === card.deckId);
-  const near = shuffle(others.filter((o) => conceptKey(o.concept) === conceptKey(card.concept)), rnd);
-  const far = shuffle(others.filter((o) => conceptKey(o.concept) !== conceptKey(card.concept)), rnd);
+type Kind = 'yesno' | 'number' | 'text';
+const kindOf = (s: string): Kind => {
+  const t = s.trim();
+  if (/^(yes|no|true|false)\b/i.test(t)) return 'yesno';
+  return /\d/.test(t) && /^[\d\s.,:%°$€£+\-–/]+$/.test(t) ? 'number' : 'text';
+};
+const wordsOf = (s: string) => Math.max(1, norm(s).split(' ').filter(Boolean).length);
+
+/**
+ * Up to 3 wrong options shaped like the answer, since an option that looks different gives the right one away:
+ * the same kind only (a yes/no answer among place names, or a year among names), then the closest in length,
+ * with the same concept counting as about a 2.7x length difference. near: on the card's concept.
+ */
+export function wrongOptions(answer: string, candidates: { text: string; near: boolean }[], rnd: () => number): string[] {
+  const kind = kindOf(answer), words = wordsOf(answer);
+  const ranked = shuffle(candidates, rnd) // random among equals; the sort below is stable
+    .filter((c) => kindOf(c.text) === kind)
+    .map((c) => ({ text: c.text.trim(), score: Math.abs(Math.log(wordsOf(c.text) / words)) + (c.near ? 0 : 1) }))
+    .sort((a, b) => a.score - b.score);
   const out: string[] = [];
-  for (const o of [...near, ...far]) {
+  for (const { text } of ranked) {
     if (out.length === 3) break;
-    if (!sameAnswer(o.back, card.back) && !out.some((x) => sameAnswer(x, o.back))) out.push(o.back.trim());
+    if (!sameAnswer(text, answer) && !out.some((x) => sameAnswer(x, text))) out.push(text);
   }
   return out;
+}
+
+/** Wrong options for a review card, from other answers in its own deck (another subject's answer is a giveaway). */
+export function distractors(card: FormatCard, pool: FormatCard[], rnd: () => number): string[] {
+  const others = pool.filter((o) => o.id !== card.id && o.deckId === card.deckId);
+  return wrongOptions(card.back, others.map((o) => ({ text: o.back, near: conceptKey(o.concept) === conceptKey(card.concept) })), rnd);
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

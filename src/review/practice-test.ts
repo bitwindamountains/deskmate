@@ -1,5 +1,5 @@
 import { CARD_TYPES, EXPLAIN_TYPES, type CardType } from '@/lib/cards/types';
-import { random, sameAnswer as same, shuffle } from './formats';
+import { random, shuffle, wrongOptions } from './formats';
 export type TestQuestion = { cardId: string; kind: 'choice' | 'short'; prompt: string; answer: string; choices?: string[];
   keyPoints: string[]; type: CardType };
 type TestCard = { id: string; front: string; back: string; type: string; keyPoints: string[] };
@@ -12,10 +12,9 @@ export function buildTest(cards: TestCard[], seed: number): TestQuestion[] {
   return shuffle(cards, rnd).slice(0, MAX_QUESTIONS).map((c) => {
     const type = ((CARD_TYPES as readonly string[]).includes(c.type) ? c.type : 'basic') as TestQuestion['type'];
     const base = { cardId: c.id, prompt: c.front, answer: c.back, keyPoints: c.keyPoints, type };
-    // A distractor that means the right answer would mark a correct pick wrong, so equivalents are left out.
-    const others: string[] = [];
-    for (const o of cards) if (o.id !== c.id && !same(o.back, c.back) && !others.some((x) => same(x, o.back))) others.push(o.back.trim());
-    if (EXPLAIN_TYPES.includes(type) || type === 'sequence' || others.length < 3) return { ...base, kind: 'short' as const };
-    return { ...base, kind: 'choice' as const, choices: shuffle([c.back, ...shuffle(others, rnd).slice(0, 3)], rnd) };
+    // wrongOptions leaves out answers that mean the right one (picking it would be marked wrong) and ones shaped unlike it.
+    const wrong = wrongOptions(c.back, cards.filter((o) => o.id !== c.id).map((o) => ({ text: o.back, near: true })), rnd);
+    if (EXPLAIN_TYPES.includes(type) || type === 'sequence' || wrong.length < 3) return { ...base, kind: 'short' as const };
+    return { ...base, kind: 'choice' as const, choices: shuffle([c.back, ...wrong], rnd) };
   });
 }

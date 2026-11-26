@@ -1,6 +1,6 @@
 import { Rating } from 'ts-fsrs';
 import { expect, test } from 'vitest';
-import { allowedRatings, blankPart, buildBlank, buildChoice, checkBlank, chooseFormat, seedFor, suggestFor, type FormatCard } from '@/review/formats';
+import { allowedRatings, blankPart, buildBlank, buildChoice, checkBlank, chooseFormat, distractors, seedFor, suggestFor, type FormatCard } from '@/review/formats';
 import type { StateRow } from '@/review/schedule';
 
 const state = (over: Partial<StateRow>): StateRow => ({ card_id: 'x', due: '2026-10-25T00:00:00.000Z', stability: 30, difficulty: 5,
@@ -72,6 +72,28 @@ test('distractors stay in the same deck, and concepts match without case', () =>
   expect(chooseFormat(mine, pool)).toBe('choice');
   expect(buildChoice(mine, pool, 1)).not.toContain('Answer 5');
   expect(chooseFormat(mine, pool.filter((c) => c.id !== 'c4'))).not.toBe('choice'); // 2 in-deck answers are not enough
+});
+
+test('a yes/no answer gets no options that give it away, so it is not multiple choice', () => {
+  const places = ['Paris', 'Lyon', 'Marseille', 'Nice'].map((back, i) => card(i + 2, { back }));
+  const yes = card(1, { back: 'Yes, it is the capital' });
+  expect(distractors(yes, [yes, ...places], () => 0)).toEqual([]);
+  expect(chooseFormat(yes, [yes, ...places])).not.toBe('choice');
+  // and a place name never gets a yes/no option
+  expect(distractors(places[0], [yes, ...places], () => 0)).not.toContain('Yes, it is the capital');
+});
+
+test('a number answer gets number options only', () => {
+  const pool = [card(1, { back: '1945' }), card(2, { back: '1918' }), card(3, { back: 'Treaty of Versailles' }), card(4, { back: '1939' }),
+    card(5, { back: 'Churchill' }), card(6, { back: '1914' })];
+  expect([...distractors(pool[0], pool, () => 0)].sort()).toEqual(['1914', '1918', '1939']);
+});
+
+test('options close to the answer in length come first, even from another concept', () => {
+  const answer = card(1, { back: 'Mitochondria' });
+  const long = [2, 3, 4].map((n) => card(n, { back: `A long explanation number ${n} that runs to well over ten words in all` }));
+  const short = [5, 6, 7].map((n) => card(n, { back: ['Nucleus', 'Ribosome', 'Golgi body'][n - 5], concept: 'organelles' }));
+  expect([...distractors(answer, [answer, ...long, ...short], () => 0)].sort()).toEqual(['Golgi body', 'Nucleus', 'Ribosome']);
 });
 
 test('a blank is right when it matches closely, ignoring case and small typos', () => {
