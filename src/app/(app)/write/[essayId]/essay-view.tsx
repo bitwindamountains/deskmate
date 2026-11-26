@@ -256,7 +256,7 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
                       <span className="rounded-sm border-2 border-ink px-0.5 box-decoration-clone"><span className="sr-only">Now reading:</span>{text.slice(reading.start, reading.end)}</span>
                       {text.slice(reading.end)}
                     </>
-                  ) : <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} />}
+                  ) : <Marked text={text} spans={spans.filter((s) => s.para === i)} onMark={openCard} lit={!!focus} />}
                 </p>
               );
             })}
@@ -385,18 +385,24 @@ export function EssayView({ essayId, draftId, version, content, paragraphs, laye
   );
 }
 
-/** A paragraph with its highlights. Each mark carries its layer label as text, so colour is never the only signal. */
-function Marked({ text, spans, onMark }: { text: string; spans: Span[]; onMark: (id: string) => void }) {
+/**
+ * A paragraph with its feedback anchors. At rest nothing is highlighted, so a highlight always singles one passage out
+ * (owner, 2026-11-26). A mark lights up, with the highlighter stroke and its layer label as text (colour is never the
+ * only signal), while its card is pointed at or focused (data-linked), when it has focus (Show in essay), or in focus
+ * mode (data-focus). The label is always there for screen readers.
+ */
+function Marked({ text, spans, onMark, lit }: { text: string; spans: Span[]; onMark: (id: string) => void; lit: boolean }) {
   const out: React.ReactNode[] = [];
   let pos = 0;
   for (const s of [...spans].sort((a, b) => a.start - b.start)) {
     out.push(text.slice(pos, s.start));
     out.push(
       // Not a tab stop: dozens of marks would bury the panel. Keyboard users reach each card directly and come back with Show in essay.
-      <mark key={s.id} id={`hl-${s.id}`} tabIndex={-1} onClick={() => onMark(s.id)}
-        className={`cursor-pointer rounded-sm px-0.5 text-ink shadow-[inset_0_-2px_var(--line)] [box-decoration-break:clone] ${LAYER_BG[s.layer]}`}>
+      <mark key={s.id} id={`hl-${s.id}`} tabIndex={-1} onClick={() => onMark(s.id)} data-focus={lit || undefined}
+        className="group rounded-sm bg-transparent px-0.5 text-inherit [box-decoration-break:clone]">
         {/* the hidden ": " keeps screen readers from running the label into the quote ("Big pictureAttendance…") */}
-        <span className="mr-1 text-sm font-bold">{LAYER_LABEL[s.layer]}<span className="sr-only">: </span></span>
+        <span className="sr-only mr-1 text-sm font-bold group-focus:not-sr-only group-data-[linked]:not-sr-only group-data-[focus]:not-sr-only">
+          {LAYER_LABEL[s.layer]}<span className="sr-only">: </span></span>
         {text.slice(s.start, s.end)}
       </mark>,
     );
