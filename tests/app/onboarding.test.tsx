@@ -122,11 +122,13 @@ test('form shows labelled fields and the verbatim disclosure', () => {
 test('first-time mode: 18+ box required, button says Start studying', () => {
   render(<OnboardingForm />);
   expect((screen.getByLabelText('I am 18 or older.') as HTMLInputElement).required).toBe(true);
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Set up Scholar');
   expect(screen.getByRole('button', { name: 'Start studying' })).toBeTruthy();
 });
 test('edit mode: no 18+ box, button says Save changes, disclosure stays', () => {
   render(<OnboardingForm defaults={{ user_id: 'u1', first_language: 'en', study_minutes_per_day: 20, preferences: { font: 'default', reduced_motion: false } } as never} />);
   expect(screen.queryByLabelText('I am 18 or older.')).toBeNull();
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Your preferences');
   expect(screen.queryByRole('button', { name: 'Start studying' })).toBeNull();
   expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
   expect((screen.getByLabelText('Show rubric scores') as HTMLInputElement).checked).toBe(true); // missing means on
