@@ -4,7 +4,7 @@ A "Try the demo" site for the portfolio. It is not for real students. `render.de
 
 ## What demo mode does
 
-- `/login` shows **Try the demo** instead of the sign-in form. It posts to `/api/demo`, which creates a throwaway account and signs the visitor in. The account's email is `demo-<uuid>@deskmate-demo.invalid` and it carries `app_metadata.scholar_demo`. The account is seeded by `src/lib/demo/seed.ts` with the content in `src/lib/demo/content.ts`:
+- `/login` shows **Try the demo** instead of the sign-in form. It posts to `/api/demo`, which creates a throwaway account and signs the visitor in. The account's email is `demo-<uuid>@scholar-demo.invalid` (unchanged by the rename: `DEMO_DOMAIN` in `src/lib/demo/accounts.ts`; cleanup matches it) and it carries `app_metadata.scholar_demo`. The account is seeded by `src/lib/demo/seed.ts` with the content in `src/lib/demo/content.ts`:
   - two decks of cards made from class notes, with a week of review history;
   - 4 cards waiting to be sorted;
   - an essay with finished feedback.
