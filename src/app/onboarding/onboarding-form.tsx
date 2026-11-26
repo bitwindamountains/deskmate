@@ -1,7 +1,6 @@
 'use client';
 
 import { useActionState } from 'react';
-import { CardStackHero } from '@/components/card-stack';
 import type { Profile } from '@/lib/profile/require';
 import { completeOnboarding, type OnboardingState } from './actions';
 
@@ -20,7 +19,6 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
   return (
     <main className="mx-auto max-w-md space-y-6 px-4 py-10">
       {/* On phones the long form scrolls over the stack, so it shows from 768px, beside the form. */}
-      <div className="hidden md:contents"><CardStackHero /></div>
       <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{defaults ? 'Your preferences' : 'Set up Deskmate'}</span></h1>
       {state.error && <p role="alert" className="error">{state.error}</p>}
       <form action={action} className="space-y-5">

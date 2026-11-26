@@ -25,12 +25,3 @@ export function CardStackGround() {
     </div>
   );
 }
-
-/** Sign-in and onboarding: the stack sits beside the form column (which is at most 28rem wide), never behind it. */
-export function CardStackHero() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden text-ink">
-      <CardStack className="absolute -right-16 -bottom-12 w-[22rem] opacity-[0.22] md:right-auto md:bottom-[10%] md:left-[calc(50%+15rem)] md:w-[28rem]" />
-    </div>
-  );
-}
