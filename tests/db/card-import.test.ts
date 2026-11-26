@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
-import { importAnkiCards, importCards } from '@/lib/cards/transfer';
+import { addOneCard, importAnkiCards, importCards } from '@/lib/cards/transfer';
 import { adminClient, anonClient, createTestUser, deleteTestUsers, type Client } from './helpers';
 
 const session = vi.hoisted(() => ({ client: null as unknown }));
@@ -40,6 +40,21 @@ test('importAnkiCards adds new cards, counts ones already in the deck, and rejec
   expect(await importAnkiCards(A.client, A.userId, deck, [{ front: 'q', back: 'x', concept: '', type: 'essay' }])).toEqual(bad);
   expect(await importAnkiCards(A.client, A.userId, deck, 'nope')).toEqual(bad);
   expect(await importAnkiCards(B.client, B.userId, deck, [{ front: 'q', back: 'x', concept: '', type: 'basic' }])).toEqual({ ok: false, message: "We couldn't find that deck." });
+});
+
+test('addOneCard keeps one Q&A card, counts a duplicate, and refuses bad input or another user deck', async () => {
+  const r = await addOneCard(A.client, A.userId, deck, { front: ' What is osmosis? ', back: 'Water moving across a membrane', concept: 'Cells' });
+  expect(r).toEqual({ ok: true, added: 1, skippedRows: [], inDeck: 0, inFile: 0 });
+  const row = (await adminClient().from('cards').select('front,type,status,concept').eq('deck_id', deck).eq('front', 'What is osmosis?').single()).data;
+  expect(row).toEqual({ front: 'What is osmosis?', type: 'basic', status: 'kept', concept: 'Cells' });
+  expect(await addOneCard(A.client, A.userId, deck, { front: 'what is osmosis?', back: 'Water moving across a membrane', concept: '' }))
+    .toEqual({ ok: true, added: 0, skippedRows: [], inDeck: 1, inFile: 0 });
+  const bad = { ok: false, message: 'Write a question and an answer, each up to 500 characters.' };
+  expect(await addOneCard(A.client, A.userId, deck, { front: '  ', back: 'x', concept: '' })).toEqual(bad);
+  expect(await addOneCard(A.client, A.userId, deck, { front: 'q', back: 'x'.repeat(501), concept: '' })).toEqual(bad);
+  expect(await addOneCard(A.client, A.userId, deck, { front: 'q', back: 'x', concept: 'c'.repeat(121) })).toEqual(bad);
+  expect(await addOneCard(A.client, A.userId, deck, 'nope')).toEqual(bad);
+  expect(await addOneCard(B.client, B.userId, deck, { front: 'q', back: 'x', concept: '' })).toEqual({ ok: false, message: "We couldn't find that deck." });
 });
 
 test('export returns the deck as CSV or Anki text, and 404 for another user', async () => {

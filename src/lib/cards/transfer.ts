@@ -36,6 +36,15 @@ export async function importAnkiCards(db: Db, userId: string, deckId: string, in
   return insertCards(db, userId, deckId, v.data, []);
 }
 
+const HandCard = z.object({ front: Side, back: Side, concept: z.string().trim().max(120) });
+
+/** One Q&A card written on the deck page. It is kept at once, like an import, and a duplicate counts as inDeck. */
+export async function addOneCard(db: Db, userId: string, deckId: string, input: unknown): Promise<ImportResult> {
+  const v = HandCard.safeParse(input);
+  if (!v.success) return { ok: false, message: 'Write a question and an answer, each up to 500 characters.' };
+  return insertCards(db, userId, deckId, [{ ...v.data, type: 'basic' }], []);
+}
+
 export async function insertCards(db: Db, userId: string, deckId: string, cards: CsvCard[], skippedRows: number[]): Promise<ImportResult> {
   const { data: deck, error } = await db.from('decks').select('id').eq('id', deckId).maybeSingle();
   if (error) return FAILED;
