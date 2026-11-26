@@ -24,6 +24,14 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
       <CardStackHero />
       <h1 key={mode} className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{TITLE[mode]}</span></h1>
+      {/* / leads here, so this is the only place a visitor learns what Scholar is (owner, 2026-11-26). */}
+      {mode !== 'forgot' && (
+        <p className="text-pretty">
+          Scholar helps you study without doing the work for you. Draft Coach gives feedback on your essays, with hints instead
+          of rewrites. Recall turns your notes into flashcards and schedules each review before you forget. Free beta for
+          students 18 and over.
+        </p>
+      )}
       {notice && <p role="status">{notice}</p>}
       {shown.error && <p id="login-err" role="alert" className="error">{shown.error}</p>}
 
