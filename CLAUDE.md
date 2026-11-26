@@ -1,4 +1,6 @@
-# Scholar
+# Deskmate
+
+The app was renamed from Scholar on 2026-11-27 (owner). Only what people see says Deskmate; the repo, the `scholar` schema, code names and client storage keys keep "scholar".
 
 AI study app: Draft Coach (essay feedback) and Recall (cards + FSRS review). The AI coaches; the student does the work.
 Next.js 16 / React 19, Supabase, Tailwind 4, vitest. Node >= 22.9.

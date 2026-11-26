@@ -1,10 +1,10 @@
 # Public demo on Render (free)
 
-A "Try the demo" site for the portfolio. It is not for real students. `render.demo.yaml` describes one free Render web service (`scholar-demo`, Singapore) running the app with `DEMO_MODE=true`.
+A "Try the demo" site for the portfolio. It is not for real students. `render.demo.yaml` describes one free Render web service (`deskmate-demo`, Singapore) running the app with `DEMO_MODE=true`.
 
 ## What demo mode does
 
-- `/login` shows **Try the demo** instead of the sign-in form. It posts to `/api/demo`, which creates a throwaway account and signs the visitor in. The account's email is `demo-<uuid>@scholar-demo.invalid` and it carries `app_metadata.scholar_demo`. The account is seeded by `src/lib/demo/seed.ts` with the content in `src/lib/demo/content.ts`:
+- `/login` shows **Try the demo** instead of the sign-in form. It posts to `/api/demo`, which creates a throwaway account and signs the visitor in. The account's email is `demo-<uuid>@deskmate-demo.invalid` and it carries `app_metadata.scholar_demo`. The account is seeded by `src/lib/demo/seed.ts` with the content in `src/lib/demo/content.ts`:
   - two decks of cards made from class notes, with a week of review history;
   - 4 cards waiting to be sorted;
   - an essay with finished feedback.
@@ -19,7 +19,7 @@ A "Try the demo" site for the portfolio. It is not for real students. `render.de
 
 1. Push `main` to GitHub. In Render, choose **New → Blueprint**, pick the repo and set the blueprint path to `render.demo.yaml`. If Render asks for a card and declines it, create the service by hand instead: **New → Web Service** from this repo, with the name, region, Free plan, build command, start command, health check path and variables from the file.
 2. Fill the three `sync: false` variables from `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. The first two are read at build time, so set them before the first build, or redeploy after setting them. Don't add any LLM key.
-3. If Render names the service something other than `scholar-demo.onrender.com`, set `SITE_URL` to the real `https://…onrender.com` origin (no trailing slash) and redeploy. A wrong `SITE_URL` makes **Try the demo** come back with "The demo couldn't start".
+3. If Render names the service something other than `deskmate-demo.onrender.com`, set `SITE_URL` to the real `https://…onrender.com` origin (no trailing slash) and redeploy. A wrong `SITE_URL` makes **Try the demo** come back with "The demo couldn't start".
 4. Nothing to add in Supabase: the demo signs in with a password on the server, so no redirect URL is involved.
 
 ## Check after deploying

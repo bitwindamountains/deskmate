@@ -1,4 +1,4 @@
-# Deploying Scholar
+# Deploying Deskmate
 
 Target: Vercel Hobby (free), with the existing shared Supabase project. The owner connects the account and deploys. Nothing here has been run yet.
 
@@ -22,9 +22,9 @@ Target: Vercel Hobby (free), with the existing shared Supabase project. The owne
 
 4. **Supabase Auth URLs** (Dashboard → Authentication → URL Configuration). The project is shared with other apps:
    - Add `https://<your-domain>/auth/callback` to **Redirect URLs**. Add `https://*-<team>.vercel.app/auth/callback` too if you want sign-in on preview deploys.
-   - Do **not** change **Site URL**: the other apps on this project rely on it. Scholar always passes its own `redirectTo`.
+   - Do **not** change **Site URL**: the other apps on this project rely on it. Deskmate always passes its own `redirectTo`.
 5. **Google sign-in.** In the Google Cloud OAuth client, the authorized redirect URI is Supabase's (`https://<project-ref>.supabase.co/auth/v1/callback`), which doesn't change. Nothing to add for the new domain unless the consent screen lists authorized domains; then add it there.
-6. **Email and password.** Students sign in with a password; email is sent only to confirm a new account and for a password reset. Both links come back through `/auth/callback`, so the Redirect URLs entry above covers them. Supabase's built-in email sender is for testing and allows only a few emails an hour across the whole project; before real students sign up, set a custom SMTP sender (Dashboard → Authentication → Emails → SMTP). A free-tier transactional email service is enough for a beta. Leave **Confirm email** on (Authentication → Providers → Email): Scholar relies on it to prove the address belongs to the student.
+6. **Email and password.** Students sign in with a password; email is sent only to confirm a new account and for a password reset. Both links come back through `/auth/callback`, so the Redirect URLs entry above covers them. Supabase's built-in email sender is for testing and allows only a few emails an hour across the whole project; before real students sign up, set a custom SMTP sender (Dashboard → Authentication → Emails → SMTP). A free-tier transactional email service is enough for a beta. Leave **Confirm email** on (Authentication → Providers → Email): Deskmate relies on it to prove the address belongs to the student.
 7. **Function time limit.** Every route that makes an AI call sets `maxDuration = 60` in its own file (`tests/lib/route-duration.test.ts` checks them), so nothing needs setting in the dashboard. 60 seconds is the Hobby limit without Fluid compute; with Fluid compute (on by default for new projects) Hobby allows more, and 60 is still enough.
 
 ## After the first deploy
