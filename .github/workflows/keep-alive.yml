@@ -1,0 +1,16 @@
+# Keeps the free Supabase project from pausing (it pauses after 7 days without requests) while nothing else keeps it busy:
+# the Render demo sleeps when idle, and Vercel's cron (vercel.json) runs only once production is on Vercel.
+# Calling the demo's /api/keep-alive wakes Render and runs scholar.ping() as anon. About 1 Actions minute a day.
+name: keep-alive
+on:
+  schedule:
+    - cron: '41 3 * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the demo (a cold Render start can take about a minute)
+        run: curl --fail --silent --show-error --max-time 150 --retry 3 --retry-delay 20 --retry-all-errors https://deskmate-demo.onrender.com/api/keep-alive
