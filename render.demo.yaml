@@ -1,0 +1,31 @@
+# Public portfolio demo on Render's free plan: "Try the demo" sample accounts only. Guide: docs/deployment-render-demo.md.
+# Uses the shared Supabase project (owner decision 2026-11-27): each visitor gets a throwaway auth user on
+# @scholar-demo.invalid, seeded by src/lib/demo, deleted after a day. No LLM keys: DEMO_MODE turns every AI call off.
+services:
+  - type: web
+    name: scholar-demo
+    runtime: node
+    region: singapore
+    plan: free
+    # Render builds with NODE_ENV=production; devDependencies (typescript, tailwind) are needed for next build.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/keep-alive
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"
+      - key: DEMO_MODE
+        value: "true"
+      # Must be the service's exact https origin: /api/demo refuses a post from any other origin.
+      - key: SITE_URL
+        value: https://scholar-demo.onrender.com
+      - key: NEXT_PUBLIC_SUPABASE_SCHEMA
+        value: scholar
+      # Read at build time (NEXT_PUBLIC_), so set them before the first build. Values from .env.local.
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      # Server only: creates, seeds and deletes demo accounts. Never add GROQ/MISTRAL/GEMINI keys here.
+      - key: SUPABASE_SECRET_KEY
+        sync: false
