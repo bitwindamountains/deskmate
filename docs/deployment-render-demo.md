@@ -34,6 +34,8 @@ The service sleeps after about 15 minutes idle, so the first visit can take abou
 
 ## Limits
 
+- **Supabase pausing.** The free project pauses after 7 days without requests, and a sleeping demo sends none. `.github/workflows/keep-alive.yml` calls `/api/keep-alive` on the demo once a day, which wakes Render and pings Supabase. If it ever fails, it shows in the repo's Actions tab.
+
 - **Build memory.** The free plan has 512 MB, and `next build` can run out. If the build is killed, retry. If it keeps failing, add `NODE_OPTIONS=--max-old-space-size=460`.
 - **Cold start.** After idle, the first page and the first **Try the demo** are slow (the page says so).
 - **Real sign-in is hidden but not removed.** The sign-in server actions still exist, so a real account could sign in on the demo URL by calling them directly. It would see its own data, exactly as on the real site.
