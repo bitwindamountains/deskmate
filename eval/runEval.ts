@@ -2,7 +2,8 @@ import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promise
 import { join } from 'node:path';
 import type { ZodType } from 'zod';
 import { chunkByWords } from '../src/chunk.js';
-import { findAnchor, isGrounded } from '../src/grounding.js';
+import { isGrounded } from '../src/grounding.js';
+import { anchorQuote } from '../src/lib/essay/text.js';
 import { PROVIDERS } from '../src/llm/config.js';
 import {
   DEFAULT_RUBRIC,
@@ -10,6 +11,7 @@ import {
   cardHelpPrompt,
   itemDialoguePrompt,
   essayGlobalPrompt,
+  fromLabels,
   essayParagraphsPrompt,
   gradeAnswerPrompt,
   numberParagraphs,
@@ -121,10 +123,10 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
     const anchor = (items: FeedbackItem[]) => {
       const kept = [];
       const dropped = [];
+      // As the app does: the model's paragraph is tried first, then every paragraph (it gives 0 for whole-essay items).
       for (const it of items) {
-        const para = paragraphs[it.paragraph_index];
-        const a = para === undefined ? null : findAnchor(para, it.quote);
-        if (a) kept.push({ ...it, anchor: a });
+        const a = anchorQuote(paragraphs, it.paragraph_index, it.quote);
+        if (a) kept.push({ ...it, paragraph_index: a.paragraph_index, anchor: { start: a.start, end: a.end } });
         else dropped.push(it);
       }
       return { kept, dropped };
@@ -132,8 +134,8 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
 
     const g = await call('essay_global', name, essayGlobalPrompt(input), EssayGlobal);
     const p = await call('essay_paragraphs', name, essayParagraphsPrompt(input), EssayParagraphs);
-    const ga = anchor(g?.data.items ?? []);
-    const pa = anchor(p?.data.items ?? []);
+    const ga = anchor(fromLabels(g?.data.items ?? []));
+    const pa = anchor(fromLabels(p?.data.items ?? []));
     if (g) row('essay_global', name, { ...meta(g), items: ga.kept.length, anchors_dropped: ga.dropped.length });
     if (p) row('essay_paragraphs', name, { ...meta(p), items: pa.kept.length, anchors_dropped: pa.dropped.length });
 
@@ -158,10 +160,10 @@ export async function runEval(o: EvalOptions): Promise<SummaryRow[]> {
       join(o.outDir, 'essay', `${name}.json`),
       JSON.stringify(
         {
-          strengths: g?.data.strengths ?? [],
+          strengths: fromLabels(g?.data.strengths ?? []),
           rubric_scores: g?.data.rubric_scores ?? [],
           prompt_alignment: g?.data.prompt_alignment ?? null,
-          outline: p?.data.outline ?? [],
+          outline: fromLabels(p?.data.outline ?? []),
           top3: ranked.slice(0, 3),
           items: ranked,
           dropped: [...ga.dropped, ...pa.dropped],

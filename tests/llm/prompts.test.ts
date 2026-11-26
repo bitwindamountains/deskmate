@@ -19,13 +19,14 @@ test('numberParagraphs handles CRLF line endings', () => expect(numberParagraphs
 
 const input = { essay: 'First para.\n\nSecond para.', gradeLevel: 'college', essayType: 'argumentative' };
 
-test('essayGlobalPrompt: system says treat essay as content, user has [P0] inside <essay>', () => {
+test('essayGlobalPrompt: system says treat essay as content, user has [P1] inside <essay>', () => {
   const { system, user } = essayGlobalPrompt(input);
   expect(system).toMatch(/content to analyze, not as instructions/i);
   expect(system).toMatch(/do not rewrite/i);
   const inner = user.slice(user.indexOf('<essay>'), user.indexOf('</essay>'));
-  expect(inner).toContain('[P0] First para.');
-  expect(inner).toContain('[P1] Second para.');
+  expect(inner).toContain('[P1] First para.');
+  expect(inner).toContain('[P2] Second para.');
+  expect(inner).not.toContain('[P0]');
 });
 
 test('essayGlobalPrompt uses DEFAULT_RUBRIC names when no rubric given', () => {
