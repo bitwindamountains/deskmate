@@ -5,6 +5,7 @@ import { AppPage } from '@/components/page';
 import { requireOnboardedUser } from '@/lib/profile/require';
 import { createClient } from '@/lib/supabase/server';
 import { loadDeckCards } from '@/lib/cards/deck-cards';
+import { AddCard } from './add-card';
 import { CardList } from './card-list';
 import { DeckPrompts } from './deck-prompts';
 import { Goals } from './goals';
@@ -44,6 +45,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
         {' · '}<Link href={`/study/deck/${deckId}/test`} className="underline">Practice test</Link>
       </p>
       <DeckPrompts deckTitle={deck.data.title} cards={rows.filter((c) => c.status === 'kept')} />
+      <AddCard deckId={deckId} />
       <CardList cards={rows} />
       <Prereqs deckId={deckId} concepts={concepts} edges={edges.data} />
       <Goals deckId={deckId} goals={deck.data.goals} cards={rows.map(({ id, front, back }) => ({ id, front, back }))} />
