@@ -44,6 +44,8 @@ export async function complete<T>(
   schema: ZodType<T>,
   opts: CompleteOptions,
 ): Promise<CompleteResult<T>> {
+  // The public demo (DEMO_MODE) shows seeded data only and never spends provider quota, even if a key is set by mistake.
+  if (process.env.DEMO_MODE === 'true') throw new AllProvidersFailedError('AI is off in the demo', []);
   const providers = opts.providers ?? TASK_ROUTES[task].map((id) => PROVIDERS[id]);
   const limiter = opts.limiter ?? providerLimiter;
   const estimate = estimateTokens(prompt);
