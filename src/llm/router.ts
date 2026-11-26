@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod';
 import { PROVIDERS, TASK_ROUTES } from './config';
 import { extractJson } from './json';
+import { estimateTokens, providerLimiter, type ProviderLimiter } from './limiter';
 import { callGemini } from './providers/gemini';
 import { callOpenAICompatible } from './providers/openai-compatible';
 import type { CallLog, CallStatus, ProviderConfig, TaskName } from './types';
@@ -13,6 +14,8 @@ export interface CompleteOptions {
   /** Overrides TASK_ROUTES order, e.g. to pin one provider. */
   providers?: ProviderConfig[];
   timeoutMs?: number;
+  /** Per-minute limits and 429 cooldowns; tests pass their own. */
+  limiter?: ProviderLimiter;
 }
 
 export interface CompleteResult<T> {
@@ -42,6 +45,8 @@ export async function complete<T>(
   opts: CompleteOptions,
 ): Promise<CompleteResult<T>> {
   const providers = opts.providers ?? TASK_ROUTES[task].map((id) => PROVIDERS[id]);
+  const limiter = opts.limiter ?? providerLimiter;
+  const estimate = estimateTokens(prompt);
   const log: CallLog[] = [];
   const entry = (p: ProviderConfig, status: CallStatus, extra: Partial<CallLog> = {}): CallLog => ({
     task,
@@ -65,6 +70,13 @@ export async function complete<T>(
       continue;
     }
     for (let attempt = 0; attempt < ATTEMPTS_PER_PROVIDER; attempt++) {
+      // Checked before every attempt: a retry after invalid output is another request against the same limits.
+      const busy = limiter.check(p, estimate);
+      if (busy) {
+        log.push(entry(p, 'rate_limited', { message: busy }));
+        break;
+      }
+      const used = limiter.start(p, estimate);
       const started = Date.now();
       const out = await ADAPTERS[p.kind](p, apiKey ?? null, {
         ...prompt,
@@ -73,10 +85,12 @@ export async function complete<T>(
       });
       const latencyMs = Date.now() - started;
       if (!out.ok) {
+        if (out.status === 429) limiter.cooldown(p, out.retryAfterMs);
         const status: CallStatus = out.status === 429 ? 'rate_limited' : out.status === 'timeout' ? 'timeout' : 'error';
         log.push(entry(p, status, { latencyMs, message: `${out.status}: ${out.message}` }));
         break; // provider failure: move to the next provider
       }
+      used(out.tokensIn + out.tokensOut);
       const usage = { tokensIn: out.tokensIn, tokensOut: out.tokensOut, latencyMs };
       let parsed: ReturnType<typeof schema.safeParse>;
       try {

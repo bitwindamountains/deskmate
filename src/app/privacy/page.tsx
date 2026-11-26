@@ -26,6 +26,7 @@ export default function PrivacyPage() {
         <h2 className="hand text-2xl">Who sees your text</h2>
         <ul className="list-disc space-y-1 pl-6">
           <li><strong>Groq</strong> runs the AI that writes feedback, makes and rewords cards, checks your answers and responds to your explanations. Its terms say it does not train its models on what you send.</li>
+          <li><strong>Mistral</strong> does the same work when Groq is busy. Scholar&apos;s Mistral account is set so that what you send is not used to train its models.</li>
           <li><strong>LanguageTool</strong> checks the spelling and grammar of your essays.</li>
           <li><strong>Supabase</strong> stores your data, and <strong>Vercel</strong> hosts the app.</li>
         </ul>
