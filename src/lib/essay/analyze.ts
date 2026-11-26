@@ -1,5 +1,5 @@
 import { logCalls, type Db } from '@/lib/llm-calls';
-import { essayGlobalPrompt, essayParagraphsPrompt, type EssayInput } from '@/llm/prompts';
+import { essayGlobalPrompt, essayParagraphsPrompt, fromLabels, type EssayInput } from '@/llm/prompts';
 import { AllProvidersFailedError, complete } from '@/llm/router';
 import { EssayGlobal, EssayParagraphs, type FeedbackItem } from '@/llm/schemas';
 
@@ -151,8 +151,8 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
     const recurring = recurringFor((await growth) ?? [], draft.essay_id);
     const r = await completeFn('essay_global', essayGlobalPrompt({ ...input, recurring, previousItems: judge.length ? judge.map((i) => ({ id: i.id, summary: byId.get(i.id)?.revised_summary ?? i.summary, quote: i.quote })) : undefined }), EssayGlobal, { env });
     await logCalls(db, userId, r.log);
-    const { rows, dropped } = anchorItems(paras, r.data.items, 'global');
-    const strengths = r.data.strengths.flatMap((s) => {
+    const { rows, dropped } = anchorItems(paras, fromLabels(r.data.items), 'global');
+    const strengths = fromLabels(r.data.strengths).flatMap((s) => {
       const a = anchorQuote(paras, s.paragraph_index, s.quote);
       return a ? [{ paragraph_index: a.paragraph_index, quote: s.quote, why: s.why, start: a.start, end: a.end }] : [];
     });
@@ -197,8 +197,8 @@ async function runLayer(db: Db, userId: string, draft: Draft, layer: Layer, env:
     if (plan && !plan.changed.length) { await saveOutline([]); await insert(kept); return 0; }
     const r = await completeFn('essay_paragraphs', essayParagraphsPrompt({ ...input, onlyParagraphs: plan?.changed }), EssayParagraphs, { env });
     await logCalls(db, userId, r.log);
-    const { rows, dropped } = anchorItems(paras, r.data.items, 'paragraph');
-    await saveOutline(r.data.outline);
+    const { rows, dropped } = anchorItems(paras, fromLabels(r.data.items), 'paragraph');
+    await saveOutline(fromLabels(r.data.outline));
     await insert([...kept, ...rows]);
     return dropped;
   }

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { PROVIDERS, TASK_ROUTES } from '@/llm/config';
-import { cardGeneratePrompt, essayGlobalPrompt, essayParagraphsPrompt, hintLadderPrompt, hintRewritePrompt } from '@/llm/prompts';
+import { cardGeneratePrompt, essayGlobalPrompt, essayParagraphsPrompt, fromLabels, hintLadderPrompt, hintRewritePrompt } from '@/llm/prompts';
 import { EssayGlobal, EssayParagraphs, HintLadder, HintRewrite } from '@/llm/schemas';
 
 const essay = 'First paragraph about phones.\n\nSecond paragraph with evidence.\n\nThird paragraph concludes.';
@@ -21,7 +21,7 @@ test('essayGlobalPrompt always asks for the safety flag and addresses the studen
 });
 
 test('essayParagraphsPrompt with onlyParagraphs names them', () => {
-  expect(essayParagraphsPrompt({ ...base, onlyParagraphs: [0, 2] }).system).toContain('Report only on paragraphs [P0], [P2]');
+  expect(essayParagraphsPrompt({ ...base, onlyParagraphs: [0, 2] }).system).toContain('Report only on paragraphs [P1], [P3]');
   expect(essayParagraphsPrompt(base).system).not.toContain('Report only on paragraphs');
 });
 
@@ -109,4 +109,9 @@ test('global prompt adds the time-limit line only for timed essays, in the user 
   expect(timed.user).toContain('Written under a 30-minute time limit; weigh structure and planning over polish.');
   expect(timed.system).toBe(essayGlobalPrompt(base).system);
   expect(essayGlobalPrompt(base).user).not.toContain('time limit');
+});
+
+test('fromLabels turns the [Pn] label the model gives back into the 0-based paragraph_index', () => {
+  expect(fromLabels([{ paragraph_index: 1, quote: 'a' }, { paragraph_index: 3, quote: 'b' }]))
+    .toEqual([{ paragraph_index: 0, quote: 'a' }, { paragraph_index: 2, quote: 'b' }]);
 });
