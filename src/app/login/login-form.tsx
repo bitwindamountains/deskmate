@@ -1,7 +1,6 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { CardStackHero } from '@/components/card-stack';
 import { PASSWORD_MAX, PASSWORD_MIN } from '@/lib/auth/password';
 import { sendPasswordReset, signInWithGoogle, signInWithPassword, signUpWithPassword, type LoginMode, type LoginState } from './actions';
 
@@ -21,17 +20,8 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
     : `If ${shown.email} has a Deskmate account, we sent it a link to set a new password.`);
 
   return (
-    <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
-      <CardStackHero />
-      <h1 key={mode} className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{TITLE[mode]}</span></h1>
-      {/* / leads here, so this is the only place a visitor learns what Deskmate is (owner, 2026-11-26). */}
-      {mode !== 'forgot' && (
-        <p className="text-pretty">
-          Deskmate helps you study without doing the work for you. Draft Coach gives feedback on your essays, with hints instead
-          of rewrites. Recall turns your notes into flashcards and schedules each review before you forget. Free beta for
-          students 18 and over.
-        </p>
-      )}
+    <div className="space-y-5">
+      <h2 key={mode} className="hand text-2xl leading-tight">{TITLE[mode]}</h2>
       {notice && <p role="status">{notice}</p>}
       {shown.error && <p id="login-err" role="alert" className="error">{shown.error}</p>}
 
@@ -73,6 +63,6 @@ export function LoginForm({ next, initialError, notice }: { next: string; initia
       </p>
 
       <p className="text-sm text-ink-muted"><a href="/privacy" className="underline">How Deskmate handles your data</a></p>
-    </main>
+    </div>
   );
 }
