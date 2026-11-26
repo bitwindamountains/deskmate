@@ -4,6 +4,10 @@ import { requestCardImprove, type CardImproveResult } from '@/lib/cards/improve'
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
+// AI calls with retries and failover; 60 s is the Vercel Hobby limit without Fluid compute.
+export const maxDuration = 60;
+
+
 const Body = z.object({ cardId: z.uuid() });
 const ERROR = { 404: 'not_found', 409: 'no_source', 422: 'ungrounded', 429: 'help_limit', 503: 'busy' } as const;
 

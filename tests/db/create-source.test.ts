@@ -21,8 +21,10 @@ test('createSource stores chunks with positions 0..n-1 and does not consume quot
   const r = await insertSource(A.client, A.userId, { newDeckTitle: 'Bio', title: 'Notes', kind: 'text', pages: [{ page: 1, text }] });
   expect(r.ok).toBe(true);
   if (!r.ok) return;
-  const { data: chunks } = await adminClient().from('source_chunks').select('position,generated_at').eq('source_id', r.sourceId).order('position');
+  const { data: chunks } = await adminClient().from('source_chunks').select('position,generated_at,page_start,page_end').eq('source_id', r.sourceId).order('position');
   expect(chunks?.map((c) => c.position)).toEqual([0, 1]);
+  // Pasted text has no pages, so triage says "From your material", not "From page 1".
+  expect(chunks?.every((c) => c.page_start === null && c.page_end === null)).toBe(true);
   expect(chunks?.every((c) => c.generated_at === null)).toBe(true);
   const { data: src } = await adminClient().from('sources').select('quota_consumed_at,page_count,kind,card_density').eq('id', r.sourceId).single();
   expect(src).toEqual({ quota_consumed_at: null, page_count: 4, kind: 'text', card_density: 'standard' });

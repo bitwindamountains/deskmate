@@ -22,7 +22,7 @@ export function YourData() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `scholar-data-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `scholar-data-${new Date().toLocaleDateString('en-CA')}.json`; // en-CA writes the local date as YYYY-MM-DD
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -71,7 +71,7 @@ test('already generated chunk returns existing cards without an LLM call', async
   expect(r).toMatchObject({ ok: true, alreadyGenerated: true, droppedUngrounded: 0 });
   if (r.ok && first.ok) {
     expect(r.cards.map((c) => c.id)).toEqual(first.cards.map((c) => c.id));
-    expect(r.cards[0]).toMatchObject({ status: 'pending', page_start: 1, importance: 2 });
+    expect(r.cards[0]).toMatchObject({ status: 'pending', page_start: null, importance: 2 }); // pasted text has no pages
   }
 });
 
