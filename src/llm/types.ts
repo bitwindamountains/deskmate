@@ -12,6 +12,8 @@ export interface ProviderConfig {
   trainsOnInputs: boolean;
   /** Reasoning models only (e.g. gpt-oss on Groq): hidden reasoning tokens count against free-tier token limits. */
   reasoningEffort?: 'low' | 'medium' | 'high';
+  /** The free tier's per-minute limits, kept locally by ProviderLimiter (tpm: input plus output tokens). */
+  limits?: { rpm: number; tpm?: number };
 }
 
 export interface ChatRequest {
@@ -23,7 +25,7 @@ export interface ChatRequest {
 
 export type ProviderOutcome =
   | { ok: true; text: string; tokensIn: number; tokensOut: number }
-  | { ok: false; status: number | 'timeout' | 'network'; message: string };
+  | { ok: false; status: number | 'timeout' | 'network'; message: string; retryAfterMs?: number };
 
 export type CallStatus =
   | 'ok'

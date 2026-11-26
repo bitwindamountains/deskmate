@@ -1,7 +1,7 @@
 import { writeHref } from '@/growth/prompts';
 import 'fake-indexeddb/auto';
 import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi, onTestFinished } from 'vitest';
 import type { ReviewCard } from '@/app/(app)/study/review/session';
 import { db } from '@/review/store';
 
@@ -123,6 +123,10 @@ test('Show answer flips the card and the student rates it', async () => {
 });
 
 test('summary shows count, accuracy, and next review', async () => {
+  // Local noon: an Again card is due again in minutes, which near midnight is (rightly) "tomorrow".
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 10, 26, 12, 0));
+  onTestFinished(() => { vi.useRealTimers(); });
   const field = await start([card('a'), card('b')]);
   await answer(field, 'electron transport chain');
   await waitFor(() => rating('Easy'));
