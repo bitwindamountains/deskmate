@@ -3,7 +3,7 @@ import { getProfile } from '@/lib/profile/require';
 import { OnboardingForm } from './onboarding-form';
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  return { title: (await searchParams).edit === '1' ? 'Your preferences · Scholar' : 'Set up · Scholar' };
+  return { title: (await searchParams).edit === '1' ? 'Your preferences · Deskmate' : 'Set up · Deskmate' };
 }
 
 export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {

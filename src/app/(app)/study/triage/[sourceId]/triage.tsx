@@ -142,7 +142,7 @@ export function Triage({ sourceId, deckId, todo, pending, existing }: { sourceId
       setMode('edit');
       focusNext.current = frontField;
     } catch {
-      setImproveError("We couldn't reach Scholar. Check your connection and try again.");
+      setImproveError("We couldn't reach Deskmate. Check your connection and try again.");
     } finally {
       setImproving(false);
     }

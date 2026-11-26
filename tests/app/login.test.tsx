@@ -12,6 +12,7 @@ vi.mock('@/app/login/actions', () => ({
 }));
 
 import { LoginForm } from '@/app/login/login-form';
+import { SignInShell } from '@/app/login/sign-in-shell';
 
 afterEach(cleanup);
 
@@ -22,7 +23,7 @@ const fill = (email: string, password?: string) => {
 
 test('sign-in shows Google, labelled email and password fields, and the other two forms', () => {
   render(<LoginForm next="/today" />);
-  expect(screen.getByRole('heading', { name: 'Sign in to Scholar' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Sign in to Deskmate' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
   expect(screen.getByLabelText('Email').getAttribute('autocomplete')).toBe('username');
   expect(screen.getByLabelText('Password').getAttribute('autocomplete')).toBe('current-password');
@@ -31,16 +32,14 @@ test('sign-in shows Google, labelled email and password fields, and the other tw
   expect(screen.getByRole('button', { name: 'Forgot your password?' })).toBeTruthy();
 });
 
-test('sign-in and create-account say what Scholar is; the reset form does not', () => {
-  render(<LoginForm next="/today" />);
-  const about = /Scholar helps you study without doing the work for you/;
-  expect(screen.getByText(about)).toBeTruthy();
+test('the sign-in page says what Deskmate is, leads with one h1, and offers a card to try before the form', () => {
+  render(<SignInShell><LoginForm next="/today" /></SignInShell>);
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Study a little. Remember it for good.');
+  expect(screen.getByText(/Deskmate helps you study without doing the work for you/)).toBeTruthy();
   expect(screen.getByText(/Free beta for students 18 and over/)).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Create an account' }));
-  expect(screen.getByText(about)).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Back to sign in' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Forgot your password?' }));
-  expect(screen.queryByText(about)).toBeNull();
+  expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  const fields = screen.getAllByRole('textbox');
+  expect(fields.map((f) => f.id)).toEqual(['email', 'try-answer']); // the form comes first in reading and tab order
 });
 
 test('a failed sign-in ties the error to both fields', async () => {
@@ -77,9 +76,9 @@ test('forgot password sends a reset link without saying whether the account exis
   expect(screen.queryByLabelText('Password')).toBeNull();
   fill('a@b.co');
   fireEvent.click(screen.getByRole('button', { name: 'Email me a reset link' }));
-  await waitFor(() => expect(screen.getByRole('status').textContent).toBe('If a@b.co has a Scholar account, we sent it a link to set a new password.'));
+  await waitFor(() => expect(screen.getByRole('status').textContent).toBe('If a@b.co has a Deskmate account, we sent it a link to set a new password.'));
   fireEvent.click(screen.getByRole('button', { name: 'Back to sign in' }));
-  expect(screen.getByRole('heading', { name: 'Sign in to Scholar' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Sign in to Deskmate' })).toBeTruthy();
 });
 
 test('initial error also ties to the email input', () => {
@@ -88,7 +87,7 @@ test('initial error also ties to the email input', () => {
 });
 
 test('after deleting their data the student sees a plain notice, not an error', () => {
-  render(<LoginForm next="/today" notice="Your Scholar data was deleted." />);
-  expect(screen.getByRole('status').textContent).toBe('Your Scholar data was deleted.');
+  render(<LoginForm next="/today" notice="Your Deskmate data was deleted." />);
+  expect(screen.getByRole('status').textContent).toBe('Your Deskmate data was deleted.');
   expect(screen.queryByRole('alert')).toBeNull();
 });

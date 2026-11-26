@@ -95,7 +95,7 @@ export function CardList({ cards: initial }: { cards: EditorCard[] }) {
         ? { ...cur, front: body.suggestion.front, back: body.suggestion.back, error: '', suggested: true }
         : { ...cur, error: body.message ?? 'Help is busy right now. Try again in a minute.' }));
     } catch {
-      setEditing((cur) => (cur && cur.id === id ? { ...cur, error: "We couldn't reach Scholar. Check your connection and try again." } : cur));
+      setEditing((cur) => (cur && cur.id === id ? { ...cur, error: "We couldn't reach Deskmate. Check your connection and try again." } : cur));
     } finally {
       setSuggesting(false);
     }

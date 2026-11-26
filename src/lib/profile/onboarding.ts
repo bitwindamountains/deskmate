@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ADULT_ERROR = "Scholar's beta is for adults (18+) for now.";
+export const ADULT_ERROR = "Deskmate's beta is for adults (18+) for now.";
 
 export const OnboardingInput = z.object({
   adult: z.literal(true, { error: ADULT_ERROR }),

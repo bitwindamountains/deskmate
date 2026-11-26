@@ -3,7 +3,7 @@
 # @scholar-demo.invalid, seeded by src/lib/demo, deleted after a day. No LLM keys: DEMO_MODE turns every AI call off.
 services:
   - type: web
-    name: scholar-demo
+    name: deskmate-demo
     runtime: node
     region: singapore
     plan: free
@@ -18,7 +18,7 @@ services:
         value: "true"
       # Must be the service's exact https origin: /api/demo refuses a post from any other origin.
       - key: SITE_URL
-        value: https://scholar-demo.onrender.com
+        value: https://deskmate-demo.onrender.com
       - key: NEXT_PUBLIC_SUPABASE_SCHEMA
         value: scholar
       # Read at build time (NEXT_PUBLIC_), so set them before the first build. Values from .env.local.

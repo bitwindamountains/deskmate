@@ -18,7 +18,7 @@ export function Nav({ current }: { current: NavKey }) {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-10 border-t-[1.5px] border-ink bg-rail pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:h-dvh md:w-56 md:shrink-0 md:border-t-0 md:border-r-[1.5px] md:px-3 md:py-6"
     >
-      <p className="hand hidden items-center gap-3 px-3 pb-6 text-2xl text-rail-ink-strong md:flex">Scholar <span className="stripe" aria-hidden="true" /></p>
+      <p className="hand hidden items-center gap-3 px-3 pb-6 text-2xl text-rail-ink-strong md:flex">Deskmate <span className="stripe" aria-hidden="true" /></p>
       <ul className="grid grid-cols-5 md:flex md:flex-col md:gap-1">
         {ITEMS.map((item) => {
           const here = item.key === current;
