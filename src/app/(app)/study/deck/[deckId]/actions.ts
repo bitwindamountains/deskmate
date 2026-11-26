@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { importAnkiCards, importCards, type ImportResult } from '@/lib/cards/transfer';
+import { addOneCard, importAnkiCards, importCards, type ImportResult } from '@/lib/cards/transfer';
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { deleteCards, updateCard, updateStatus } from '@/lib/triage/card-actions';
 import { createClient } from '@/lib/supabase/server';
@@ -51,6 +51,14 @@ export async function importAnki(deckId: string, cards: unknown): Promise<Import
   if (!z.uuid().safeParse(deckId).success) return { ok: false, message: "We couldn't import that file." };
   const { db, userId } = await session();
   const r = await importAnkiCards(db, userId, deckId, cards);
+  if (r.ok && r.added) revalidatePath(`/study/deck/${deckId}`);
+  return r;
+}
+
+export async function addCard(deckId: string, input: unknown): Promise<ImportResult> {
+  if (!z.uuid().safeParse(deckId).success) return { ok: false, message: "We couldn't find that deck." };
+  const { db, userId } = await session();
+  const r = await addOneCard(db, userId, deckId, input);
   if (r.ok && r.added) revalidatePath(`/study/deck/${deckId}`);
   return r;
 }
