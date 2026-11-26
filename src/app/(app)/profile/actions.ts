@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-/** Brief E4: deletes the student's Scholar data (not the shared sign-in), then signs out. Resolves to an error message. */
+/** Brief E4: deletes the student's Deskmate data (not the shared sign-in), then signs out. Resolves to an error message. */
 export async function deleteMyData(form: FormData): Promise<string> {
   if (String(form.get('confirm') ?? '').trim().toLowerCase() !== 'delete') return 'Type delete to confirm.';
   const db = await createClient();

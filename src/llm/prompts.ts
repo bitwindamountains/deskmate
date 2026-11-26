@@ -37,7 +37,7 @@ export interface EssayInput {
   onlyParagraphs?: number[];
   /** Timed writing (A4.5): the limit the essay was written under, in minutes. */
   timedMinutes?: number;
-  /** D3.1 step 2: labels of the student's recurring patterns from earlier essays (Scholar's own names, not student text). */
+  /** D3.1 step 2: labels of the student's recurring patterns from earlier essays (Deskmate's own names, not student text). */
   recurring?: string[];
 }
 

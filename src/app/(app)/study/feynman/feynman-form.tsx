@@ -25,7 +25,7 @@ export function FeynmanForm({ deckId, concept, label }: { deckId: string; concep
       if (res.ok && body.feedback) setFeedback(body.feedback);
       else setError(body.message ?? 'Feedback is busy right now. Try again in a minute.');
     } catch {
-      setError("We couldn't reach Scholar. Check your connection and try again.");
+      setError("We couldn't reach Deskmate. Check your connection and try again.");
     }
     setBusy(false);
   }

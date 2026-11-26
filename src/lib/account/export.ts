@@ -11,7 +11,7 @@ const TABLES: Record<string, string[]> = {
 
 type Row = Record<string, unknown>;
 
-/** Brief E4: everything the student has in Scholar, one array per table. Null when any table fails to load. */
+/** Brief E4: everything the student has in Deskmate, one array per table. Null when any table fails to load. */
 export async function exportMyData(db: Db): Promise<Record<string, Row[]> | null> {
   const tables = await Promise.all(Object.entries(TABLES).map(async ([table, keys]) => {
     const rows = await allRows<Row>((from, to) => keys.reduce((q, k) => q.order(k), db.from(table).select('*')).range(from, to));

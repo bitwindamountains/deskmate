@@ -81,7 +81,7 @@ test('export has every own row, nobody else rows, and no embeddings', async () =
   expect(JSON.stringify(data)).not.toContain(B.userId);
 });
 
-test('delete_my_data removes all Scholar content, keeps quota counters and the sign-in, and leaves others alone', async () => {
+test('delete_my_data removes all Deskmate content, keeps quota counters and the sign-in, and leaves others alone', async () => {
   expect((await anonClient().rpc('delete_my_data')).error).not.toBeNull();
   expect((await A.client.rpc('delete_my_data')).error).toBeNull();
   const left = (await exportMyData(A.client))!;

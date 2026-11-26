@@ -21,7 +21,7 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
     <main className="mx-auto max-w-md space-y-6 px-4 py-10">
       {/* On phones the long form scrolls over the stack, so it shows from 768px, beside the form. */}
       <div className="hidden md:contents"><CardStackHero /></div>
-      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{defaults ? 'Your preferences' : 'Set up Scholar'}</span></h1>
+      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">{defaults ? 'Your preferences' : 'Set up Deskmate'}</span></h1>
       {state.error && <p role="alert" className="error">{state.error}</p>}
       <form action={action} className="space-y-5">
         {!defaults && (
@@ -71,7 +71,7 @@ export function OnboardingForm({ defaults }: { defaults?: Profile }) {
         {/* ponytail: this sentence names every service that receives student text: the `trainsOnInputs: false` providers in
             src/llm/config.ts and LanguageTool (src/lib/essay/languagetool.ts). Update it with either. Confirm LanguageTool's
             privacy terms before launch. */}
-        <p>Scholar uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this (or to Mistral when Groq is busy), and essays are also checked by LanguageTool for spelling and grammar. Neither Groq nor Mistral trains its models on what you send. <a href="/privacy" className="underline">Read the privacy notice</a>.</p>
+        <p>Deskmate uses AI to make flashcards, check your answers, and give essay feedback. Your text is sent to Groq for this (or to Mistral when Groq is busy), and essays are also checked by LanguageTool for spelling and grammar. Neither Groq nor Mistral trains its models on what you send. <a href="/privacy" className="underline">Read the privacy notice</a>.</p>
 
         <button type="submit" disabled={pending} className="btn btn-primary">{defaults ? 'Save changes' : 'Start studying'}</button>
       </form>

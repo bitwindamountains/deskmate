@@ -11,9 +11,9 @@ export function DemoStart({ error }: { error?: string }) {
   return (
     <main className="mx-auto max-w-sm space-y-6 px-4 py-10">
       <CardStackHero />
-      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">Try Scholar</span></h1>
+      <h1 className="hand rule-draw pb-1 text-[2.25rem] leading-tight text-balance"><span className="hand-write">Try Deskmate</span></h1>
       <p className="text-pretty">
-        Scholar helps you study without doing the work for you. Draft Coach gives feedback on your essays, with hints instead
+        Deskmate helps you study without doing the work for you. Draft Coach gives feedback on your essays, with hints instead
         of rewrites. Recall turns your notes into flashcards and schedules each review before you forget.
       </p>
       <p className="text-pretty">
@@ -26,7 +26,7 @@ export function DemoStart({ error }: { error?: string }) {
         <button type="submit" className="btn btn-primary w-full">Try the demo</button>
       </form>
       <p className="text-sm text-ink-muted">The first start can take a minute while the server wakes up.</p>
-      <p className="text-sm text-ink-muted"><a href="/privacy" className="underline">How Scholar handles your data</a></p>
+      <p className="text-sm text-ink-muted"><a href="/privacy" className="underline">How Deskmate handles your data</a></p>
     </main>
   );
 }

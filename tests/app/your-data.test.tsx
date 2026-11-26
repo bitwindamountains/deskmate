@@ -37,7 +37,7 @@ test('the file is named by the local date, not the UTC one', async () => {
   render(<YourData />);
   fireEvent.click(screen.getByRole('button', { name: 'Download my data' }));
   await waitFor(() => expect(click).toHaveBeenCalled());
-  expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('scholar-data-2026-11-27.json');
+  expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('deskmate-data-2026-11-27.json');
   vi.useRealTimers();
 });
 
