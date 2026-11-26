@@ -35,7 +35,7 @@ export default async function TriagePage({ params }: { params: Promise<{ sourceI
   return (
     <AppPage current="study" title="Review your cards">
       <p className="mb-6 text-ink-muted [overflow-wrap:anywhere]">From {source.title}</p>
-      <Triage sourceId={sourceId} todo={todo} pending={pending} existing={existing} />
+      <Triage sourceId={sourceId} deckId={source.deck_id} todo={todo} pending={pending} existing={existing} />
     </AppPage>
   );
 }

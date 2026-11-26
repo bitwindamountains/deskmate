@@ -155,6 +155,16 @@ test('clicking a highlight focuses its card; Show in essay focuses the highlight
   expect(within(card('g2')).getByText('Covers the whole essay')).toBeTruthy();
 });
 
+test('at rest no passage is highlighted: marks have no colour and their label is for screen readers only', () => {
+  view();
+  for (const id of ['hl-g1', 'hl-s1', 'hl-strength-0']) {
+    const mark = document.getElementById(id)!;
+    expect(mark.className).not.toMatch(/bg-layer-/);
+    expect(mark.hasAttribute('data-focus')).toBe(false);
+    expect(mark.firstElementChild!.className).toMatch(/(^| )sr-only( |$)/); // the label shows only when the mark is lit
+  }
+});
+
 test('pointing at or tabbing into a feedback card highlights its passage in the essay', () => {
   view();
   const mark = document.getElementById('hl-g1')!;
@@ -292,6 +302,7 @@ test('focus mode steps through Top 3 with keyboard only', async () => {
   press();
   await waitFor(() => expect(document.activeElement).toBe(card('g1')));
   expect(screen.getByText('0 of 3 priorities addressed')).toBeTruthy();
+  expect(document.getElementById('hl-g1')!.hasAttribute('data-focus')).toBe(true); // the item in focus stays lit
   expect(document.querySelector('[data-paragraph="0"]')!.getAttribute('data-dimmed')).toBe('false');
   expect(document.querySelector('[data-paragraph="1"]')!.getAttribute('data-dimmed')).toBe('true');
   expect(screen.queryByRole('region', { name: 'Top 3 priorities' })).toBeNull();
