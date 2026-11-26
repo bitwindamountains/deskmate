@@ -24,7 +24,7 @@ function stubHosts(replies: Record<string, Reply[]>) {
 }
 const statuses = (log: { status: string }[]) => log.map((l) => l.status);
 
-afterEach(() => { vi.unstubAllGlobals(); providerLimiter.reset(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); providerLimiter.reset(); });
 
 test('returns parsed data from first provider', async () => {
   stubHosts({ a: [{ content: '{"n":1}' }] });
@@ -135,4 +135,11 @@ test('a provider at its requests-a-minute limit is skipped for the next one', as
   expect(r.provider).toBe('b');
   expect(r.log[0].message).toMatch(/1 requests a minute/);
   expect(f).toHaveBeenCalledTimes(2);
+});
+
+test('demo mode never calls a provider, even with keys set', async () => {
+  vi.stubEnv('DEMO_MODE', 'true');
+  const f = stubHosts({ a: [{ content: '{"n":1}' }] });
+  await expect(complete('grade_answer', pr, s, { env, providers: [a] })).rejects.toBeInstanceOf(AllProvidersFailedError);
+  expect(f).not.toHaveBeenCalled();
 });
