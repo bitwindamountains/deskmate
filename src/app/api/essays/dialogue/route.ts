@@ -4,6 +4,10 @@ import { sendDialogue, type DialogueResult } from '@/lib/essay/dialogue';
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
+// AI calls with retries and failover; 60 s is the Vercel Hobby limit without Fluid compute.
+export const maxDuration = 60;
+
+
 const Body = z.object({ itemId: z.uuid(), kind: z.enum(['question', 'dispute']), message: z.string().trim().min(1).max(1000) });
 const ERROR = { 404: 'not_found', 409: 'thread_limit', 429: 'quota', 503: 'busy' } as const;
 

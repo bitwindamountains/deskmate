@@ -4,6 +4,10 @@ import { generateChunk } from '@/lib/generate/generate-chunk';
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
+// AI calls with retries and failover; 60 s is the Vercel Hobby limit without Fluid compute.
+export const maxDuration = 60;
+
+
 const Body = z.object({ sourceId: z.uuid(), position: z.number().int().min(0) });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {

@@ -3,6 +3,10 @@ import { requestFeynman, type FeynmanResult } from '@/lib/cards/feynman';
 import { isOnboarded } from '@/lib/profile/is-onboarded';
 import { createClient } from '@/lib/supabase/server';
 
+// AI calls with retries and failover; 60 s is the Vercel Hobby limit without Fluid compute.
+export const maxDuration = 60;
+
+
 const ERROR = { 400: 'bad_request', 404: 'not_found', 429: 'help_limit', 503: 'busy' } as const;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
