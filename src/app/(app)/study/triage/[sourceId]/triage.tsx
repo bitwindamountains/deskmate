@@ -50,7 +50,7 @@ const snippet = (c: CardRow) => {
 };
 
 /** todo: positions of chunks not yet generated, in order. pending: this source's pending cards. existing: the deck's kept and pending cards, for dedupe. */
-export function Triage({ sourceId, todo, pending, existing }: { sourceId: string; todo: number[]; pending: CardRow[]; existing: KnownCard[] }) {
+export function Triage({ sourceId, deckId, todo, pending, existing }: { sourceId: string; deckId: string; todo: number[]; pending: CardRow[]; existing: KnownCard[] }) {
   const [cards, setCards] = useState<CardRow[]>(pending);
   const [part, setPart] = useState<number | null>(todo.length ? 0 : null);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -83,6 +83,8 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
   const current = cards.find((c) => c.status === 'pending');
   useEffect(() => setImproveError(''), [current?.id]); // an error about one card shouldn't follow the student to the next
   const left = cards.filter((c) => c.status === 'pending').length;
+  // Everything made and sorted, with something kept: offer to study it straight away.
+  const finished = part === null && left === 0 && cards.some((c) => c.status === 'kept');
   const path = `/study/triage/${sourceId}`;
 
   function move(ids: string[], status: 'kept' | 'discarded', reason?: Reason) {
@@ -354,6 +356,7 @@ export function Triage({ sourceId, todo, pending, existing }: { sourceId: string
 
       <div className="flex flex-wrap gap-3 border-t border-line pt-6">
         <button type="button" className="btn" disabled={!left} onClick={keepAll}>Keep all</button>
+        {finished && <Link href={`/study/review?deck=${deckId}`} className="btn btn-primary">Study these now</Link>}
         <Link ref={doneLink} href="/study" className="btn">Done reviewing</Link>
       </div>
 

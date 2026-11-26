@@ -31,6 +31,18 @@ test('sign-in shows Google, labelled email and password fields, and the other tw
   expect(screen.getByRole('button', { name: 'Forgot your password?' })).toBeTruthy();
 });
 
+test('sign-in and create-account say what Scholar is; the reset form does not', () => {
+  render(<LoginForm next="/today" />);
+  const about = /Scholar helps you study without doing the work for you/;
+  expect(screen.getByText(about)).toBeTruthy();
+  expect(screen.getByText(/Free beta for students 18 and over/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Create an account' }));
+  expect(screen.getByText(about)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Back to sign in' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Forgot your password?' }));
+  expect(screen.queryByText(about)).toBeNull();
+});
+
 test('a failed sign-in ties the error to both fields', async () => {
   signIn.mockResolvedValue({ mode: 'signin', email: 'a@b.co', error: "That email and password don't match." });
   render(<LoginForm next="/today" />);

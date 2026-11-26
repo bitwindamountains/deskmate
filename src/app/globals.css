@@ -183,10 +183,10 @@ html { scrollbar-color: var(--line) var(--ground); caret-color: var(--ink); }
   @keyframes square-up { from { transform: translate(var(--from-x), -18px) rotate(var(--from-r)); opacity: 0; } }
   .tick { stroke-dasharray: 60; stroke-dashoffset: 60; animation: tick 360ms var(--ease-out) both; }
   @keyframes tick { to { stroke-dashoffset: 0; } }
-  /* Pointing at a feedback card lays a highlighter stroke over its passage in the essay. */
+  /* Pointing at a feedback card lays a highlighter stroke over its passage in the essay; at rest nothing is highlighted. */
   mark[id^='hl-'] { background-image: linear-gradient(var(--highlight), var(--highlight)); background-size: 0 100%;
     background-repeat: no-repeat; transition: background-size 320ms var(--ease-out); }
-  mark[id^='hl-'][data-linked] { background-size: 100% 100%; }
+  mark[id^='hl-'][data-linked], mark[id^='hl-'][data-focus], mark[id^='hl-']:focus { background-size: 100% 100%; }
   /* A card slides into view like an inlay pushed into its case: revealed from the left edge. */
   .card-in { animation: card-in 280ms var(--ease-out) both; }
   @keyframes card-in { from { clip-path: inset(0 100% 0 0); transform: translateX(-10px); } to { clip-path: inset(0 0 0 0); } }
