@@ -2,14 +2,14 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> Written from `ai-learning-platform-brief.md` without an interview (the owner chose to skip questions). Facts not stated in the brief are marked **(inferred)**.
+> Written from `docs/dev-notes/product-brief.md` without an interview (the owner chose to skip questions). Facts not stated in the brief are marked **(inferred)**.
 
 ## Platform
 
 web
 
 ## Stack
-Delegated, with a constraint from the owner: free, open-source, or free-tier services only for now. Chosen: Next.js + Tailwind as a PWA, Supabase free plan, client-side parsing/OCR/embeddings, a free-tier LLM router. Rationale in `docs/superpowers/specs/2026-10-20-scholar-design.md` §4.
+Delegated, with a constraint from the owner: free, open-source, or free-tier services only for now. Chosen: Next.js + Tailwind as a PWA, Supabase free plan, client-side parsing/OCR/embeddings, a free-tier LLM router. Rationale in `docs/dev-notes/superpowers/specs/2026-10-20-scholar-design.md` §4.
 
 ## Users
 - High school students (14–18) writing class essays and studying on phones.
