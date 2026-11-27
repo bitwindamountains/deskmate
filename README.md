@@ -1,5 +1,7 @@
 # Deskmate
 
+[![CI](https://github.com/bitwindamountains/deskmate/actions/workflows/ci.yml/badge.svg)](https://github.com/bitwindamountains/deskmate/actions/workflows/ci.yml)
+
 An AI study app with two tools. **Draft Coach** gives layered feedback on essays and hints before it rewrites. **Recall** turns a student's own notes into flashcards scheduled for their exam date. The AI coaches; the student does the work.
 
 **[Try the live demo →](https://deskmate-demo.onrender.com)** Each visitor gets a fresh sample account. AI features are off in the demo. It runs on free hosting, so the first load can take about a minute.
@@ -61,7 +63,7 @@ An AI study app with two tools. **Draft Coach** gives layered feedback on essays
 | Data | Supabase (PostgreSQL, row-level security, Auth), Dexie for offline reviews |
 | Learning | ts-fsrs scheduling, Transformers.js embeddings, Tesseract OCR, pdf.js, mammoth, sql.js for Anki import |
 | AI | An LLM router over Groq and Mistral (Gemini for evaluation and development only) |
-| Quality | Vitest, database tests against the Supabase schema, an LLM evaluation set |
+| Quality | Vitest, GitHub Actions (type check, tests, build), database tests against the Supabase schema, an LLM evaluation set |
 
 ## Run it locally
 
