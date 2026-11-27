@@ -6,7 +6,7 @@ An AI study app with two tools. **Draft Coach** gives layered feedback on essays
 
 ![Draft Coach on an essay: the flagged sentence highlighted, a strength, and the top priority with its first hint](docs/images/draft-coach.webp)
 
-> **Status:** the demo is live. Production deployment with a custom sign-in email, then a closed beta with college students and exam reviewees, are next. This repository was called Scholar before the app was renamed Deskmate.
+> **Status:** the demo is live. Production deployment with a custom sign-in email, then a closed beta with college students and exam reviewees, are next. The project was called Scholar before, so the database schema and some code still use that name.
 
 ## Walkthrough
 

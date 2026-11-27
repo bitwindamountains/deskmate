@@ -5,7 +5,7 @@ Target: Vercel Hobby (free), with the existing shared Supabase project. The owne
 ## Before the first deploy
 
 1. **Check the Hobby terms.** Vercel Hobby is for personal, non-commercial use. A free beta fits; anything that charges students or schools needs Vercel Pro or another host.
-2. **Import the repo.** In Vercel, choose "Add New → Project", pick `bitwindamountains/scholar`, framework Next.js. Keep the default build (`next build`) and output settings. Node version: 22 or later (`package.json` engines says `>=22.9`).
+2. **Import the repo.** In Vercel, choose "Add New → Project", pick `bitwindamountains/deskmate`, framework Next.js. Keep the default build (`next build`) and output settings. Node version: 22 or later (`package.json` engines says `>=22.9`).
 3. **Set the environment variables** (Production, and Preview if you use preview deploys):
 
    | Variable | Value | Notes |
